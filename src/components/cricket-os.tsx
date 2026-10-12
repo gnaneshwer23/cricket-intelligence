@@ -61,7 +61,7 @@ const titles: Record<ScreenId, string> = {
 };
 
 function Shell() {
-  const { screen, go } = useApp();
+  const { screen, go, onboarded } = useApp();
   const [more, setMore] = useState(false);
 
   useEffect(() => {
@@ -92,6 +92,11 @@ function Shell() {
       >
         Skip to content
       </a>
+      <div
+        className="min-h-dvh"
+        inert={!onboarded ? true : undefined}
+        aria-hidden={!onboarded ? true : undefined}
+      >
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-border bg-sidebar/95 px-3 py-5 lg:flex">
         <div className="px-2">
           <p className="font-display text-2xl tracking-tight">CricketOS</p>
@@ -248,6 +253,7 @@ function Shell() {
           </div>
         </SheetContent>
       </Sheet>
+      </div>
 
       <Onboarding />
     </div>

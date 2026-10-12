@@ -26,7 +26,7 @@ import { clamp, MOODS, moodBreakdown } from "@/lib/format";
 
 export function MatchScreen() {
   const countdown = useCountdown();
-  const { mood, react, go, ask } = useApp();
+  const { mood, react, go } = useApp();
   const [planId, setPlanId] = useState(fieldPlans[0].id);
   const [side, setSide] = useState<"england" | "india">("england");
   const [noted, setNoted] = useState<string | null>(null);
@@ -198,8 +198,7 @@ export function MatchScreen() {
                 className="mt-5"
                 variant="secondary"
                 onClick={() => {
-                  go("ask", { mode: "predictions" });
-                  ask("Why is England winning?", "predictions");
+                  go("ask", { mode: "predictions", seedAsk: "Why is England winning?" });
                 }}
               >
                 Ask: why is England winning?
@@ -318,8 +317,7 @@ export function MatchScreen() {
                 type="button"
                 variant="secondary"
                 onClick={() => {
-                  go("ask", { mode: "predictions" });
-                  ask("Project the final score", "predictions");
+                  go("ask", { mode: "predictions", seedAsk: "Project the final score" });
                 }}
               >
                 Project final score
@@ -328,8 +326,7 @@ export function MatchScreen() {
                 type="button"
                 variant="outline"
                 onClick={() => {
-                  go("ask", { mode: "predictions" });
-                  ask("Who likely scores next?", "predictions");
+                  go("ask", { mode: "predictions", seedAsk: "Who likely scores next?" });
                 }}
               >
                 Who scores next?

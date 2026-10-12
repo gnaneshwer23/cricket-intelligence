@@ -35,7 +35,6 @@ export function AskScreen() {
   const [draft, setDraft] = useState("");
   const scroller = useRef<HTMLDivElement>(null);
   const prompts = askPrompts[askMode] ?? askPrompts.general;
-  const seeded = useRef(false);
 
   useEffect(() => {
     const node = scroller.current;
@@ -43,12 +42,11 @@ export function AskScreen() {
   }, [messages, asking]);
 
   useEffect(() => {
-    if (!pendingSeed || seeded.current || asking) return;
-    seeded.current = true;
+    if (!pendingSeed || asking) return;
     const text = pendingSeed;
     clearPendingSeed();
-    ask(text, "general");
-  }, [pendingSeed, clearPendingSeed, ask, asking]);
+    ask(text, askMode);
+  }, [pendingSeed, clearPendingSeed, ask, asking, askMode]);
 
   function submit(question: string) {
     const text = question.trim();

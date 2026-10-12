@@ -29,7 +29,6 @@ import {
 export function HomeScreen() {
   const {
     go,
-    ask,
     followedPlayers,
     followedTeams,
     preferences,
@@ -71,8 +70,9 @@ export function HomeScreen() {
       return;
     }
     setError(null);
-    go("ask", { mode });
-    ask(text, mode);
+    // Route through seedAsk so AskScreen owns the thread after navigation —
+    // avoids racing Home unmount with a direct ask() call.
+    go("ask", { mode, seedAsk: text });
   }
 
   return (

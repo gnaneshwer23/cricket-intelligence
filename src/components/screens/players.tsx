@@ -13,7 +13,7 @@ import { answerQuestion } from "@/lib/engine";
 import type { Answer } from "@/lib/types";
 
 export function PlayersScreen() {
-  const { playerId, setPlayerId, followedPlayers, toggleFollow, go, ask } = useApp();
+  const { playerId, setPlayerId, followedPlayers, toggleFollow, go } = useApp();
   const [query, setQuery] = useState("");
   const [nodeId, setNodeId] = useState("self");
   const [twinDraft, setTwinDraft] = useState("");
@@ -408,7 +408,16 @@ export function PlayersScreen() {
                         Open {activeNode.title}
                       </Button>
                     ) : null}
-                    <Button type="button" variant="secondary" onClick={() => { go("ask", { mode: "general" }); ask(`Who is most similar to ${player.name}?`, "general"); }}>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => {
+                        go("ask", {
+                          mode: "general",
+                          seedAsk: `Who is most similar to ${player.name}?`,
+                        });
+                      }}
+                    >
                       Ask this as a question
                     </Button>
                   </div>

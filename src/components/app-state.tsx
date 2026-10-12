@@ -197,7 +197,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       if (opts?.teamId) setTeamId(opts.teamId);
       if (opts?.mode) setAskMode(opts.mode);
       if (opts?.seedAsk) setPendingSeed(opts.seedAsk);
-      if (window.location.hash === `#${next}`) {
+      // Prefer location.hash (fires hashchange) over history.replaceState —
+      // Next's patched history API can swallow hash-only replaceState updates.
+      const target = `#${next}`;
+      if (window.location.hash === target) {
         window.dispatchEvent(new Event("hashchange"));
       } else {
         window.location.hash = next;

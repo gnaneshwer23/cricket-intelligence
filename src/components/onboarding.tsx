@@ -44,10 +44,17 @@ export function Onboarding() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 sm:items-center">
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 sm:items-center"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="onboarding-title"
+    >
       <div className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-[2rem] border border-border bg-card p-6 shadow-2xl sm:p-8">
         <Kicker>Welcome to CricketOS</Kicker>
-        <h2 className="font-display mt-3 text-4xl tracking-tight">Ask Cricket Anything</h2>
+        <h2 id="onboarding-title" className="font-display mt-3 text-4xl tracking-tight">
+          Ask Cricket Anything
+        </h2>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
           Fan → AI → Answers → Predictions → Community → Action. Pick who you follow so the
           briefing and feed feel like yours.

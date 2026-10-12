@@ -14,7 +14,6 @@ import {
 export function FeedScreen() {
   const {
     go,
-    ask,
     followedPlayers,
     followedTeams,
     toggleFollow,
@@ -120,8 +119,7 @@ export function FeedScreen() {
             className="mt-5"
             variant="secondary"
             onClick={() => {
-              go("ask", { mode: "predictions" });
-              ask("Why is England winning?", "predictions");
+              go("ask", { mode: "predictions", seedAsk: "Why is England winning?" });
             }}
           >
             Ask the model
@@ -144,8 +142,7 @@ export function FeedScreen() {
                     type="button"
                     className="text-left text-sm hover:text-lime"
                     onClick={() => {
-                      go("ask", { mode: "general" });
-                      ask(chat.question);
+                      go("ask", { mode: "general", seedAsk: chat.question });
                     }}
                   >
                     <span className="block font-medium">{chat.question}</span>
@@ -176,8 +173,7 @@ export function FeedScreen() {
                     type="button"
                     className="text-left text-sm hover:text-lime"
                     onClick={() => {
-                      go("ask", { mode: "general" });
-                      ask(chat.question);
+                      go("ask", { mode: "general", seedAsk: chat.question });
                     }}
                   >
                     <span className="block font-medium">{chat.question}</span>
