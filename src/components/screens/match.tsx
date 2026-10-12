@@ -5,7 +5,7 @@ import { useApp } from "@/components/app-state";
 import { LiveCommentary } from "@/components/live-commentary";
 import { LiveScoreStrip } from "@/components/live-score-strip";
 import { KindBadge, ProvenanceStrip, StatusBadge } from "@/components/status-badge";
-import { Kicker, Meter, PageTitle, Panel, WinSplit } from "@/components/ui-bits";
+import { Kicker, Meter, Panel, WinSplit } from "@/components/ui-bits";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -87,11 +87,36 @@ export function MatchScreen() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <PageTitle
-        kicker="Match Room · DEMO sim + intelligence"
-        title={matchMeta.title}
-        lede="Scripted DEMO score and commentary advance an illustrative Lord's innings — then explore the graph, evidence, and consequences. Not a broadcast feed."
-      />
+      <header className="mb-5 flex flex-wrap items-end justify-between gap-3">
+        <div className="max-w-2xl">
+          <Kicker className="text-cyan">Match Room · DEMO sim + intelligence</Kicker>
+          <h1 className="font-display mt-2 text-3xl font-medium tracking-tight text-balance sm:text-4xl">
+            {matchMeta.title}
+          </h1>
+          <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
+            Scripted DEMO score and commentary — explore graph, evidence, and consequences. Not a
+            broadcast feed.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            onClick={() => go("explorer", { explorerFocus: { chart: "worm", from: "Match Room" } })}
+          >
+            Open Explorer charts
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            onClick={() => go("ask", { seedAsk: "Which over scored the most runs?" })}
+          >
+            Ask Copilot
+          </Button>
+        </div>
+      </header>
 
       <LiveScoreStrip />
       <div className="mt-3">
@@ -100,25 +125,6 @@ export function MatchScreen() {
           asOf={matchMeta.provenance.asOf}
           note="Score strip is a scripted DEMO sim. Graph and report stay on the session snapshot."
         />
-      </div>
-
-      <div className="mt-4 flex flex-wrap gap-2">
-        <Button
-          type="button"
-          size="sm"
-          variant="secondary"
-          onClick={() => go("explorer", { explorerFocus: { chart: "worm", from: "Match Room" } })}
-        >
-          Open Explorer charts
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="secondary"
-          onClick={() => go("ask", { seedAsk: "Which over scored the most runs?" })}
-        >
-          Ask Copilot
-        </Button>
       </div>
 
       <Tabs value={tab} onValueChange={setTab} className="mt-6">

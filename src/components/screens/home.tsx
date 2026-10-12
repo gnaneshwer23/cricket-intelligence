@@ -77,102 +77,130 @@ export function HomeScreen() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <section className="relative overflow-hidden rounded-[2rem] border border-border">
+      {/* One composition: brand-first hero — no card soup, no competing stats */}
+      <section className="relative overflow-hidden rounded-[2rem] border border-white/10">
         <div
-          className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,oklch(0.35_0.08_145/0.55),transparent_55%),radial-gradient(ellipse_at_bottom_right,oklch(0.28_0.05_95/0.4),transparent_50%),linear-gradient(160deg,oklch(0.18_0.02_145),oklch(0.14_0.01_120))]"
+          className="absolute inset-0 bg-[radial-gradient(ellipse_at_15%_0%,oklch(0.42_0.14_125/0.45),transparent_52%),radial-gradient(ellipse_at_95%_80%,oklch(0.35_0.08_210/0.32),transparent_48%),linear-gradient(165deg,oklch(0.18_0.03_240),oklch(0.13_0.02_240))]"
           aria-hidden
         />
-        <div className="absolute inset-x-10 top-0 h-px bg-linear-to-r from-transparent via-lime to-transparent" />
-        <div className="relative grid gap-8 p-6 sm:p-10 lg:grid-cols-[1.35fr_1fr] lg:items-end">
-          <div>
-            <p className="font-display text-5xl tracking-tight text-lime sm:text-6xl">CricketOS</p>
-            <h1 className="font-display mt-4 text-4xl font-medium tracking-tight text-balance sm:text-6xl">
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.07]"
+          style={{
+            backgroundImage:
+              "repeating-linear-gradient(-18deg, transparent, transparent 22px, oklch(1 0 0 / 0.9) 22px, oklch(1 0 0 / 0.9) 23px)",
+          }}
+          aria-hidden
+        />
+        <div className="absolute inset-x-8 top-0 h-px bg-linear-to-r from-transparent via-lime to-transparent sm:inset-x-12" />
+        <div className="relative px-6 py-10 sm:px-10 sm:py-14 lg:px-14 lg:py-16">
+          <div className="cos-hero-in max-w-2xl">
+            <p className="font-display text-5xl tracking-tight text-lime sm:text-6xl md:text-7xl">
+              CricketOS
+            </p>
+            <h1 className="font-display mt-5 text-3xl font-medium tracking-tight text-balance sm:text-5xl">
               Follow the match. Understand the game.
             </h1>
             <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground sm:text-base">
               {greeting}. Intelligence briefing with grounded answers — demo data labelled honestly,
               not another scoreboard that pretends to be live.
             </p>
-            <form
-              className="mt-8 flex flex-col gap-3 sm:flex-row"
-              onSubmit={(event) => {
-                event.preventDefault();
-                submit(draft);
-              }}
-            >
-              <label className="sr-only" htmlFor="home-ask">
-                Ask Cricket Anything
-              </label>
-              <Input
-                id="home-ask"
-                value={draft}
-                onChange={(event) => {
-                  setDraft(event.target.value);
-                  if (error) setError(null);
-                }}
-                placeholder="Why is Bumrah difficult to face today?"
-                aria-invalid={error ? true : undefined}
-                className="h-12! flex-1 border-white/15 bg-black/25 px-4"
-              />
-              <Button type="submit" className="h-12 px-5" size="lg">
-                <ArrowUp />
-                Ask
-              </Button>
-            </form>
-            {error ? <p className="mt-2 text-sm text-destructive">{error}</p> : null}
-            <div className="mt-4 flex flex-wrap gap-2">
-              {recommendations.slice(0, 4).map((item) => (
-                <Button
-                  key={item.q}
-                  type="button"
-                  variant="secondary"
-                  className="h-auto bg-black/30 px-3 py-2 text-left whitespace-normal"
-                  onClick={() => submit(item.q, item.mode)}
-                >
-                  {item.q}
-                </Button>
-              ))}
-            </div>
           </div>
-          <div className="rounded-3xl border border-white/10 bg-black/30 p-5 backdrop-blur-sm">
-            <Kicker>{dateLabel} · intelligence briefing</Kicker>
-            <ul className="mt-4 space-y-3">
-              {briefing.slice(0, 3).map((item) => (
-                <li key={item.id}>
-                  <button
-                    type="button"
-                    className="w-full text-left hover:text-lime"
-                    onClick={() =>
-                      go(item.screen, item.playerId ? { playerId: item.playerId } : undefined)
-                    }
-                  >
-                    <span className="block text-sm font-medium">{item.title}</span>
-                    <span className="mt-1 block text-xs text-muted-foreground">{item.detail}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-            <Button
-              type="button"
-              variant="outline"
-              className="mt-5 w-full border-white/15"
-              onClick={() => go("feed")}
-            >
-              Open personal feed
+
+          <form
+            className="cos-hero-in-delay mt-8 flex max-w-xl flex-col gap-3 sm:flex-row"
+            onSubmit={(event) => {
+              event.preventDefault();
+              submit(draft);
+            }}
+          >
+            <label className="sr-only" htmlFor="home-ask">
+              Ask Cricket Anything
+            </label>
+            <Input
+              id="home-ask"
+              value={draft}
+              onChange={(event) => {
+                setDraft(event.target.value);
+                if (error) setError(null);
+              }}
+              placeholder="Why is Bumrah difficult to face today?"
+              aria-invalid={error ? true : undefined}
+              className="h-12! flex-1 border-white/15 bg-black/30 px-4"
+            />
+            <Button type="submit" className="h-12 px-5" size="lg">
+              <ArrowUp />
+              Ask
             </Button>
+          </form>
+          {error ? <p className="mt-2 text-sm text-destructive">{error}</p> : null}
+
+          <div className="cos-hero-in-delay mt-4 flex flex-wrap gap-2">
+            {recommendations.slice(0, 3).map((item) => (
+              <button
+                key={item.q}
+                type="button"
+                className="rounded-full border border-white/12 bg-black/20 px-3 py-1.5 text-left text-xs text-muted-foreground transition hover:border-lime/40 hover:text-foreground"
+                onClick={() => submit(item.q, item.mode)}
+              >
+                {item.q}
+              </button>
+            ))}
           </div>
         </div>
       </section>
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-5">
-        <div className="lg:col-span-3">
-          <LiveScoreStrip compact onOpenMatch={() => go("match")} />
+      {/* Scoreboard composition — sports-app density, not a dashboard tile row */}
+      <section className="mt-6">
+        <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <Kicker className="text-cyan">DEMO scoreboard</Kicker>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Scripted Lord&apos;s session · not a live broadcast
+            </p>
+          </div>
+          <Button type="button" variant="ghost" size="sm" onClick={() => go("match")}>
+            Open Match Room
+          </Button>
         </div>
-        <div className="grid gap-4 lg:col-span-2">
+        <LiveScoreStrip compact onOpenMatch={() => go("match")} />
+      </section>
+
+      <div className="mt-6 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+        <div className="rounded-[1.75rem] border border-border/80 bg-card/60 p-5">
+          <Kicker>
+            {dateLabel} · intelligence briefing
+          </Kicker>
+          <ul className="mt-4 space-y-3">
+            {briefing.slice(0, 3).map((item) => (
+              <li key={item.id}>
+                <button
+                  type="button"
+                  className="w-full border-l-2 border-transparent pl-3 text-left transition hover:border-lime hover:text-lime"
+                  onClick={() =>
+                    go(item.screen, item.playerId ? { playerId: item.playerId } : undefined)
+                  }
+                >
+                  <span className="block text-sm font-medium">{item.title}</span>
+                  <span className="mt-1 block text-xs text-muted-foreground">{item.detail}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-5 w-full border-white/12 sm:w-auto"
+            onClick={() => go("feed")}
+          >
+            Open personal feed
+          </Button>
+        </div>
+
+        <div className="grid gap-4">
           <button
             type="button"
             onClick={() => setShowUpcoming(true)}
-            className="rounded-[1.75rem] border border-dashed border-border p-5 text-left"
+            className="rounded-[1.75rem] border border-dashed border-border/80 p-5 text-left transition hover:border-cyan/40"
           >
             <div className="flex items-center gap-2">
               <StatusBadge status="UPCOMING" />
@@ -181,7 +209,7 @@ export function HomeScreen() {
             <p className="mt-2 font-medium">{upcoming.title}</p>
             <p className="text-sm text-muted-foreground">{upcoming.meta}</p>
           </button>
-          <div className="rounded-[1.75rem] border border-border bg-card/80 p-5">
+          <div className="rounded-[1.75rem] border border-border/80 bg-card/60 p-5">
             <div className="flex items-center justify-between gap-2">
               <Kicker>Smart alerts</Kicker>
               <button
@@ -270,7 +298,7 @@ export function HomeScreen() {
               key={storyItem.id}
               type="button"
               onClick={() => setStoryId(storyItem.id)}
-              className="flex min-h-44 flex-col rounded-3xl border border-border bg-card/80 p-5 text-left transition hover:-translate-y-0.5 hover:border-lime/40"
+              className="flex min-h-44 flex-col rounded-3xl border border-border/80 bg-card/60 p-5 text-left transition hover:-translate-y-0.5 hover:border-lime/40"
             >
               <span className="text-sm text-muted-foreground">
                 {storyItem.icon} {storyItem.kicker}
@@ -296,7 +324,7 @@ export function HomeScreen() {
                   key={team.id}
                   type="button"
                   onClick={() => go("teams", { teamId: team.id })}
-                  className="rounded-3xl border border-border bg-card/80 p-4 text-left"
+                  className="rounded-3xl border border-border/80 bg-card/60 p-4 text-left"
                 >
                   <p className="text-xs tracking-[0.16em] text-muted-foreground uppercase">
                     {team.short}
@@ -318,7 +346,7 @@ export function HomeScreen() {
                   key={player.id}
                   type="button"
                   onClick={() => go("players", { playerId: player.id })}
-                  className="flex items-center gap-3 rounded-3xl border border-border bg-card/80 p-4 text-left"
+                  className="flex items-center gap-3 rounded-3xl border border-border/80 bg-card/60 p-4 text-left"
                 >
                   <Spark values={player.form} label={`${player.name} recent returns`} />
                   <span>

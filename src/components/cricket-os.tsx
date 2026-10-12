@@ -101,9 +101,13 @@ function Shell() {
         inert={!onboarded ? true : undefined}
         aria-hidden={!onboarded ? true : undefined}
       >
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-border bg-sidebar/95 px-3 py-5 lg:flex">
-        <div className="px-2">
-          <p className="font-display text-2xl tracking-tight">CricketOS</p>
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-white/10 bg-sidebar/95 px-3 py-5 backdrop-blur-md lg:flex">
+        <div className="relative px-2">
+          <span
+            className="absolute top-1 -left-1 h-8 w-0.5 rounded-full bg-lime"
+            aria-hidden
+          />
+          <p className="font-display text-2xl tracking-tight text-lime">CricketOS</p>
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
             Follow · understand · explore what next.
           </p>
@@ -117,7 +121,9 @@ function Shell() {
                 key={item.id}
                 type="button"
                 variant={active ? "default" : "ghost"}
-                className="h-10 justify-start px-3"
+                className={`h-10 justify-start px-3 ${
+                  active ? "shadow-[inset_3px_0_0_0_var(--color-lime)]" : ""
+                }`}
                 aria-current={active ? "page" : undefined}
                 onClick={() => go(item.id)}
               >
@@ -126,7 +132,7 @@ function Shell() {
               </Button>
             );
           })}
-          <p className="mt-5 px-3 text-[10px] tracking-[0.18em] text-muted-foreground uppercase">
+          <p className="mt-5 px-3 text-[10px] tracking-[0.18em] text-cyan/80 uppercase">
             Later
           </p>
           {laterNav.map((item) => {
@@ -137,7 +143,9 @@ function Shell() {
                 key={item.id}
                 type="button"
                 variant={active ? "secondary" : "ghost"}
-                className="h-9 justify-start px-3 text-muted-foreground"
+                className={`h-9 justify-start px-3 text-muted-foreground ${
+                  active ? "text-foreground shadow-[inset_3px_0_0_0_var(--color-cyan)]" : ""
+                }`}
                 aria-current={active ? "page" : undefined}
                 onClick={() => go(item.id)}
               >
@@ -156,10 +164,10 @@ function Shell() {
       </aside>
 
       <div className="lg:pl-60">
-        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-background/80 px-4 py-3 backdrop-blur lg:hidden">
+        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-white/10 bg-background/75 px-4 py-3 backdrop-blur-md lg:hidden">
           <div>
-            <p className="font-display text-xl">CricketOS</p>
-            <p className="text-[10px] tracking-[0.16em] text-lime uppercase">Understand the game</p>
+            <p className="font-display text-xl text-lime">CricketOS</p>
+            <p className="text-[10px] tracking-[0.16em] text-cyan uppercase">Understand the game</p>
           </div>
           <p className="text-xs text-gold tracking-[0.12em] uppercase">DEMO · Lord&apos;s</p>
         </header>
@@ -178,7 +186,7 @@ function Shell() {
       </div>
 
       <nav
-        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-border bg-background/95 px-1 py-2 backdrop-blur lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-white/10 bg-background/90 px-1.5 py-2 backdrop-blur-md lg:hidden"
         aria-label="Primary"
       >
         {primaryNav.slice(0, 4).map((item) => {
@@ -188,8 +196,10 @@ function Shell() {
             <button
               key={item.id}
               type="button"
-              className={`flex flex-col items-center gap-1 rounded-xl py-1 text-[10px] ${
-                active ? "text-lime" : "text-muted-foreground"
+              className={`flex flex-col items-center gap-1 rounded-xl px-1 py-1.5 text-[10px] transition ${
+                active
+                  ? "bg-lime/12 text-lime"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
               onClick={() => go(item.id)}
             >
@@ -200,10 +210,10 @@ function Shell() {
         })}
         <button
           type="button"
-          className={`flex flex-col items-center gap-1 py-1 text-[10px] ${
+          className={`flex flex-col items-center gap-1 rounded-xl px-1 py-1.5 text-[10px] transition ${
             laterNav.some((item) => item.id === screen) || screen === "players"
-              ? "text-lime"
-              : "text-muted-foreground"
+              ? "bg-lime/12 text-lime"
+              : "text-muted-foreground hover:text-foreground"
           }`}
           onClick={() => setMore(true)}
         >
