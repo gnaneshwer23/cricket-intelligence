@@ -2,6 +2,18 @@
 
 export type MatchLifecycle = "LIVE" | "COMPLETED" | "UPCOMING" | "DEMO";
 
+/**
+ * Distinguishes feed freshness for UI / operators.
+ * DEMO is never promoted to LIVE without a verified provider health check.
+ */
+export type FreshnessStatus =
+  | "LIVE"
+  | "STALE"
+  | "UNAVAILABLE"
+  | "DEMO"
+  | "HISTORICAL"
+  | "UPCOMING";
+
 export type DataKind =
   | "fact"
   | "historical"
@@ -14,6 +26,10 @@ export type Provenance = {
   source: string;
   asOf: string;
   note?: string;
+  /** Provider id when sourced externally */
+  provider?: string;
+  /** Provider-native entity id */
+  providerEntityId?: string;
 };
 
 export type EvidenceItem = {
@@ -28,6 +44,8 @@ export type EvidenceItem = {
 export type MatchMeta = {
   id: string;
   status: MatchLifecycle;
+  /** Feed freshness — defaults to DEMO for bundled board */
+  freshness?: FreshnessStatus;
   title: string;
   venue: string;
   dayLabel: string;
@@ -50,6 +68,23 @@ export function statusLabel(status: MatchLifecycle): string {
   }
 }
 
+export function freshnessLabel(status: FreshnessStatus): string {
+  switch (status) {
+    case "LIVE":
+      return "LIVE";
+    case "STALE":
+      return "STALE";
+    case "UNAVAILABLE":
+      return "UNAVAILABLE";
+    case "DEMO":
+      return "DEMO";
+    case "HISTORICAL":
+      return "HISTORICAL";
+    case "UPCOMING":
+      return "UPCOMING";
+  }
+}
+
 export function kindLabel(kind: DataKind): string {
   switch (kind) {
     case "fact":
@@ -63,4 +98,26 @@ export function kindLabel(kind: DataKind): string {
     case "demo":
       return "Demo dataset";
   }
+}
+
+/** Map lifecycle + age into a freshness badge for UI. */
+export function deriveFreshness(input: {
+  lifecycle: MatchLifecycle;
+  demoMode: boolean;
+  updatedAtIso?: string;
+  staleAfterMs?: number;
+  providerAvailable?: boolean;
+}): FreshnessStatus {
+  if (input.demoMode || input.lifecycle === "DEMO") return "DEMO";
+  if (input.providerAvailable === false) return "UNAVAILABLE";
+  if (input.lifecycle === "UPCOMING") return "UPCOMING";
+  if (input.lifecycle === "COMPLETED") return "HISTORICAL";
+  if (input.lifecycle === "LIVE") {
+    if (!input.updatedAtIso) return "STALE";
+    const age = Date.now() - Date.parse(input.updatedAtIso);
+    const limit = input.staleAfterMs ?? 120_000;
+    if (!Number.isFinite(age) || age > limit) return "STALE";
+    return "LIVE";
+  }
+  return "UNAVAILABLE";
 }

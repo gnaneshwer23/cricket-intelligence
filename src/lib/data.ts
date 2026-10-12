@@ -9,6 +9,7 @@ import { extraTeams } from "@/lib/teams-extra";
 export const matchMeta: MatchMeta = {
   id: "demo-eng-ind-lords-d2",
   status: "DEMO",
+  freshness: "DEMO",
   title: "England vs India",
   venue: "Lord's",
   dayLabel: "Day 2 · session break",
@@ -20,6 +21,8 @@ export const matchMeta: MatchMeta = {
     source: "Bundled CricketOS demo dataset",
     asOf: "Session snapshot (illustrative)",
     note: "Not a live or official scorecard. DEMO labels are intentional.",
+    provider: "demo",
+    providerEntityId: "demo-eng-ind-lords-d2",
   },
 };
 

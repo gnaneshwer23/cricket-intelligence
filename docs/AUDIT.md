@@ -57,9 +57,31 @@
 - [ ] Personalisation polish (deferred — Feed already functional)
 - [x] Deployment notes (README)
 
+### Stage 5 checklist (data layer — this session)
+
+| # | Item | Status |
+|---|------|--------|
+| 1 | Audit retained surfaces (Match Room, Graph, Copilot, Explorer, Players, Labs) | Done |
+| 2 | Provider evaluation from official docs → `docs/PROVIDER_EVALUATION.md` | Done |
+| 3 | Provider-independent flow: adapter → validate → normalise → quality → storage → domain → UI | Done |
+| 4 | Shared adapter ops: fixtures, match, scorecards, balls (if supported), players, historical, health | Done |
+| 5 | Server-side ingestion: schemas, ID map, dedupe, retries, timeouts, run records | Done |
+| 6 | Persistence: storage interface; in-memory until durable DB credentials exist | Done (Postgres SQL sketch; client pending credentials) |
+| 7 | Config/env + DEMO fallback; LIVE/STALE/UNAVAILABLE/DEMO/HISTORICAL/UPCOMING | Done |
+| 8 | Historical search/compare/trends + Explorer empty states (no fabricated fields) | Done |
+| 9 | Wire Match Room / Copilot / Graph / What-If via normalised service; sim stays DEMO | Done |
+| 10 | Data-quality test suite + synthetic fixtures labelled test data | Done |
+| 11 | GitHub Actions CI (typecheck, lint, unit/adapter/ingestion, build) — mock providers | Done |
+| 12 | Docs: PROVIDER_EVALUATION, DATA_ARCHITECTURE, DATA_QUALITY; update PROVIDERS + README | Done |
+| 13 | Security: server-only secrets; no public unbounded ingestion trigger | Done |
+
+**Blockers without credentials:** live provider calls, durable Postgres client wiring, verified LIVE scores.
+
 ## Do not claim
 
 - Real-time official scores
 - Connected LLM unless `CRICKETOS_LLM_*` configured (optional; fallback is grounded engine)
 - Scraped Cricbuzz/Cricinfo data
 - Win probabilities from the rate scenario builder (rates only unless an evaluated model exists)
+- In-memory storage as production persistence
+- Provider coverage/prices not evidenced in official docs

@@ -26,13 +26,29 @@ Copy `.env.example` → `.env.local`. Secrets stay **server-side only** (never `
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `CRICKETOS_DATA_PROVIDER` | `demo` | `demo` \| `cricapi` \| `sportmonks` (live providers not wired yet) |
+| `CRICKETOS_DATA_PROVIDER` | `demo` | `demo` \| `cricapi` \| `sportmonks` |
 | `CRICKETOS_DATA_API_KEY` | — | Server-only data API key |
+| `CRICKETOS_STORAGE_BACKEND` | `memory` | `memory` (ephemeral) \| `postgres` (needs `DATABASE_URL` + migrations) |
+| `DATABASE_URL` | — | Managed Postgres URL when durable storage is ready |
+| `CRICKETOS_INGESTION_TOKEN` | — | Required for `POST /api/ingestion/run` (disabled when unset) |
 | `CRICKETOS_LLM_PROVIDER` | `off` | `off` \| `openai` \| `anthropic` |
 | `CRICKETOS_LLM_API_KEY` | — | Server-only LLM key (explain layer only) |
 | `CRICKETOS_LLM_MODEL` | — | Optional model id |
 
-With no live credentials, the app stays in **DEMO** and labels match status accordingly. See `docs/PROVIDERS.md`.
+With no live credentials, the app stays in **DEMO** and labels match status accordingly. See `docs/PROVIDERS.md` and `docs/PROVIDER_EVALUATION.md`.
+
+## Data layer (Stage 5)
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/health` | Provider + storage summary (no secrets) |
+| `GET /api/matches` | Historical search / filters |
+| `GET /api/matches/:id` | Match + scorecard + honest missing fields |
+| `GET /api/ingestion/status` | Operator ingestion summary |
+| `POST /api/ingestion/run` | Token-gated ingest (refused without token) |
+
+Freshness labels: **LIVE / STALE / UNAVAILABLE / DEMO / HISTORICAL / UPCOMING**.  
+Default persistence is **in-memory** and labelled ephemeral — not production durable storage.
 
 ## Product surfaces
 
@@ -73,8 +89,9 @@ Filters: match, innings, team, player (event highlight), phase. Clicking a linke
 ## Data honesty
 
 - **DEMO** — bundled illustrative match / authored DNA
+- **LIVE / STALE / UNAVAILABLE** — only when a configured provider health check warrants it
 - **UPCOMING** — fixture with no ball in play
-- **HISTORICAL** — career / archive file
+- **HISTORICAL** — completed / archive normalised matches
 - **Model** — session win prior / projections
 - **Hypothetical** — what-if & ball simulations
 
@@ -83,23 +100,29 @@ Copilot pipeline (current): classify intent → retrieve from demo file → **ca
 ## Docs
 
 - `docs/AUDIT.md` — audit + staged plan
-- `docs/PROVIDERS.md` — provider investigation (no scraping Cricbuzz/Cricinfo)
+- `docs/PROVIDERS.md` — provider env + pipeline
+- `docs/PROVIDER_EVALUATION.md` — evidence-based provider comparison
+- `docs/DATA_ARCHITECTURE.md` — adapter → storage → UI flow
+- `docs/DATA_QUALITY.md` — invariants + synthetic fixtures
+- `docs/migrations/001_cricketos.sql` — Postgres sketch (manual apply)
 
 ## Known limitations
 
 - No verified live score feed — Match Room strip is a **scripted DEMO simulation**, labelled as such
+- Provider adapters are implemented and **unit-tested with mocks**; live keyed calls need credentials + license confirmation
+- Persistence defaults to **in-memory** until `DATABASE_URL` + migrations + a Postgres client are wired
 - LLM explain path is stubbed behind env (not implemented end-to-end)
-- Explorer has England 1st innings only — no second-innings compare yet
+- Explorer over-series is England 1st innings DEMO only — multi-match search does not invent charts
 - Fantasy / Community remain light secondary surfaces
 - Similarity % and many DNA values are authored demo file, not trained model outputs
 - Authored win-swing What-If cards are separate from the rate scenario builder
 
 ## Roadmap (priority)
 
-1. Wire a licensed data provider behind the existing contract layer
-2. Optional LLM explain that may only restate calc + evidence
-3. Second innings / multi-match Explorer series
-4. Broader calc test coverage + CI
+1. Obtain licensed Sportmonks (or CricAPI) credentials and verify coverage
+2. Wire Postgres client + apply migrations for durable storage
+3. Optional LLM explain that may only restate calc + evidence
+4. Second innings / multi-match Explorer series from normalised balls
 5. Personalisation depth (alerts with real freshness)
 
 ## Keyboard

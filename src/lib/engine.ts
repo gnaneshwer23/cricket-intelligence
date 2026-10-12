@@ -15,10 +15,12 @@ import { buildExplorerView, explorerInnings } from "@/lib/innings";
 import { matchEvidence } from "@/lib/match-graph";
 import { hasWord } from "@/lib/format";
 import { playerAliases, searchPlayerList } from "@/lib/player-search";
+import { copilotEvidenceScope } from "@/lib/service/evidence-scope";
 import type { Answer, AskMode, Player } from "@/lib/types";
 
-const DEMO_PROVENANCE =
-  "DEMO dataset · grounded rule engine · figures from bundled match file (not a live feed or LLM).";
+function demoProvenance(): string {
+  return copilotEvidenceScope().provenanceNote;
+}
 
 function cite(...ids: string[]) {
   return matchEvidence
@@ -32,10 +34,19 @@ function cite(...ids: string[]) {
 }
 
 function finalize(answer: Answer, extras?: Partial<Answer>): Answer {
+  const scope = copilotEvidenceScope();
+  const method =
+    extras?.method ??
+    answer.method ??
+    (scope.llmEnabled ? answer.method : undefined) ??
+    "rule-engine";
+  // Never claim llm-explain unless configured — stub path stays rule/calc
+  const safeMethod =
+    method === "llm-explain" && !scope.llmEnabled ? "rule-engine" : method;
   return {
     ...answer,
-    method: extras?.method ?? answer.method ?? "rule-engine",
-    provenanceNote: extras?.provenanceNote ?? answer.provenanceNote ?? DEMO_PROVENANCE,
+    method: safeMethod,
+    provenanceNote: extras?.provenanceNote ?? answer.provenanceNote ?? scope.provenanceNote,
     evidence: extras?.evidence ?? answer.evidence,
     speaker: extras?.speaker ?? answer.speaker,
   };
@@ -175,7 +186,7 @@ function answerQuestionInner(raw: string, mode: AskMode, twinId: string): Answer
       ]),
       method: "deterministic-calc",
       evidence: cite("ev-over-27", "ev-phase-2230"),
-      provenanceNote: DEMO_PROVENANCE + " · Explorer Manhattan",
+      provenanceNote: demoProvenance() + " · Explorer Manhattan",
     });
   }
 
@@ -218,7 +229,7 @@ function answerQuestionInner(raw: string, mode: AskMode, twinId: string): Answer
       ]),
       method: "deterministic-calc",
       evidence: cite("ev-phase-2230", "ev-over-27"),
-      provenanceNote: DEMO_PROVENANCE + " · Explorer phase bands",
+      provenanceNote: demoProvenance() + " · Explorer phase bands",
     });
   }
 
@@ -284,7 +295,7 @@ function answerQuestionInner(raw: string, mode: AskMode, twinId: string): Answer
       ]),
       method: "deterministic-calc",
       evidence: cite("ev-win-model"),
-      provenanceNote: DEMO_PROVENANCE + " · What-If calc module",
+      provenanceNote: demoProvenance() + " · What-If calc module",
     });
   }
 

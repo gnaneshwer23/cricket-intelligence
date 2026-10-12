@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useApp } from "@/components/app-state";
 import { LiveCommentary } from "@/components/live-commentary";
 import { LiveScoreStrip } from "@/components/live-score-strip";
+import { DataStatusStrip } from "@/components/data-status-strip";
 import { KindBadge, ProvenanceStrip, StatusBadge } from "@/components/status-badge";
 import { Kicker, Meter, Panel, WinSplit } from "@/components/ui-bits";
 import { Button } from "@/components/ui/button";
@@ -119,7 +120,8 @@ export function MatchScreen() {
       </header>
 
       <LiveScoreStrip />
-      <div className="mt-3">
+      <div className="mt-3 space-y-2">
+        <DataStatusStrip />
         <ProvenanceStrip
           source={matchMeta.provenance.source}
           asOf={matchMeta.provenance.asOf}

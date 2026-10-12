@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useApp } from "@/components/app-state";
-import { KindBadge, ProvenanceStrip, StatusBadge } from "@/components/status-badge";
+import { DataStatusStrip } from "@/components/data-status-strip";
+import { FreshnessBadge, KindBadge, ProvenanceStrip, StatusBadge } from "@/components/status-badge";
 import { Kicker, PageTitle, Panel } from "@/components/ui-bits";
 import { Button } from "@/components/ui/button";
 import {
@@ -77,15 +78,38 @@ export function ExplorerScreen() {
         lede="Scoring progression, Manhattan, and phase rates from the bundled Lord’s series — not a live feed. Click a point to open Match Graph evidence."
       />
 
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <StatusBadge status="DEMO" />
-        <KindBadge kind="demo" />
+      <div className="mb-4 space-y-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <StatusBadge status="DEMO" />
+          <FreshnessBadge freshness="DEMO" />
+          <KindBadge kind="demo" />
+        </div>
+        <DataStatusStrip />
         <ProvenanceStrip
           source={matchMeta.provenance.source}
           asOf={matchMeta.provenance.asOf}
           note="Charts use authored over summaries tied to the DEMO scorecard."
         />
       </div>
+
+      <Panel className="mb-4 border-border/80">
+        <Kicker>Historical / multi-match</Kicker>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Search and compare use the normalised match service (`/api/matches`). Only the Lord’s DEMO
+          board has an authored over series for worm/Manhattan. Other matches show an empty state —
+          second innings, wagon wheels, and missing series are never fabricated.
+        </p>
+        <HistoricalMatchPanel
+          activeMatchId={filters.matchId}
+          onSelectDemo={() =>
+            setFilters((f) => ({
+              ...f,
+              matchId: matchMeta.id,
+              inningsId: explorerInnings[0]?.meta.id ?? "eng-1",
+            }))
+          }
+        />
+      </Panel>
 
       {explorerFocus ? (
         <Panel className="mb-4 border-lime/30 bg-lime/5">
@@ -597,6 +621,130 @@ function ManhattanChart({
       ) : (
         <p className="mt-2 text-xs text-muted-foreground">Click or focus a bar · gold dots mark wickets.</p>
       )}
+    </div>
+  );
+}
+
+type ApiMatchRow = {
+  id: string;
+  title: string;
+  freshness: string;
+  venue: string;
+  format: string;
+  score?: { runs: number; wickets: number; overs: string };
+  provenance?: { source: string; asOf: string };
+};
+
+function HistoricalMatchPanel({
+  activeMatchId,
+  onSelectDemo,
+}: {
+  activeMatchId: string;
+  onSelectDemo: () => void;
+}) {
+  const [rows, setRows] = useState<ApiMatchRow[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [compareId, setCompareId] = useState<string>("");
+  const [compareNote, setCompareNote] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/matches?limit=20")
+      .then((r) => r.json())
+      .then((json: { ok: boolean; matches?: ApiMatchRow[]; error?: string }) => {
+        if (cancelled) return;
+        if (!json.ok) {
+          setError(json.error ?? "Failed to load matches");
+          return;
+        }
+        setRows(json.matches ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setError("Failed to load matches");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function runCompare() {
+    if (!compareId) return;
+    setCompareNote(null);
+    const res = await fetch(`/api/matches/${activeMatchId}?compare=${encodeURIComponent(compareId)}`);
+    const json = (await res.json()) as {
+      ok: boolean;
+      comparison?: {
+        notes: string[];
+        comparable: { scoreLeft?: string; scoreRight?: string; formatSame: boolean };
+      };
+      error?: string;
+    };
+    if (!json.ok || !json.comparison) {
+      setCompareNote(json.error ?? "Comparison unavailable");
+      return;
+    }
+    const c = json.comparison;
+    setCompareNote(
+      [
+        c.comparable.scoreLeft ? `Left: ${c.comparable.scoreLeft}` : "Left: no score",
+        c.comparable.scoreRight ? `Right: ${c.comparable.scoreRight}` : "Right: no score",
+        c.comparable.formatSame ? "Format matches" : "Format differs",
+        ...c.notes,
+      ].join(" · "),
+    );
+  }
+
+  return (
+    <div className="mt-3 space-y-3">
+      {error ? <p className="text-sm text-gold">{error}</p> : null}
+      <ul className="space-y-2 text-sm">
+        {rows.map((m) => {
+          const hasCharts = m.id === matchMeta.id;
+          return (
+            <li
+              key={m.id}
+              className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-2"
+            >
+              <div>
+                <p className="font-medium text-foreground">{m.title}</p>
+                <p className="text-xs text-muted-foreground">
+                  {m.venue} · {m.format} · {m.freshness}
+                  {m.score ? ` · ${m.score.runs}/${m.score.wickets}` : " · no score"}
+                </p>
+                {!hasCharts ? (
+                  <p className="text-xs text-muted-foreground">
+                    Empty state: no over series for Explorer charts (not fabricated).
+                  </p>
+                ) : null}
+              </div>
+              {hasCharts ? (
+                <Button type="button" size="sm" variant="secondary" onClick={onSelectDemo}>
+                  Use for charts
+                </Button>
+              ) : (
+                <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                  Charts unavailable
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      <div className="flex flex-wrap items-end gap-2">
+        <label className="text-sm">
+          <span className="text-muted-foreground">Compare with match id</span>
+          <input
+            className="mt-1 block w-64 rounded-xl border border-border bg-background px-3 py-2"
+            value={compareId}
+            onChange={(e) => setCompareId(e.target.value)}
+            placeholder={matchMeta.id}
+          />
+        </label>
+        <Button type="button" size="sm" onClick={() => void runCompare()}>
+          Compare
+        </Button>
+      </div>
+      {compareNote ? <p className="text-xs text-muted-foreground">{compareNote}</p> : null}
     </div>
   );
 }

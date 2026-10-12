@@ -1,4 +1,11 @@
-import { kindLabel, statusLabel, type DataKind, type MatchLifecycle } from "@/lib/contracts";
+import {
+  freshnessLabel,
+  kindLabel,
+  statusLabel,
+  type DataKind,
+  type FreshnessStatus,
+  type MatchLifecycle,
+} from "@/lib/contracts";
 import { cn } from "cn";
 
 const statusTone: Record<MatchLifecycle, string> = {
@@ -6,6 +13,15 @@ const statusTone: Record<MatchLifecycle, string> = {
   COMPLETED: "border-border bg-muted/60 text-muted-foreground",
   UPCOMING: "border-eng/40 bg-eng/10 text-eng",
   DEMO: "border-gold/50 bg-gold/10 text-gold",
+};
+
+const freshnessTone: Record<FreshnessStatus, string> = {
+  LIVE: "border-lime/50 bg-lime/15 text-lime",
+  STALE: "border-gold/40 bg-gold/10 text-gold",
+  UNAVAILABLE: "border-border bg-muted/60 text-muted-foreground",
+  DEMO: "border-gold/50 bg-gold/10 text-gold",
+  HISTORICAL: "border-border text-muted-foreground",
+  UPCOMING: "border-eng/40 bg-eng/10 text-eng",
 };
 
 const kindTone: Record<DataKind, string> = {
@@ -32,6 +48,26 @@ export function StatusBadge({
       )}
     >
       {statusLabel(status)}
+    </span>
+  );
+}
+
+export function FreshnessBadge({
+  freshness,
+  className,
+}: {
+  freshness: FreshnessStatus;
+  className?: string;
+}) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-medium tracking-[0.14em] uppercase",
+        freshnessTone[freshness],
+        className,
+      )}
+    >
+      {freshnessLabel(freshness)}
     </span>
   );
 }

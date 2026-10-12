@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useApp } from "@/components/app-state";
+import { DataStatusStrip } from "@/components/data-status-strip";
 import { KindBadge } from "@/components/status-badge";
 import { Kicker, PageTitle, Panel, WinSplit } from "@/components/ui-bits";
 import { Button } from "@/components/ui/button";
@@ -141,6 +142,9 @@ export function LabsScreen() {
         title="The futures that didn’t happen, and the ones that might."
         lede="Hypothetical scenario maths on the DEMO board — required rates and projections, not win probabilities or AI predictions."
       />
+      <div className="mb-4">
+        <DataStatusStrip />
+      </div>
       <Tabs defaultValue="what-if">
         <TabsList variant="line" className="h-auto! w-full justify-start overflow-x-auto">
           <TabsTrigger value="what-if">What if</TabsTrigger>
