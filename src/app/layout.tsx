@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Fraunces, Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Syne } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
@@ -13,9 +13,10 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
 });
 
-const fraunces = Fraunces({
+/* Geometric display — retail-sports clarity (Voltace cue), not editorial serif. */
+const syne = Syne({
   subsets: ["latin"],
-  variable: "--font-fraunces",
+  variable: "--font-syne",
 });
 
 export const metadata: Metadata = {
@@ -28,7 +29,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} dark h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${syne.variable} dark h-full antialiased`}
     >
       <body className="min-h-full">
         <TooltipProvider>{children}</TooltipProvider>

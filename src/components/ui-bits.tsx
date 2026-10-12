@@ -29,7 +29,12 @@ export function Panel({
   children: React.ReactNode;
 }) {
   return (
-    <section className={cn("rounded-3xl border border-border bg-card/90 p-5 sm:p-6", className)}>
+    <section
+      className={cn(
+        "rounded-[1.5rem] border border-white/8 bg-card/50 p-5 sm:p-7",
+        className,
+      )}
+    >
       {children}
     </section>
   );
@@ -43,7 +48,12 @@ export function Kicker({
   className?: string;
 }) {
   return (
-    <p className={cn("text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase", className)}>
+    <p
+      className={cn(
+        "text-[10px] font-medium tracking-[0.2em] text-muted-foreground uppercase",
+        className,
+      )}
+    >
       {children}
     </p>
   );
@@ -59,12 +69,14 @@ export function PageTitle({
   lede?: string;
 }) {
   return (
-    <header className="mb-6 max-w-3xl">
+    <header className="mb-8 max-w-3xl">
       <Kicker>{kicker}</Kicker>
-      <h1 className="font-display mt-2 text-4xl font-medium tracking-tight text-balance sm:text-5xl">
+      <h1 className="font-display mt-3 text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
         {title}
       </h1>
-      {lede ? <p className="mt-3 max-w-2xl text-base leading-relaxed text-muted-foreground">{lede}</p> : null}
+      {lede ? (
+        <p className="mt-4 max-w-xl text-base leading-relaxed text-muted-foreground">{lede}</p>
+      ) : null}
     </header>
   );
 }

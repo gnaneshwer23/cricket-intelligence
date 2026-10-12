@@ -77,37 +77,24 @@ export function HomeScreen() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      {/* One composition: brand-first hero — no card soup, no competing stats */}
-      <section className="relative overflow-hidden rounded-[2rem] border border-white/10">
-        <div
-          className="absolute inset-0 bg-[radial-gradient(ellipse_at_15%_0%,oklch(0.42_0.14_125/0.45),transparent_52%),radial-gradient(ellipse_at_95%_80%,oklch(0.35_0.08_210/0.32),transparent_48%),linear-gradient(165deg,oklch(0.18_0.03_240),oklch(0.13_0.02_240))]"
-          aria-hidden
-        />
-        <div
-          className="pointer-events-none absolute inset-0 opacity-[0.07]"
-          style={{
-            backgroundImage:
-              "repeating-linear-gradient(-18deg, transparent, transparent 22px, oklch(1 0 0 / 0.9) 22px, oklch(1 0 0 / 0.9) 23px)",
-          }}
-          aria-hidden
-        />
-        <div className="absolute inset-x-8 top-0 h-px bg-linear-to-r from-transparent via-lime to-transparent sm:inset-x-12" />
-        <div className="relative px-6 py-10 sm:px-10 sm:py-14 lg:px-14 lg:py-16">
+      {/* One composition: brand-first full-bleed hero — no card soup */}
+      <section className="cos-hero rounded-[2rem] border border-white/8">
+        <div className="relative z-[1] px-6 py-12 sm:px-12 sm:py-16 lg:px-16 lg:py-20">
           <div className="cos-hero-in max-w-2xl">
-            <p className="font-display text-5xl tracking-tight text-lime sm:text-6xl md:text-7xl">
+            <p className="font-display text-[clamp(3rem,8vw,4.75rem)] font-semibold leading-none text-lime">
               CricketOS
             </p>
-            <h1 className="font-display mt-5 text-3xl font-medium tracking-tight text-balance sm:text-5xl">
+            <h1 className="font-display mt-7 text-[clamp(1.65rem,4vw,2.75rem)] font-medium leading-[1.15] text-balance">
               Follow the match. Understand the game.
             </h1>
-            <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground sm:text-base">
-              {greeting}. Intelligence briefing with grounded answers — demo data labelled honestly,
-              not another scoreboard that pretends to be live.
+            <p className="mt-5 max-w-md text-[0.95rem] leading-relaxed text-muted-foreground sm:text-base">
+              {greeting}. Intelligence briefing with grounded answers — demo data labelled
+              honestly, not another scoreboard that pretends to be live.
             </p>
           </div>
 
           <form
-            className="cos-hero-in-delay mt-8 flex max-w-xl flex-col gap-3 sm:flex-row"
+            className="cos-hero-in-delay mt-10 flex max-w-xl flex-col gap-3 sm:flex-row sm:items-stretch"
             onSubmit={(event) => {
               event.preventDefault();
               submit(draft);
@@ -125,63 +112,75 @@ export function HomeScreen() {
               }}
               placeholder="Why is Bumrah difficult to face today?"
               aria-invalid={error ? true : undefined}
-              className="h-12! flex-1 border-white/15 bg-black/30 px-4"
+              className="h-12! flex-1 border-white/12 bg-black/25 px-4 text-base"
             />
-            <Button type="submit" className="h-12 px-5" size="lg">
+            <Button type="submit" className="cos-cta h-12 px-7 text-base" size="lg">
               <ArrowUp />
               Ask
             </Button>
           </form>
           {error ? <p className="mt-2 text-sm text-destructive">{error}</p> : null}
-
-          <div className="cos-hero-in-delay mt-4 flex flex-wrap gap-2">
-            {recommendations.slice(0, 3).map((item) => (
-              <button
-                key={item.q}
-                type="button"
-                className="rounded-full border border-white/12 bg-black/20 px-3 py-1.5 text-left text-xs text-muted-foreground transition hover:border-lime/40 hover:text-foreground"
-                onClick={() => submit(item.q, item.mode)}
-              >
-                {item.q}
-              </button>
-            ))}
-          </div>
         </div>
       </section>
 
-      {/* Scoreboard composition — sports-app density, not a dashboard tile row */}
-      <section className="mt-6">
-        <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
+      {/* Scoreboard — sports retail clarity, DEMO labelled */}
+      <section className="mt-10">
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <div>
             <Kicker className="text-cyan">DEMO scoreboard</Kicker>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="mt-1.5 text-sm text-muted-foreground">
               Scripted Lord&apos;s session · not a live broadcast
             </p>
           </div>
-          <Button type="button" variant="ghost" size="sm" onClick={() => go("match")}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="cos-cta border-white/12"
+            onClick={() => go("match")}
+          >
             Open Match Room
           </Button>
         </div>
         <LiveScoreStrip compact onOpenMatch={() => go("match")} />
       </section>
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-        <div className="rounded-[1.75rem] border border-border/80 bg-card/60 p-5">
+      {/* Trending / quick asks — below first composition */}
+      <section className="mt-8">
+        <Kicker>Quick asks</Kicker>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {recommendations.slice(0, 3).map((item) => (
+            <button
+              key={item.q}
+              type="button"
+              className="border-b border-white/15 pb-1 text-left text-sm text-muted-foreground transition hover:border-lime/50 hover:text-foreground"
+              onClick={() => submit(item.q, item.mode)}
+            >
+              {item.q}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <div className="mt-10 grid gap-8 lg:grid-cols-[1.45fr_1fr] lg:gap-12">
+        <div>
           <Kicker>
             {dateLabel} · intelligence briefing
           </Kicker>
-          <ul className="mt-4 space-y-3">
+          <ul className="mt-5 space-y-0 divide-y divide-white/8">
             {briefing.slice(0, 3).map((item) => (
               <li key={item.id}>
                 <button
                   type="button"
-                  className="w-full border-l-2 border-transparent pl-3 text-left transition hover:border-lime hover:text-lime"
+                  className="w-full py-4 text-left transition hover:text-lime"
                   onClick={() =>
                     go(item.screen, item.playerId ? { playerId: item.playerId } : undefined)
                   }
                 >
-                  <span className="block text-sm font-medium">{item.title}</span>
-                  <span className="mt-1 block text-xs text-muted-foreground">{item.detail}</span>
+                  <span className="block text-base font-medium tracking-tight">{item.title}</span>
+                  <span className="mt-1.5 block text-sm leading-relaxed text-muted-foreground">
+                    {item.detail}
+                  </span>
                 </button>
               </li>
             ))}
@@ -189,27 +188,27 @@ export function HomeScreen() {
           <Button
             type="button"
             variant="outline"
-            className="mt-5 w-full border-white/12 sm:w-auto"
+            className="cos-cta mt-4 border-white/12"
             onClick={() => go("feed")}
           >
             Open personal feed
           </Button>
         </div>
 
-        <div className="grid gap-4">
+        <div className="flex flex-col gap-8 border-t border-white/10 pt-8 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-10">
           <button
             type="button"
             onClick={() => setShowUpcoming(true)}
-            className="rounded-[1.75rem] border border-dashed border-border/80 p-5 text-left transition hover:border-cyan/40"
+            className="text-left transition hover:text-lime"
           >
             <div className="flex items-center gap-2">
               <StatusBadge status="UPCOMING" />
               <Kicker>Fixture</Kicker>
             </div>
-            <p className="mt-2 font-medium">{upcoming.title}</p>
-            <p className="text-sm text-muted-foreground">{upcoming.meta}</p>
+            <p className="font-display mt-3 text-xl tracking-tight">{upcoming.title}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{upcoming.meta}</p>
           </button>
-          <div className="rounded-[1.75rem] border border-border/80 bg-card/60 p-5">
+          <div>
             <div className="flex items-center justify-between gap-2">
               <Kicker>Smart alerts</Kicker>
               <button
@@ -223,11 +222,13 @@ export function HomeScreen() {
             {alerts.length === 0 ? (
               <p className="mt-3 text-sm text-muted-foreground">Follow players to seed alerts.</p>
             ) : (
-              <ul className="mt-3 space-y-2">
+              <ul className="mt-3 space-y-3">
                 {alerts.slice(0, 2).map((alert) => (
                   <li key={alert.id} className="text-sm">
                     <span className="font-medium">{alert.title}</span>
-                    <span className="mt-0.5 block text-xs text-muted-foreground">{alert.detail}</span>
+                    <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">
+                      {alert.detail}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -236,30 +237,29 @@ export function HomeScreen() {
         </div>
       </div>
 
-      <section className="mt-8">
+      <section className="mt-12">
         <Kicker>Trending asks</Kicker>
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2">
           {trending.map((item) => (
-            <Button
+            <button
               key={item.label}
               type="button"
-              variant="outline"
-              className="h-auto px-3 py-2"
+              className="text-left text-sm transition hover:text-lime"
               onClick={() => submit(item.q)}
             >
               <span className="text-lime">{item.label}</span>
-              <span className="mx-2 text-muted-foreground">·</span>
+              <span className="mx-2 text-muted-foreground/50">·</span>
               <span className="text-muted-foreground">{item.q}</span>
-            </Button>
+            </button>
           ))}
         </div>
       </section>
 
-      <Panel className="mt-8">
+      <Panel className="mt-12 border-white/8 bg-card/40">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <Kicker>Your intelligence briefing</Kicker>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p className="mt-2 max-w-lg text-sm leading-relaxed text-muted-foreground">
               Ranked for the teams and players you follow · DEMO facts where match-linked.
             </p>
           </div>
@@ -267,22 +267,24 @@ export function HomeScreen() {
             Personalise in Feed
           </Button>
         </div>
-        <ul className="mt-4 divide-y divide-border">
+        <ul className="mt-5 divide-y divide-white/8">
           {briefing.map((item) => (
             <li key={item.id}>
               <button
                 type="button"
-                className="flex w-full gap-3 py-3 text-left hover:text-lime"
+                className="flex w-full gap-3 py-4 text-left transition hover:text-lime"
                 onClick={() =>
                   go(item.screen, item.playerId ? { playerId: item.playerId } : undefined)
                 }
               >
-                <span aria-hidden className="mt-0.5">
+                <span aria-hidden className="mt-0.5 text-muted-foreground">
                   {item.icon}
                 </span>
                 <span>
-                  <span className="block font-medium">{item.title}</span>
-                  <span className="mt-1 block text-sm text-muted-foreground">{item.detail}</span>
+                  <span className="block font-medium tracking-tight">{item.title}</span>
+                  <span className="mt-1 block text-sm leading-relaxed text-muted-foreground">
+                    {item.detail}
+                  </span>
                 </span>
               </button>
             </li>
@@ -290,49 +292,58 @@ export function HomeScreen() {
         </ul>
       </Panel>
 
-      <section className="mt-8">
-        <Kicker>Context, not journalism</Kicker>
-        <div className="mt-4 grid gap-4 md:grid-cols-3">
+      {/* Product-grid rhythm → sports briefing tiles (hairline, not card soup) */}
+      <section className="mt-14">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <Kicker>Context, not journalism</Kicker>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Atmosphere briefs with space to breathe.
+            </p>
+          </div>
+        </div>
+        <div className="cos-brief-grid">
           {stories.map((storyItem) => (
             <button
               key={storyItem.id}
               type="button"
               onClick={() => setStoryId(storyItem.id)}
-              className="flex min-h-44 flex-col rounded-3xl border border-border/80 bg-card/60 p-5 text-left transition hover:-translate-y-0.5 hover:border-lime/40"
+              className="cos-brief-tile"
             >
-              <span className="text-sm text-muted-foreground">
+              <span className="text-[11px] tracking-[0.16em] text-muted-foreground uppercase">
                 {storyItem.icon} {storyItem.kicker}
               </span>
-              <span className="font-display mt-4 text-2xl leading-tight tracking-tight">
-                {storyItem.title}
+              <span className="font-display mt-4 text-2xl leading-tight">{storyItem.title}</span>
+              <span className="mt-auto pt-6 text-sm leading-relaxed text-muted-foreground">
+                {storyItem.lede}
               </span>
-              <span className="mt-auto pt-4 text-sm text-muted-foreground">{storyItem.lede}</span>
             </button>
           ))}
         </div>
       </section>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-2">
+      <div className="mt-14 grid gap-10 lg:grid-cols-2 lg:gap-14">
         <section>
           <Kicker>Following · teams</Kicker>
           {myTeams.length === 0 ? (
             <p className="mt-3 text-sm text-muted-foreground">Pick sides in onboarding or Feed.</p>
           ) : (
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <ul className="mt-4 divide-y divide-white/8">
               {myTeams.map((team) => (
-                <button
-                  key={team.id}
-                  type="button"
-                  onClick={() => go("teams", { teamId: team.id })}
-                  className="rounded-3xl border border-border/80 bg-card/60 p-4 text-left"
-                >
-                  <p className="text-xs tracking-[0.16em] text-muted-foreground uppercase">
-                    {team.short}
-                  </p>
-                  <p className="mt-1 font-medium">{team.name}</p>
-                </button>
+                <li key={team.id}>
+                  <button
+                    type="button"
+                    onClick={() => go("teams", { teamId: team.id })}
+                    className="flex w-full items-baseline justify-between gap-3 py-3.5 text-left transition hover:text-lime"
+                  >
+                    <span className="font-medium tracking-tight">{team.name}</span>
+                    <span className="text-[11px] tracking-[0.16em] text-muted-foreground uppercase">
+                      {team.short}
+                    </span>
+                  </button>
+                </li>
               ))}
-            </div>
+            </ul>
           )}
         </section>
         <section>
@@ -340,24 +351,25 @@ export function HomeScreen() {
           {mine.length === 0 ? (
             <p className="mt-3 text-sm text-muted-foreground">Follow players for DNA updates.</p>
           ) : (
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <ul className="mt-4 divide-y divide-white/8">
               {mine.map((player) => (
-                <button
-                  key={player.id}
-                  type="button"
-                  onClick={() => go("players", { playerId: player.id })}
-                  className="flex items-center gap-3 rounded-3xl border border-border/80 bg-card/60 p-4 text-left"
-                >
-                  <Spark values={player.form} label={`${player.name} recent returns`} />
-                  <span>
-                    <span className="block font-medium">{player.name}</span>
-                    <span className="block text-sm text-muted-foreground">
-                      {teamLabel(player.teamId)} · {player.traits[0]?.label}
+                <li key={player.id}>
+                  <button
+                    type="button"
+                    onClick={() => go("players", { playerId: player.id })}
+                    className="flex w-full items-center gap-4 py-3.5 text-left transition hover:text-lime"
+                  >
+                    <Spark values={player.form} label={`${player.name} recent returns`} />
+                    <span className="min-w-0">
+                      <span className="block font-medium tracking-tight">{player.name}</span>
+                      <span className="block text-sm text-muted-foreground">
+                        {teamLabel(player.teamId)} · {player.traits[0]?.label}
+                      </span>
                     </span>
-                  </span>
-                </button>
+                  </button>
+                </li>
               ))}
-            </div>
+            </ul>
           )}
         </section>
       </div>

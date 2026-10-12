@@ -9,8 +9,8 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-display: var(--font-fraunces);
-  --font-heading: var(--font-fraunces);
+  --font-display: var(--font-syne);
+  --font-heading: var(--font-syne);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -40,11 +40,12 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --color-lime: oklch(0.9 0.19 125);
-  --color-cyan: oklch(0.82 0.1 210);
-  --color-eng: oklch(0.78 0.11 250);
-  --color-ind: oklch(0.75 0.16 48);
-  --color-gold: oklch(0.84 0.13 90);
+  /* Volt-leaning electric lime — restrained accent energy */
+  --color-lime: oklch(0.9 0.2 122);
+  --color-cyan: oklch(0.8 0.08 215);
+  --color-eng: oklch(0.78 0.1 250);
+  --color-ind: oklch(0.76 0.15 50);
+  --color-gold: oklch(0.86 0.14 95);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -78,7 +79,7 @@
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
+  --radius: 0.75rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -90,38 +91,38 @@
 }
 
 .dark {
-  /* Night stadium: charcoal-navy base, lime + cyan accents (sports-tech, not purple). */
-  --background: oklch(0.145 0.018 240);
-  --foreground: oklch(0.96 0.015 95);
-  --card: oklch(0.195 0.02 240);
-  --card-foreground: oklch(0.96 0.015 95);
-  --popover: oklch(0.2 0.02 240);
-  --popover-foreground: oklch(0.96 0.015 95);
-  --primary: oklch(0.9 0.19 125);
-  --primary-foreground: oklch(0.22 0.04 130);
-  --secondary: oklch(0.25 0.018 240);
-  --secondary-foreground: oklch(0.96 0.015 95);
-  --muted: oklch(0.25 0.016 240);
-  --muted-foreground: oklch(0.72 0.02 220);
-  --accent: oklch(0.3 0.045 145);
-  --accent-foreground: oklch(0.96 0.015 95);
+  /* Night stadium: charcoal-navy base; volt lime used sparingly (retail-sports). */
+  --background: oklch(0.14 0.016 242);
+  --foreground: oklch(0.97 0.01 100);
+  --card: oklch(0.185 0.018 242);
+  --card-foreground: oklch(0.97 0.01 100);
+  --popover: oklch(0.19 0.018 242);
+  --popover-foreground: oklch(0.97 0.01 100);
+  --primary: oklch(0.9 0.2 122);
+  --primary-foreground: oklch(0.2 0.04 130);
+  --secondary: oklch(0.24 0.016 242);
+  --secondary-foreground: oklch(0.97 0.01 100);
+  --muted: oklch(0.24 0.014 242);
+  --muted-foreground: oklch(0.7 0.018 220);
+  --accent: oklch(0.28 0.04 140);
+  --accent-foreground: oklch(0.97 0.01 100);
   --destructive: oklch(0.7 0.18 25);
-  --border: oklch(1 0 0 / 11%);
-  --input: oklch(1 0 0 / 14%);
-  --ring: oklch(0.9 0.19 125);
-  --chart-1: oklch(0.9 0.19 125);
-  --chart-2: oklch(0.82 0.1 210);
-  --chart-3: oklch(0.75 0.16 48);
-  --chart-4: oklch(0.84 0.13 90);
-  --chart-5: oklch(0.7 0.02 220);
-  --sidebar: oklch(0.155 0.02 240);
-  --sidebar-foreground: oklch(0.96 0.015 95);
-  --sidebar-primary: oklch(0.9 0.19 125);
-  --sidebar-primary-foreground: oklch(0.22 0.04 130);
-  --sidebar-accent: oklch(0.25 0.018 240);
-  --sidebar-accent-foreground: oklch(0.96 0.015 95);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.9 0.19 125);
+  --border: oklch(1 0 0 / 9%);
+  --input: oklch(1 0 0 / 12%);
+  --ring: oklch(0.9 0.2 122);
+  --chart-1: oklch(0.9 0.2 122);
+  --chart-2: oklch(0.8 0.08 215);
+  --chart-3: oklch(0.76 0.15 50);
+  --chart-4: oklch(0.86 0.14 95);
+  --chart-5: oklch(0.68 0.02 220);
+  --sidebar: oklch(0.15 0.018 242);
+  --sidebar-foreground: oklch(0.97 0.01 100);
+  --sidebar-primary: oklch(0.9 0.2 122);
+  --sidebar-primary-foreground: oklch(0.2 0.04 130);
+  --sidebar-accent: oklch(0.24 0.016 242);
+  --sidebar-accent-foreground: oklch(0.97 0.01 100);
+  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-ring: oklch(0.9 0.2 122);
 }
 
 @layer base {
@@ -135,18 +136,20 @@
   body {
     @apply text-foreground;
     background-color: var(--background);
+    /* Soft atmosphere — photography plane cue without busy pattern noise */
     background-image:
-      radial-gradient(1100px 520px at 78% -8%, oklch(0.42 0.14 125 / 0.22), transparent 58%),
-      radial-gradient(720px 440px at -8% 105%, oklch(0.38 0.08 210 / 0.18), transparent 52%),
-      radial-gradient(520px 280px at 50% 100%, oklch(0.28 0.04 145 / 0.12), transparent 60%);
+      radial-gradient(980px 480px at 85% -12%, oklch(0.48 0.16 122 / 0.18), transparent 58%),
+      radial-gradient(680px 420px at -10% 110%, oklch(0.36 0.06 215 / 0.14), transparent 55%),
+      linear-gradient(180deg, oklch(0.155 0.02 242), oklch(0.14 0.016 242) 40%, oklch(0.135 0.014 242));
     background-attachment: fixed;
     min-height: 100%;
   }
 }
 
 .font-display {
-  font-family: var(--font-fraunces), Georgia, serif;
+  font-family: var(--font-syne), ui-sans-serif, system-ui, sans-serif;
   font-optical-sizing: auto;
+  letter-spacing: -0.03em;
 }
 
 .story-dialog {
@@ -154,11 +157,11 @@
   max-width: min(42rem, calc(100vw - 2rem)) !important;
 }
 
-/* Intentional motion — score tick, hero reveal, nav active (2–3 places). */
+/* Intentional motion — hero reveal, score tick, live pulse (2–3 places). */
 @keyframes cos-score-tick {
   from {
-    opacity: 0.55;
-    transform: translateY(0.2em);
+    opacity: 0.5;
+    transform: translateY(0.18em);
   }
   to {
     opacity: 1;
@@ -169,7 +172,7 @@
 @keyframes cos-hero-in {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(14px);
   }
   to {
     opacity: 1;
@@ -181,28 +184,50 @@
   0%,
   100% {
     opacity: 1;
-    box-shadow: 0 0 0 0 oklch(0.84 0.13 90 / 0.45);
+    box-shadow: 0 0 0 0 oklch(0.86 0.14 95 / 0.4);
   }
   50% {
-    opacity: 0.75;
-    box-shadow: 0 0 0 5px oklch(0.84 0.13 90 / 0);
+    opacity: 0.7;
+    box-shadow: 0 0 0 6px oklch(0.86 0.14 95 / 0);
   }
 }
 
 .cos-score-tick {
-  animation: cos-score-tick 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: cos-score-tick 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .cos-hero-in {
-  animation: cos-hero-in 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: cos-hero-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .cos-hero-in-delay {
-  animation: cos-hero-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
+  animation: cos-hero-in 0.75s cubic-bezier(0.22, 1, 0.36, 1) 0.14s both;
 }
 
 .cos-live-dot {
-  animation: cos-live-pulse 1.8s ease-in-out infinite;
+  animation: cos-live-pulse 1.9s ease-in-out infinite;
+}
+
+/* Full-bleed hero plane — retail composition, not inset card media */
+.cos-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 90% 70% at 12% 0%, oklch(0.5 0.18 122 / 0.35), transparent 55%),
+    radial-gradient(ellipse 60% 50% at 100% 90%, oklch(0.38 0.07 215 / 0.28), transparent 50%),
+    linear-gradient(160deg, oklch(0.2 0.028 242) 0%, oklch(0.145 0.02 242) 55%, oklch(0.13 0.018 242) 100%);
+}
+
+.cos-hero::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(115deg, transparent 42%, oklch(1 0 0 / 0.04) 50%, transparent 58%),
+    radial-gradient(circle at 70% 40%, oklch(0.55 0.12 122 / 0.08), transparent 40%);
+  opacity: 0.9;
 }
 
 .cos-scoreboard {
@@ -210,9 +235,8 @@
   isolation: isolate;
   overflow: hidden;
   background:
-    radial-gradient(ellipse 80% 60% at 20% 0%, oklch(0.4 0.1 125 / 0.28), transparent 55%),
-    radial-gradient(ellipse 70% 50% at 90% 100%, oklch(0.35 0.08 210 / 0.22), transparent 50%),
-    linear-gradient(165deg, oklch(0.2 0.025 240), oklch(0.16 0.02 240));
+    radial-gradient(ellipse 70% 55% at 50% -10%, oklch(0.42 0.12 122 / 0.22), transparent 55%),
+    linear-gradient(180deg, oklch(0.2 0.022 242), oklch(0.16 0.018 242));
 }
 
 .cos-scoreboard::after {
@@ -221,12 +245,56 @@
   position: absolute;
   inset: 0;
   background-image: linear-gradient(
-    115deg,
-    transparent 40%,
-    oklch(1 0 0 / 0.03) 50%,
-    transparent 60%
+    105deg,
+    transparent 45%,
+    oklch(1 0 0 / 0.025) 52%,
+    transparent 58%
   );
-  opacity: 0.7;
+}
+
+/* Product-grid rhythm adapted to sports briefing tiles */
+.cos-brief-grid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .cos-brief-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .cos-brief-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.75rem;
+  }
+}
+
+.cos-brief-tile {
+  position: relative;
+  display: flex;
+  min-height: 11.5rem;
+  flex-direction: column;
+  border-top: 1px solid oklch(1 0 0 / 12%);
+  padding: 1.25rem 0.15rem 0.25rem;
+  text-align: left;
+  transition:
+    border-color 0.25s ease,
+    color 0.25s ease,
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cos-brief-tile:hover {
+  border-top-color: oklch(0.9 0.2 122 / 0.65);
+  transform: translateY(-2px);
+}
+
+.cos-cta {
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -243,5 +311,9 @@
   .cos-hero-in-delay,
   .cos-live-dot {
     animation: none !important;
+  }
+
+  .cos-brief-tile:hover {
+    transform: none;
   }
 }

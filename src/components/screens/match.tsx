@@ -88,13 +88,13 @@ export function MatchScreen() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <header className="mb-5 flex flex-wrap items-end justify-between gap-3">
+      <header className="mb-7 flex flex-wrap items-end justify-between gap-4">
         <div className="max-w-2xl">
           <Kicker className="text-cyan">Match Room · DEMO sim + intelligence</Kicker>
-          <h1 className="font-display mt-2 text-3xl font-medium tracking-tight text-balance sm:text-4xl">
+          <h1 className="font-display mt-3 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
             {matchMeta.title}
           </h1>
-          <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
+          <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground">
             Scripted DEMO score and commentary — explore graph, evidence, and consequences. Not a
             broadcast feed.
           </p>
@@ -103,7 +103,8 @@ export function MatchScreen() {
           <Button
             type="button"
             size="sm"
-            variant="secondary"
+            variant="outline"
+            className="cos-cta border-white/12"
             onClick={() => go("explorer", { explorerFocus: { chart: "worm", from: "Match Room" } })}
           >
             Open Explorer charts
@@ -111,7 +112,7 @@ export function MatchScreen() {
           <Button
             type="button"
             size="sm"
-            variant="secondary"
+            className="cos-cta"
             onClick={() => go("ask", { seedAsk: "Which over scored the most runs?" })}
           >
             Ask Copilot
