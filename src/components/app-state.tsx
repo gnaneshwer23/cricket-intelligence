@@ -55,20 +55,17 @@ const defaults: StoredState = {
   savedChats: [],
 };
 
+/** Matches SSR/hydration; real localStorage is applied after subscribe. */
 const serverSnapshot: StoredState = { ...defaults, onboarded: true };
 
 let memoryStore: StoredState | null = null;
+let clientReady = false;
 
-function readStore(): StoredState {
-  if (memoryStore) return memoryStore;
+function parseStore(raw: string | null): StoredState {
+  if (!raw) return { ...defaults };
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      memoryStore = defaults;
-      return defaults;
-    }
     const parsed = JSON.parse(raw) as Partial<StoredState>;
-    memoryStore = {
+    return {
       ...defaults,
       ...parsed,
       preferences: { ...defaults.preferences, ...parsed.preferences },
@@ -77,11 +74,16 @@ function readStore(): StoredState {
       recentChats: parsed.recentChats ?? [],
       savedChats: parsed.savedChats ?? [],
     };
-    return memoryStore;
   } catch {
-    memoryStore = defaults;
-    return defaults;
+    return { ...defaults };
   }
+}
+
+function readStore(): StoredState {
+  if (!clientReady) return serverSnapshot;
+  if (memoryStore) return memoryStore;
+  memoryStore = parseStore(window.localStorage.getItem(STORAGE_KEY));
+  return memoryStore;
 }
 
 function writeStore(next: StoredState) {
@@ -102,9 +104,17 @@ function patchStore(patch: Partial<StoredState>) {
 }
 
 function subscribeStore(onStoreChange: () => void) {
+  const finishHydration = () => {
+    if (clientReady) return;
+    clientReady = true;
+    memoryStore = parseStore(window.localStorage.getItem(STORAGE_KEY));
+    onStoreChange();
+  };
+  const id = window.setTimeout(finishHydration, 0);
   window.addEventListener(STORE_EVENT, onStoreChange);
   window.addEventListener("storage", onStoreChange);
   return () => {
+    window.clearTimeout(id);
     window.removeEventListener(STORE_EVENT, onStoreChange);
     window.removeEventListener("storage", onStoreChange);
   };
@@ -187,9 +197,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       if (opts?.teamId) setTeamId(opts.teamId);
       if (opts?.mode) setAskMode(opts.mode);
       if (opts?.seedAsk) setPendingSeed(opts.seedAsk);
-      const url = `${window.location.pathname}${window.location.search}#${next}`;
-      window.history.replaceState(null, "", url);
-      window.dispatchEvent(new HashChangeEvent("hashchange"));
+      if (window.location.hash === `#${next}`) {
+        window.dispatchEvent(new Event("hashchange"));
+      } else {
+        window.location.hash = next;
+      }
     },
     [],
   );
