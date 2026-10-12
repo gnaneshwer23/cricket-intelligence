@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowUp } from "lucide-react";
 import { useApp } from "@/components/app-state";
+import { KindBadge } from "@/components/status-badge";
 import { Kicker, PageTitle, Panel } from "@/components/ui-bits";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,9 +62,9 @@ export function AskScreen() {
   return (
     <div className="mx-auto flex max-w-3xl flex-col">
       <PageTitle
-        kicker="Ask Cricket"
+        kicker="Cricket Copilot"
         title="Ask Cricket Anything."
-        lede="Conversational answers with figures, confidence, and follow-ups — match explainers, predictions, careers, and Cricket Twin."
+        lede="Intent → retrieve → calculate → explain. Figures come from the DEMO dataset and deterministic calcs — not invented by an LLM."
       />
 
       <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
@@ -146,7 +147,14 @@ export function AskScreen() {
             const priorText = prior && prior.role === "user" ? prior.text : message.answer.headline;
             return (
               <article key={message.id} className="rounded-2xl bg-muted/50 px-4 py-4">
-                {message.answer.speaker ? <Kicker>{message.answer.speaker}</Kicker> : null}
+                <div className="flex flex-wrap items-center gap-2">
+                  {message.answer.speaker ? <Kicker>{message.answer.speaker}</Kicker> : null}
+                  {message.answer.method === "deterministic-calc" ? (
+                    <KindBadge kind="model" />
+                  ) : (
+                    <KindBadge kind="demo" />
+                  )}
+                </div>
                 <h2 className="font-display mt-1 text-2xl leading-tight">{message.answer.headline}</h2>
                 <div className="mt-3 space-y-3 text-sm leading-relaxed text-muted-foreground">
                   {message.answer.paragraphs.map((paragraph) => (
@@ -165,9 +173,33 @@ export function AskScreen() {
                     ))}
                   </dl>
                 ) : null}
+                {message.answer.evidence?.length ? (
+                  <div className="mt-4">
+                    <Kicker>Evidence</Kicker>
+                    <ul className="mt-2 space-y-2">
+                      {message.answer.evidence.map((item) => (
+                        <li
+                          key={item.id}
+                          className="rounded-xl border border-border/80 bg-background/40 px-3 py-2 text-xs leading-relaxed text-muted-foreground"
+                        >
+                          <span className="mr-2 inline-flex">
+                            <KindBadge kind={item.kind} />
+                          </span>
+                          <span className="font-medium text-foreground">{item.label}</span>
+                          <span className="mt-1 block">{item.detail}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
                 {message.answer.confidence ? (
                   <p className="mt-3 text-xs text-muted-foreground">
-                    Confidence {message.answer.confidence}%
+                    Authored confidence {message.answer.confidence}% · not a measured model score
+                  </p>
+                ) : null}
+                {message.answer.provenanceNote ? (
+                  <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground" role="note">
+                    {message.answer.provenanceNote}
                   </p>
                 ) : null}
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -204,7 +236,7 @@ export function AskScreen() {
 
           {asking ? (
             <p className="text-sm text-muted-foreground" role="status" aria-live="polite">
-              Reading the file…
+              Retrieving · calculating · explaining…
             </p>
           ) : null}
         </div>
@@ -239,7 +271,8 @@ export function AskScreen() {
           </p>
         ) : null}
         <p className="mt-3 text-xs text-muted-foreground">
-          Press / from anywhere else in the app to come back here.
+          Press / from anywhere to jump here. Optional LLM explain is off unless{" "}
+          <code className="text-[10px]">CRICKETOS_LLM_*</code> is configured server-side.
         </p>
       </Panel>
     </div>

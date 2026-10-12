@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useApp } from "@/components/app-state";
-import { Kicker, Meter, PageTitle, Panel, useCountdown, WinSplit } from "@/components/ui-bits";
+import { LiveCommentary } from "@/components/live-commentary";
+import { LiveScoreStrip } from "@/components/live-score-strip";
+import { KindBadge, ProvenanceStrip, StatusBadge } from "@/components/status-badge";
+import { Kicker, Meter, PageTitle, Panel, WinSplit } from "@/components/ui-bits";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -10,36 +13,56 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useLiveMatch } from "@/hooks/use-live-match";
+import { analysePhases, applyWinSwing, strikeRate } from "@/lib/calc";
 import {
   batting,
   bowling,
   fieldPlans,
-  fow,
-  lastOver,
+  matchMeta,
   matchPredictions,
   matchReport,
   matchups,
   phases,
   simScript,
 } from "@/lib/data";
+import {
+  getGraphNode,
+  matchGraphNodes,
+  matchEvidence,
+  outgoing,
+  type MatchGraphNode,
+} from "@/lib/match-graph";
 import { clamp, MOODS, moodBreakdown } from "@/lib/format";
 
+const graphKindLabel: Record<MatchGraphNode["kind"], string> = {
+  event: "Event",
+  player: "Player",
+  consequence: "Consequence",
+  scenario: "Scenario",
+};
+
 export function MatchScreen() {
-  const countdown = useCountdown();
   const { mood, react, go } = useApp();
+  const live = useLiveMatch();
   const [planId, setPlanId] = useState(fieldPlans[0].id);
   const [side, setSide] = useState<"england" | "india">("england");
   const [noted, setNoted] = useState<string | null>(null);
   const [step, setStep] = useState(-1);
   const [running, setRunning] = useState(false);
+  const [graphId, setGraphId] = useState(matchGraphNodes[0].id);
+  const [evidenceId, setEvidenceId] = useState<string | null>(null);
   const plan = fieldPlans.find((item) => item.id === planId) ?? fieldPlans[0];
   const played = simScript.slice(0, step + 1);
-  const simRuns = 245 + played.reduce((sum, event) => sum + event.runs, 0);
-  const simWickets = 4 + played.reduce((sum, event) => sum + event.wickets, 0);
+  const simRuns = matchMeta.score.runs + played.reduce((sum, event) => sum + event.runs, 0);
+  const simWickets = matchMeta.score.wickets + played.reduce((sum, event) => sum + event.wickets, 0);
   const swing = played.reduce((sum, event) => sum + event.swing, 0);
-  const eng = clamp(58 + swing, 5, 92);
-  const ind = 100 - eng;
+  const { eng, ind } = applyWinSwing(matchMeta.winModel.eng, swing);
   const moods = moodBreakdown(mood[side]);
+  const phaseRows = useMemo(() => analysePhases(phases), []);
+  const graphNode = getGraphNode(graphId) ?? matchGraphNodes[0];
+  const nextLinks = outgoing(graphId);
+  const selectedEvidence = matchEvidence.find((item) => item.id === evidenceId) ?? null;
 
   const finished = step >= simScript.length - 1;
   useEffect(() => {
@@ -51,65 +74,26 @@ export function MatchScreen() {
   return (
     <div className="mx-auto max-w-6xl">
       <PageTitle
-        kicker="Match Centre · explanations"
-        title="England vs India"
-        lede="Above expectation, momentum, key matchup, turning point, predictions, and an AI session report — the score is only the start."
+        kicker="Match Room · DEMO sim + intelligence"
+        title={matchMeta.title}
+        lede="Scripted DEMO score and commentary advance an illustrative Lord's innings — then explore the graph, evidence, and consequences. Not a broadcast feed."
       />
 
-      <section className="overflow-hidden rounded-[2rem] border border-border bg-card">
-        <div className="grid gap-6 p-6 sm:p-8 lg:grid-cols-[1.4fr_1fr] lg:items-end">
-          <div>
-            <Kicker>Day 2 · Lord’s · session in {countdown}</Kicker>
-            <p className="font-display mt-3 text-6xl leading-none tabular-nums sm:text-7xl">
-              245<span className="text-lime">/4</span>
-            </p>
-            <p className="mt-3 text-sm text-muted-foreground">
-              48.2 overs · Root 89* (120) · Stokes 3* (6) · partnership just starting
-            </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {lastOver.map((ball, index) => (
-                <span
-                  key={`${ball}-${index}`}
-                  className="grid size-8 place-items-center rounded-full border border-border text-xs tabular-nums"
-                >
-                  {ball}
-                </span>
-              ))}
-              <span className="self-center text-xs text-muted-foreground">Last over before the break</span>
-            </div>
-          </div>
-          <div>
-            <div className="mb-4 grid grid-cols-2 gap-3">
-              <div>
-                <p className="text-eng text-xs tracking-[0.16em] uppercase">England</p>
-                <p className="font-display text-4xl tabular-nums">58%</p>
-              </div>
-              <div>
-                <p className="text-ind text-xs tracking-[0.16em] uppercase">India</p>
-                <p className="font-display text-4xl tabular-nums">42%</p>
-              </div>
-            </div>
-            <WinSplit eng={58} ind={42} />
-          </div>
-        </div>
-        <div className="grid border-t border-border sm:grid-cols-3">
-          {[
-            ["Momentum", "England"],
-            ["Turning point", "Over 27"],
-            ["Above expectation", "+21 runs"],
-          ].map(([label, value]) => (
-            <div key={label} className="border-b border-border px-5 py-4 sm:border-b-0 sm:border-r last:border-r-0">
-              <Kicker>{label}</Kicker>
-              <p className="mt-2 text-xl font-medium">{value}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      <LiveScoreStrip />
+      <div className="mt-3">
+        <ProvenanceStrip
+          source={matchMeta.provenance.source}
+          asOf={matchMeta.provenance.asOf}
+          note="Score strip is a scripted DEMO sim. Graph and report stay on the session snapshot."
+        />
+      </div>
 
-      <Tabs defaultValue="intel" className="mt-6">
+      <Tabs defaultValue="commentary" className="mt-6">
         <TabsList variant="line" className="h-auto! w-full justify-start overflow-x-auto">
+          <TabsTrigger value="commentary">Demo Commentary</TabsTrigger>
+          <TabsTrigger value="graph">Match Graph</TabsTrigger>
           <TabsTrigger value="intel">Intelligence</TabsTrigger>
-          <TabsTrigger value="report">AI Report</TabsTrigger>
+          <TabsTrigger value="report">Session Report</TabsTrigger>
           <TabsTrigger value="predictions">Predictions</TabsTrigger>
           <TabsTrigger value="scorecard">Scorecard</TabsTrigger>
           <TabsTrigger value="emotions">Mood</TabsTrigger>
@@ -118,10 +102,143 @@ export function MatchScreen() {
           <TabsTrigger value="sim">Simulations</TabsTrigger>
         </TabsList>
 
+        <TabsContent value="commentary" className="mt-4">
+          <LiveCommentary />
+        </TabsContent>
+
+        <TabsContent value="graph" className="mt-4">
+          <div className="grid gap-4 lg:grid-cols-5">
+            <Panel className="lg:col-span-2">
+              <Kicker>Journey</Kicker>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Event → player → consequence → scenario. Click a node, then follow the edge.
+              </p>
+              <ol className="mt-4 space-y-2">
+                {matchGraphNodes.map((node) => (
+                  <li key={node.id}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setGraphId(node.id);
+                        setEvidenceId(node.evidenceIds?.[0] ?? null);
+                      }}
+                      className={`w-full rounded-2xl border px-3 py-2.5 text-left transition ${
+                        graphId === node.id
+                          ? "border-lime/50 bg-lime/10"
+                          : "border-border bg-muted/30 hover:border-lime/30"
+                      }`}
+                    >
+                      <span className="flex flex-wrap items-center gap-2">
+                        <span className="text-[10px] tracking-[0.14em] text-muted-foreground uppercase">
+                          {graphKindLabel[node.kind]}
+                        </span>
+                        <KindBadge kind={node.dataKind} />
+                      </span>
+                      <span className="mt-1 block text-sm font-medium">{node.title}</span>
+                    </button>
+                  </li>
+                ))}
+              </ol>
+            </Panel>
+            <Panel className="lg:col-span-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Kicker>{graphKindLabel[graphNode.kind]}</Kicker>
+                <KindBadge kind={graphNode.dataKind} />
+                {graphNode.overs ? (
+                  <span className="font-mono text-xs text-lime">{graphNode.overs}</span>
+                ) : null}
+              </div>
+              <h2 className="font-display mt-3 text-3xl tracking-tight">{graphNode.title}</h2>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{graphNode.detail}</p>
+
+              {graphNode.evidenceIds?.length ? (
+                <div className="mt-5">
+                  <Kicker>Evidence</Kicker>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {graphNode.evidenceIds.map((id) => {
+                      const item = matchEvidence.find((row) => row.id === id);
+                      if (!item) return null;
+                      return (
+                        <Button
+                          key={id}
+                          type="button"
+                          size="sm"
+                          variant={evidenceId === id ? "default" : "secondary"}
+                          onClick={() => setEvidenceId(id)}
+                        >
+                          {item.label}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                  {selectedEvidence ? (
+                    <p className="mt-3 rounded-2xl bg-muted/50 px-4 py-3 text-sm leading-relaxed text-muted-foreground">
+                      <KindBadge kind={selectedEvidence.kind} className="mb-2" />
+                      <span className="block">{selectedEvidence.detail}</span>
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {nextLinks.length ? (
+                <div className="mt-6">
+                  <Kicker>What happens next</Kicker>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {nextLinks.map((edge) => {
+                      const target = getGraphNode(edge.to);
+                      return (
+                        <Button
+                          key={`${edge.from}-${edge.to}`}
+                          type="button"
+                          variant="outline"
+                          className="h-auto px-3 py-2 text-left whitespace-normal"
+                          onClick={() => {
+                            setGraphId(edge.to);
+                            setEvidenceId(target?.evidenceIds?.[0] ?? null);
+                          }}
+                        >
+                          <span className="text-lime">{edge.label}</span>
+                          <span className="mx-2 text-muted-foreground">→</span>
+                          {target?.title ?? edge.to}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
+
+              {graphNode.kind === "scenario" ? (
+                <Button
+                  type="button"
+                  className="mt-6"
+                  variant="secondary"
+                  onClick={() => go("labs")}
+                >
+                  Open What-If Lab
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  className="mt-6"
+                  variant="secondary"
+                  onClick={() =>
+                    go("ask", { mode: "predictions", seedAsk: "What are the turning points?" })
+                  }
+                >
+                  Ask Copilot about this phase
+                </Button>
+              )}
+            </Panel>
+          </div>
+        </TabsContent>
+
         <TabsContent value="scorecard" className="mt-4">
           <div className="grid gap-4 lg:grid-cols-5">
             <Panel className="overflow-x-auto lg:col-span-3">
-              <Kicker>England, 1st innings</Kicker>
+              <div className="flex items-center gap-2">
+                <Kicker>England, 1st innings</Kicker>
+                <StatusBadge status="DEMO" />
+              </div>
               <table className="mt-4 w-full min-w-[32rem] text-left text-sm">
                 <thead className="text-xs tracking-wide text-muted-foreground uppercase">
                   <tr>
@@ -140,17 +257,23 @@ export function MatchScreen() {
                         <span className={row.out ? "" : "text-lime"}>{row.name}</span>
                         <span className="mt-0.5 block text-xs text-muted-foreground">{row.how}</span>
                       </td>
-                      <td className="py-2 tabular-nums">{row.runs}{row.out ? "" : "*"}</td>
+                      <td className="py-2 tabular-nums">
+                        {row.runs}
+                        {row.out ? "" : "*"}
+                      </td>
                       <td className="py-2 tabular-nums">{row.balls}</td>
                       <td className="py-2 tabular-nums">{row.fours}</td>
                       <td className="py-2 tabular-nums">{row.sixes}</td>
-                      <td className="py-2 tabular-nums">{((row.runs / row.balls) * 100).toFixed(1)}</td>
+                      <td className="py-2 tabular-nums">{strikeRate(row.runs, row.balls)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              <p className="mt-3 text-sm text-muted-foreground">Extras 8 (b 5, lb 3, w 4) · Total 245/4 (48.2)</p>
-              <p className="mt-2 text-xs text-muted-foreground">Fall: {fow.join(" · ")}</p>
+              <p className="mt-3 text-sm text-muted-foreground">
+                Extras 8 (b 5, lb 3, w 4) · Demo sim total {live.runs}/{live.wickets} ({live.overs}) ·
+                snapshot {matchMeta.score.runs}/{matchMeta.score.wickets}
+              </p>
+              <p className="mt-2 text-xs text-muted-foreground">Fall: {live.fow.join(" · ")}</p>
             </Panel>
             <Panel className="lg:col-span-2">
               <Kicker>Bowling</Kicker>
@@ -181,16 +304,20 @@ export function MatchScreen() {
         <TabsContent value="intel" className="mt-4">
           <div className="grid gap-4 lg:grid-cols-5">
             <Panel className="lg:col-span-3">
-              <Kicker>AI summary</Kicker>
+              <Kicker>Grounded summary</Kicker>
               <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground">
-                <p>England are 21 runs ahead of expectation. The decisive phase was overs 22–30.</p>
+                <p>
+                  England are {phaseRows.reduce((s, p) => s + p.delta, 0) > 0 ? "+" : ""}
+                  {phaseRows.reduce((s, p) => s + p.delta, 0)} runs vs phase expectation
+                  (deterministic sum). The decisive phase was overs 22–30.
+                </p>
                 <p>
                   Root neutralised spin. Brook scored quickly enough to force a change of plan, then
                   edged Kuldeep. India’s older-ball bowling never pulled the phase back.
                 </p>
                 <p>
-                  Key matchup now: Stokes vs Kuldeep. Turning point already played: over 27. The next
-                  shift is a wicket in Bumrah’s first four overs — not a quiet hour.
+                  Key matchup in the demo snapshot: Stokes vs Kuldeep. Turning point already played:
+                  over 27. Next shift in the script: a wicket in Bumrah’s first four overs.
                 </p>
               </div>
               <Button
@@ -201,31 +328,41 @@ export function MatchScreen() {
                   go("ask", { mode: "predictions", seedAsk: "Why is England winning?" });
                 }}
               >
-                Ask: why is England winning?
+                Ask: why is England ahead in the model?
               </Button>
             </Panel>
             <Panel className="lg:col-span-2">
               <Kicker>Phase against the model</Kicker>
               <ul className="mt-4 space-y-4">
-                {phases.map((phase) => {
-                  const delta = phase.scored - phase.expected;
-                  return (
-                    <li key={phase.label}>
+                {phaseRows.map((phase) => (
+                  <li key={phase.label}>
+                    <button
+                      type="button"
+                      className="w-full text-left"
+                      onClick={() => {
+                        setGraphId("evt-phase-22-30");
+                        setEvidenceId("ev-phase-2230");
+                      }}
+                      aria-label={`${phase.label}: ${phase.delta > 0 ? "+" : ""}${phase.delta} vs expected`}
+                    >
                       <div className="mb-1 flex justify-between text-sm">
                         <span>{phase.label}</span>
-                        <span className={delta > 0 ? "text-lime" : "text-muted-foreground"}>
-                          {delta > 0 ? `+${delta}` : delta}
+                        <span className={phase.ahead ? "text-lime" : "text-muted-foreground"}>
+                          {phase.delta > 0 ? `+${phase.delta}` : phase.delta}
                         </span>
                       </div>
                       <div className="flex h-2 overflow-hidden rounded-full bg-white/10">
-                        <div className="bg-lime" style={{ width: `${(phase.scored / 80) * 100}%` }} />
+                        <div
+                          className="bg-lime"
+                          style={{ width: `${clamp((phase.scored / 80) * 100, 0, 100)}%` }}
+                        />
                       </div>
                       <p className="mt-1 text-xs text-muted-foreground">
                         {phase.scored} scored · {phase.expected} expected
                       </p>
-                    </li>
-                  );
-                })}
+                    </button>
+                  </li>
+                ))}
               </ul>
             </Panel>
           </div>
@@ -233,7 +370,10 @@ export function MatchScreen() {
 
         <TabsContent value="report" className="mt-4">
           <Panel>
-            <Kicker>{matchReport.kicker}</Kicker>
+            <div className="flex flex-wrap items-center gap-2">
+              <Kicker>{matchReport.kicker}</Kicker>
+              <StatusBadge status="DEMO" />
+            </div>
             <p className="mt-2 text-xs tracking-[0.14em] text-lime uppercase">{matchReport.status}</p>
             <h2 className="font-display mt-3 text-3xl tracking-tight">{matchReport.title}</h2>
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{matchReport.summary}</p>
@@ -293,6 +433,10 @@ export function MatchScreen() {
         </TabsContent>
 
         <TabsContent value="predictions" className="mt-4">
+          <p className="mb-3 text-sm text-muted-foreground">
+            <KindBadge kind="model" className="mr-2" />
+            Model projections on the DEMO board — not verified live odds.
+          </p>
           <div className="grid gap-4 md:grid-cols-2">
             {matchPredictions.map((item) => (
               <Panel key={item.id}>
@@ -373,9 +517,10 @@ export function MatchScreen() {
               </ul>
             </Panel>
             <Panel>
-              <Kicker>React to the last ball</Kicker>
+              <Kicker>React to the latest sim ball</Kicker>
               <p className="mt-2 text-sm text-muted-foreground">
-                Stokes defended the last ball of the break. The room moves when you do.
+                {live.ballsFaced.at(-1)?.commentary ??
+                  "Mood also attaches on the Demo Commentary tab as the sim advances."}
               </p>
               <div className="mt-5 flex flex-wrap gap-3">
                 {MOODS.map((item) => (
@@ -438,8 +583,14 @@ export function MatchScreen() {
               <Kicker>{plan.title}</Kicker>
               <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{plan.note}</p>
               <div className="mt-6 space-y-3 text-sm leading-relaxed text-muted-foreground">
-                <p>England’s plan for the session is eight quiet overs, then Stokes against the spinner of his choice. The lower order’s job, if it comes, is 80 more runs.</p>
-                <p>India’s plan is the new-ball burst at Root and Kuldeep at the left-hander before the surface goes slow.</p>
+                <p>
+                  England’s plan for the session is eight quiet overs, then Stokes against the
+                  spinner of his choice. The lower order’s job, if it comes, is 80 more runs.
+                </p>
+                <p>
+                  India’s plan is the new-ball burst at Root and Kuldeep at the left-hander before
+                  the surface goes slow.
+                </p>
               </div>
             </Panel>
           </div>
@@ -452,7 +603,7 @@ export function MatchScreen() {
                 <div className="flex items-center justify-between gap-3">
                   <h3 className="font-display text-2xl">{duel.title}</h3>
                   <span className="text-xs tracking-[0.14em] text-muted-foreground uppercase">
-                    {duel.live ? "Live" : "File"}
+                    {duel.activeInDemo ? "Active · DEMO" : "Historical file"}
                   </span>
                 </div>
                 <dl className="mt-4 grid grid-cols-3 gap-2 text-sm">
@@ -481,12 +632,16 @@ export function MatchScreen() {
           <Panel>
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
-                <Kicker>Next eight balls</Kicker>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Kicker>Next eight balls</Kicker>
+                  <KindBadge kind="hypothetical" />
+                </div>
                 <p className="font-display mt-2 text-5xl tabular-nums">
                   {simRuns}/{simWickets}
                 </p>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  A projection, not a change to the scorecard. England {eng}% · India {ind}%.
+                  Hypothetical projection — does not rewrite the DEMO scorecard. England {eng}% ·
+                  India {ind}%.
                 </p>
               </div>
               <div className="flex gap-2">
@@ -517,7 +672,10 @@ export function MatchScreen() {
             </div>
             <ol className="mt-5 space-y-2">
               {played.length === 0 ? (
-                <li className="text-sm text-muted-foreground">The session has not been rolled. Nothing here changes 245 for 4 until you run it.</li>
+                <li className="text-sm text-muted-foreground">
+                  The session has not been rolled. Nothing here changes {matchMeta.score.runs} for{" "}
+                  {matchMeta.score.wickets} until you run it.
+                </li>
               ) : (
                 played.map((event) => (
                   <li key={event.over} className="rounded-2xl bg-muted/50 px-4 py-3 text-sm">
@@ -526,16 +684,22 @@ export function MatchScreen() {
                   </li>
                 ))
               )}
-              {running && !finished ? <li className="text-sm text-muted-foreground">Ball in the air…</li> : null}
+              {running && !finished ? (
+                <li className="text-sm text-muted-foreground">Ball in the air…</li>
+              ) : null}
             </ol>
             <Tooltip>
               <TooltipTrigger asChild>
-                <button type="button" className="mt-4 text-xs text-muted-foreground underline-offset-4 hover:underline">
+                <button
+                  type="button"
+                  className="mt-4 text-xs text-muted-foreground underline-offset-4 hover:underline"
+                >
                   What is this model using?
                 </button>
               </TooltipTrigger>
               <TooltipContent>
-                Phase expectancy, wickets in hand, and the Bumrah workload cap. It is illustrative.
+                Phase expectancy, wickets in hand, and the Bumrah workload cap. Illustrative
+                hypothetical — win swing via clamp(5–92).
               </TooltipContent>
             </Tooltip>
           </Panel>

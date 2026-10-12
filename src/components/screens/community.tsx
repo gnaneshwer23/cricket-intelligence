@@ -87,7 +87,7 @@ export function CommunityScreen() {
               <Kicker>Rooms</Kicker>
               <p className="mt-3 rounded-2xl bg-primary px-3 py-3 text-sm text-primary-foreground">
                 Lord’s · Day 2
-                <span className="mt-1 block text-xs opacity-80">Live thread</span>
+                <span className="mt-1 block text-xs opacity-80">Demo thread</span>
               </p>
               <p className="mt-2 rounded-2xl bg-muted/50 px-3 py-3 text-sm text-muted-foreground">
                 Centurion preview

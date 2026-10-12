@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { KindBadge } from "@/components/status-badge";
 import { Kicker, PageTitle, Panel, WinSplit } from "@/components/ui-bits";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -62,9 +63,9 @@ export function LabsScreen() {
   return (
     <div className="mx-auto max-w-6xl">
       <PageTitle
-        kicker="Labs"
+        kicker="Labs · experimental"
         title="The futures that didn’t happen, and the ones that might."
-        lede="Change today’s XI, draft your own, generate a side years from now, or drop a player into another decade."
+        lede="Hypothetical scenarios on the DEMO board. Labels stay honest: these are model swings, not live outcomes."
       />
       <Tabs defaultValue="what-if">
         <TabsList variant="line" className="h-auto! w-full justify-start overflow-x-auto">
@@ -75,6 +76,10 @@ export function LabsScreen() {
         </TabsList>
 
         <TabsContent value="what-if" className="mt-4">
+          <p className="mb-3 text-sm text-muted-foreground">
+            <KindBadge kind="hypothetical" className="mr-2" />
+            Deterministic swings on the DEMO win prior — not a live simulator.
+          </p>
           <div className="grid gap-3 md:grid-cols-2">
             {whatIfs.map((item) => (
               <button
@@ -92,7 +97,7 @@ export function LabsScreen() {
           </div>
           <div className="mt-4 grid gap-4 lg:grid-cols-2">
             <Panel>
-              <Kicker>Current</Kicker>
+              <Kicker>DEMO baseline</Kicker>
               <p className="font-display mt-3 text-5xl tabular-nums">{baseWin.ind}%</p>
               <p className="text-sm text-muted-foreground">India win chance · England {baseWin.eng}%</p>
               <div className="mt-4">
@@ -100,7 +105,7 @@ export function LabsScreen() {
               </div>
             </Panel>
             <Panel>
-              <Kicker>Without the assumption</Kicker>
+              <Kicker>Hypothetical outcome</Kicker>
               <p className="font-display mt-3 text-5xl tabular-nums text-lime">
                 {scenario.draw ? `${scenario.draw}%` : `${scenario.ind}%`}
               </p>
@@ -111,6 +116,10 @@ export function LabsScreen() {
                 <WinSplit eng={scenario.eng} ind={scenario.ind} draw={scenario.draw || undefined} />
               </div>
               <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{scenario.note}</p>
+              <p className="mt-3 text-[11px] text-muted-foreground">
+                Method: authored scenario table on DEMO prior — numbers are fixed file values, not
+                Monte Carlo draws.
+              </p>
             </Panel>
           </div>
         </TabsContent>

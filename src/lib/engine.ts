@@ -1,22 +1,59 @@
-import { getPlayer, players } from "@/lib/data";
+import { analysePhases, cumulativePhaseLead, runsToMilestone, speedUpliftPct, strikeRate } from "@/lib/calc";
+import { getPlayer, matchMeta, phases, players } from "@/lib/data";
+import { matchEvidence } from "@/lib/match-graph";
 import { hasWord } from "@/lib/format";
 import type { Answer, AskMode } from "@/lib/types";
+
+const DEMO_PROVENANCE =
+  "DEMO dataset · grounded rule engine · figures from bundled match file (not a live feed or LLM).";
+
+function cite(...ids: string[]) {
+  return matchEvidence
+    .filter((item) => ids.includes(item.id))
+    .map((item) => ({
+      id: item.id,
+      label: item.label,
+      detail: item.detail,
+      kind: item.kind,
+    }));
+}
+
+function finalize(answer: Answer, extras?: Partial<Answer>): Answer {
+  return {
+    ...answer,
+    method: extras?.method ?? answer.method ?? "rule-engine",
+    provenanceNote: extras?.provenanceNote ?? answer.provenanceNote ?? DEMO_PROVENANCE,
+    evidence: extras?.evidence ?? answer.evidence,
+    speaker: extras?.speaker ?? answer.speaker,
+  };
+}
 
 const entities: { words: string[]; id: string }[] = [
   { words: ["root"], id: "joe-root" },
   { words: ["brook"], id: "harry-brook" },
   { words: ["bumrah"], id: "jasprit-bumrah" },
   { words: ["kohli"], id: "virat-kohli" },
+  { words: ["rohit"], id: "rohit-sharma" },
   { words: ["stokes"], id: "ben-stokes" },
   { words: ["jadeja"], id: "ravindra-jadeja" },
   { words: ["head"], id: "travis-head" },
   { words: ["williamson"], id: "kane-williamson" },
   { words: ["smith"], id: "steve-smith" },
+  { words: ["warner"], id: "david-warner" },
+  { words: ["starc"], id: "mitchell-starc" },
+  { words: ["cummins"], id: "pat-cummins" },
+  { words: ["rabada"], id: "kagiso-rabada" },
+  { words: ["shaheen", "afridi"], id: "shaheen-afridi" },
   { words: ["sangakkara", "sanga"], id: "kumar-sangakkara" },
   { words: ["potts"], id: "matthew-potts" },
   { words: ["kuldeep"], id: "kuldeep-yadav" },
   { words: ["babar"], id: "babar-azam" },
   { words: ["sachin", "tendulkar"], id: "sachin-tendulkar" },
+  { words: ["gill"], id: "shubman-gill" },
+  { words: ["pant"], id: "rishabh-pant" },
+  { words: ["dhoni"], id: "ms-dhoni" },
+  { words: ["shakib"], id: "shakib-al-hasan" },
+  { words: ["rashid"], id: "rashid-khan" },
 ];
 
 function findEntities(query: string) {
@@ -31,9 +68,20 @@ function follow(list: string[]): string[] {
 }
 
 export function answerQuestion(raw: string, mode: AskMode, twinId: string): Answer {
+  return finalize(answerQuestionInner(raw, mode, twinId));
+}
+
+function answerQuestionInner(raw: string, mode: AskMode, twinId: string): Answer {
   const query = raw.trim().toLowerCase();
   const named = findEntities(query);
   const twin = getPlayer(twinId) ?? players[0];
+  const phaseLead = cumulativePhaseLead(phases);
+  const phaseRows = analysePhases(phases);
+  const surge = phaseRows.find((row) => row.label.includes("22–30"));
+  const root = getPlayer("joe-root");
+  const rootTo14k = root ? runsToMilestone(root.milestones[0].current, root.milestones[0].target) : 73;
+  const bumrahUplift = speedUpliftPct(146.2, 134.1);
+  const rootSr = root ? strikeRate(89, 120) : 74.2;
 
   if (
     query.includes("30 second") ||
@@ -42,17 +90,17 @@ export function answerQuestion(raw: string, mode: AskMode, twinId: string): Answ
       (hasWord(query, "today") || hasWord(query, "cricket"))
   ) {
     return {
-      headline: "Today in 30 seconds",
+      headline: "Demo match in 30 seconds",
       paragraphs: [
-        "England 245 for 4 at Lord’s, day two. Root 89 not out, Stokes just in. They are 21 runs ahead of the phase model because overs 22–30 went for 72 against 48 expected.",
-        "Bumrah has two wickets and is bowling 9% above career speed. He is still the over that can flip the hour. Win model: England 58, India 42. Rain risk up to 34%.",
-        "Root needs 73 for 14,000. Brook’s 64 ended to Kuldeep — tempo given, then the known spin hole. Ask deeper if you want the why.",
+        `DEMO board: England ${matchMeta.score.runs} for ${matchMeta.score.wickets} at ${matchMeta.venue}, ${matchMeta.dayLabel}. Root 89* (SR ${rootSr}), Stokes just in. Phase lead ${phaseLead > 0 ? `+${phaseLead}` : phaseLead} — surge in overs 22–30 was ${surge ? `${surge.scored} vs ${surge.expected} expected` : "the key phase"}.`,
+        `Bumrah has two wickets and is bowling ${bumrahUplift}% above career speed in this file. Win model: England ${matchMeta.winModel.eng}, India ${matchMeta.winModel.ind}. Rain risk up to 34% (authored demo prior).`,
+        `Root needs ${rootTo14k} for 14,000. Brook’s 64 ended to Kuldeep — tempo given, then the known spin hole.`,
       ],
       figures: [
-        { label: "Score", value: "245/4" },
-        { label: "Eng win", value: "58%" },
-        { label: "vs model", value: "+21" },
-        { label: "Root to 14k", value: "73" },
+        { label: "Score", value: `${matchMeta.score.runs}/${matchMeta.score.wickets}` },
+        { label: "Eng win", value: `${matchMeta.winModel.eng}%` },
+        { label: "vs model", value: phaseLead > 0 ? `+${phaseLead}` : String(phaseLead) },
+        { label: "Root to 14k", value: String(rootTo14k) },
       ],
       confidence: 88,
       followups: follow([
@@ -60,7 +108,9 @@ export function answerQuestion(raw: string, mode: AskMode, twinId: string): Answ
         "Why is Bumrah difficult to face?",
         "What are the turning points?",
       ]),
-      speaker: "Daily briefing",
+      speaker: "Daily briefing · DEMO",
+      method: "deterministic-calc",
+      evidence: cite("ev-phase-2230", "ev-root-innings", "ev-win-model"),
     };
   }
 
@@ -268,19 +318,23 @@ export function answerQuestion(raw: string, mode: AskMode, twinId: string): Answ
     }
 
     if (wantsTurning) {
+      const surgeDelta = surge?.delta ?? 24;
       return {
-        headline: "Three turning points — one already played",
+        headline: "Three turning points — one already played (DEMO)",
         paragraphs: [
-          "Already played: overs 22–30. England scored 72 against 48 expected. Root through Jadeja, Brook forcing a plan change. Most of the +21 lead lives there.",
-          "Live: Bumrah’s first four overs after the break against Root and Stokes. A wicket here swings the hour; thirty quiet runs do not.",
+          `Already played: overs 22–30. England scored ${surge?.scored ?? 72} against ${surge?.expected ?? 48} expected (delta ${surgeDelta > 0 ? `+${surgeDelta}` : surgeDelta}). Root through Jadeja, Brook forcing a plan change. Cumulative phase lead: ${phaseLead > 0 ? `+${phaseLead}` : phaseLead}.`,
+          "Next in the demo script: Bumrah’s first four overs after the break against Root and Stokes. A wicket here swings the hour; thirty quiet runs do not.",
           "Pending: Stokes vs Kuldeep’s remaining balls in the fifteen-ball risk window, and whether rain at 34% freezes the match before India bat.",
         ],
         figures: [
-          { label: "Phase delta", value: "+24 runs" },
-          { label: "Next swing over", value: "Bumrah 1–4" },
+          { label: "Phase delta", value: `${surgeDelta > 0 ? `+${surgeDelta}` : surgeDelta} runs` },
+          { label: "Cumulative", value: phaseLead > 0 ? `+${phaseLead}` : String(phaseLead) },
+          { label: "Next swing", value: "Bumrah 1–4" },
           { label: "Rain risk", value: "34%" },
         ],
         confidence: 82,
+        method: "deterministic-calc",
+        evidence: cite("ev-phase-2230", "ev-over-27", "ev-stokes-kuldeep", "ev-win-model"),
         followups: follow([
           "Why is England winning?",
           "Project the final score",
@@ -290,19 +344,21 @@ export function answerQuestion(raw: string, mode: AskMode, twinId: string): Answ
     }
 
     return {
-      headline: "England are winning because the model already moved",
+      headline: "England lead the DEMO model because the phase already moved",
       paragraphs: [
-        "They are 245 for 4 and 21 runs ahead of phase expectation. The damage was overs 22–30: 72 against 48 expected. Root took spin out of the game; Brook made India change the ball they were bowling.",
-        "Win model: England 58%, India 42%. That is not a coin toss — it is a set batter, a lead on expectancy, and an India attack whose older-ball plan did not pull the phase back.",
-        "The lead is fragile in one direction only: Bumrah. Without him India fall to 18%. With a wicket in his first burst, this becomes a different afternoon. Turning points and score projection are one ask away.",
+        `DEMO board ${matchMeta.score.runs}/${matchMeta.score.wickets}. Cumulative phase lead ${phaseLead > 0 ? `+${phaseLead}` : phaseLead} (sum of scored − expected). Overs 22–30: ${surge ? `${surge.scored} vs ${surge.expected}` : "72 vs 48"} expected. Root took spin out of the game; Brook made India change the ball they were bowling.`,
+        `Win model: England ${matchMeta.winModel.eng}%, India ${matchMeta.winModel.ind}%. That is an authored session prior on this demo file — not a live market price.`,
+        "The lead is fragile in one direction only: Bumrah. Without him India fall to 18% in the what-if table. With a wicket in his first burst, this becomes a different afternoon.",
       ],
       figures: [
-        { label: "England", value: "58%" },
-        { label: "India", value: "42%" },
-        { label: "Ahead of model", value: "+21" },
+        { label: "England", value: `${matchMeta.winModel.eng}%` },
+        { label: "India", value: `${matchMeta.winModel.ind}%` },
+        { label: "Ahead of model", value: phaseLead > 0 ? `+${phaseLead}` : String(phaseLead) },
         { label: "Key phase", value: "Ov 22–30" },
       ],
       confidence: 79,
+      method: "deterministic-calc",
+      evidence: cite("ev-phase-2230", "ev-win-model", "ev-root-innings"),
       followups: follow([
         "What are the turning points?",
         "Project the final score",
@@ -688,22 +744,23 @@ export function answerQuestion(raw: string, mode: AskMode, twinId: string): Answ
     return {
       headline: "Ask for a win model, a total, or who scores next",
       paragraphs: [
-        "Live board: England 58%, India 42%, projected total around 338, Stokes the likeliest next chunk of runs.",
+        `DEMO board: England ${matchMeta.winModel.eng}%, India ${matchMeta.winModel.ind}%, projected total around 338, Stokes the likeliest next chunk of runs. Figures are from the bundled dataset.`,
       ],
       followups: follow([
         "Why is England winning?",
         "Project the final score",
         "Who likely scores next?",
       ]),
-      speaker: "Predictions",
+      speaker: "Predictions · DEMO",
+      evidence: cite("ev-win-model"),
     };
   }
 
   return {
     headline: "Ask Cricket Anything",
     paragraphs: [
-      "I brief matches, players, predictions, and careers — structured answers, not a raw stats dump. Today’s ground is England vs India at Lord’s, 245 for 4, England 58%.",
-      "Try Bumrah’s difficulty, Stokes’ chases, Root’s twins, Sachin vs Kohli at 24, Babar’s trajectory, or a 30-second summary of today.",
+      `Grounded copilot on the DEMO Lord’s file — England ${matchMeta.score.runs} for ${matchMeta.score.wickets}, win model ${matchMeta.winModel.eng}/${matchMeta.winModel.ind}. Numbers come from the dataset and deterministic calcs, not an inventing LLM.`,
+      "Try Bumrah’s difficulty, Stokes’ chases, Root’s twins, Sachin vs Kohli at 24, Babar’s trajectory, or a 30-second summary of the demo match.",
     ],
     followups: follow([
       "Summarise today's cricket in 30 seconds",

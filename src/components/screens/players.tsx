@@ -2,19 +2,24 @@
 
 import { useMemo, useState } from "react";
 import { useApp } from "@/components/app-state";
+import { KindBadge } from "@/components/status-badge";
 import { Kicker, Meter, PageTitle, Panel, Spark } from "@/components/ui-bits";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { sampleSizeWarning } from "@/lib/calc";
 import { dnaLabels, getPlayer, players, teamLabel } from "@/lib/data";
 import { answerQuestion } from "@/lib/engine";
-import type { Answer } from "@/lib/types";
+import type { Answer, Role } from "@/lib/types";
+
+const roleFilters: Array<Role | "All"> = ["All", "Batter", "Bowler", "All-rounder", "Keeper"];
 
 export function PlayersScreen() {
   const { playerId, setPlayerId, followedPlayers, toggleFollow, go } = useApp();
   const [query, setQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState<Role | "All">("All");
   const [nodeId, setNodeId] = useState("self");
   const [twinDraft, setTwinDraft] = useState("");
   const [twinError, setTwinError] = useState<string | null>(null);
@@ -23,11 +28,14 @@ export function PlayersScreen() {
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    if (!needle) return players;
-    return players.filter((player) =>
-      `${player.name} ${player.role} ${teamLabel(player.teamId)}`.toLowerCase().includes(needle),
-    );
-  }, [query]);
+    return players.filter((player) => {
+      if (roleFilter !== "All" && player.role !== roleFilter) return false;
+      if (!needle) return true;
+      return `${player.name} ${player.role} ${teamLabel(player.teamId)}`
+        .toLowerCase()
+        .includes(needle);
+    });
+  }, [query, roleFilter]);
 
   const player = getPlayer(playerId) ?? players[0];
   const followed = followedPlayers.includes(player.id);
@@ -78,7 +86,7 @@ export function PlayersScreen() {
       <PageTitle
         kicker="Player Intelligence"
         title="Career DNA, living traits."
-        lede="Forecast, similarities, strengths, and personality traits that update with the match narrative — Aggressive, Technical, Calm, and the rest as a living file."
+        lede="Forecast and similarities from the DEMO file. Similarity scores are authored — small samples are flagged."
       />
       <div className="grid gap-6 lg:grid-cols-[16rem_1fr]">
         <div>
@@ -92,10 +100,24 @@ export function PlayersScreen() {
             placeholder="Search players"
             className="h-10"
           />
+          <div className="mt-2 flex flex-wrap gap-1">
+            {roleFilters.map((role) => (
+              <Button
+                key={role}
+                type="button"
+                size="sm"
+                variant={roleFilter === role ? "default" : "ghost"}
+                className="h-7 px-2 text-[11px]"
+                onClick={() => setRoleFilter(role)}
+              >
+                {role}
+              </Button>
+            ))}
+          </div>
           <ScrollArea className="mt-3 h-auto lg:h-[calc(100dvh-12rem)]">
             {filtered.length === 0 ? (
               <p className="px-1 py-6 text-sm text-muted-foreground">
-                No player matches “{query}”. Try Root, Bumrah, or Williamson.
+                No player matches. Try another role filter or Root, Bumrah, Williamson.
               </p>
             ) : (
               <ul className="flex gap-2 overflow-x-auto lg:block lg:space-y-1 lg:overflow-visible">
@@ -233,6 +255,13 @@ export function PlayersScreen() {
             </TabsContent>
 
             <TabsContent value="similar" className="mt-4">
+              <p className="mb-3 text-sm text-muted-foreground">
+                <KindBadge kind="demo" className="mr-2" />
+                Authored similarity graph
+                {sampleSizeWarning(player.similar.length, 5)
+                  ? ` · ${sampleSizeWarning(player.similar.length, 5)}`
+                  : null}
+              </p>
               <div className="grid gap-3">
                 {player.similar.map((item) => {
                   const other = getPlayer(item.id);

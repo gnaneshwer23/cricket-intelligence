@@ -155,7 +155,7 @@ type AppValue = {
   mood: typeof initialMood;
   react: (side: "england" | "india", key: MoodKey) => void;
   onboarded: boolean;
-  completeOnboarding: (teams: string[], players: string[]) => void;
+  completeOnboarding: (teams: string[], players: string[], seedAsk?: string) => void;
   skipOnboarding: () => void;
   preferences: Preferences;
   setPreferences: (next: Partial<Preferences>) => void;
@@ -286,13 +286,13 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const completeOnboarding = useCallback((teams: string[], players: string[]) => {
+  const completeOnboarding = useCallback((teams: string[], players: string[], seedAsk?: string) => {
     patchStore({
       onboarded: true,
       followedTeams: teams.length ? teams : ["england"],
       followedPlayers: players.length ? players : ["joe-root"],
     });
-    setPendingSeed("Tell me everything important about England this week.");
+    setPendingSeed(seedAsk ?? "Tell me everything important about England this week.");
   }, []);
 
   const skipOnboarding = useCallback(() => {

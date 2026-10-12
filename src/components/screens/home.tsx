@@ -12,9 +12,10 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useApp } from "@/components/app-state";
-import { Kicker, Panel, Spark, useCountdown, useGreeting, WinSplit } from "@/components/ui-bits";
+import { LiveScoreStrip } from "@/components/live-score-strip";
+import { StatusBadge } from "@/components/status-badge";
+import { Kicker, Panel, Spark, useGreeting } from "@/components/ui-bits";
 import {
-  baseWin,
   getPlayer,
   personalBriefing,
   recommendations,
@@ -35,7 +36,6 @@ export function HomeScreen() {
     setPreferences,
   } = useApp();
   const { greeting, dateLabel } = useGreeting();
-  const countdown = useCountdown();
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [storyId, setStoryId] = useState<string | null>(null);
@@ -87,11 +87,11 @@ export function HomeScreen() {
           <div>
             <p className="font-display text-5xl tracking-tight text-lime sm:text-6xl">CricketOS</p>
             <h1 className="font-display mt-4 text-4xl font-medium tracking-tight text-balance sm:text-6xl">
-              Ask Cricket Anything
+              Follow the match. Understand the game.
             </h1>
             <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground sm:text-base">
-              {greeting}. Your AI copilot for answers, predictions, and the why behind the score —
-              not another scoreboard.
+              {greeting}. Intelligence briefing with grounded answers — demo data labelled honestly,
+              not another scoreboard that pretends to be live.
             </p>
             <form
               className="mt-8 flex flex-col gap-3 sm:flex-row"
@@ -135,7 +135,7 @@ export function HomeScreen() {
             </div>
           </div>
           <div className="rounded-3xl border border-white/10 bg-black/30 p-5 backdrop-blur-sm">
-            <Kicker>{dateLabel} · daily AI briefing</Kicker>
+            <Kicker>{dateLabel} · intelligence briefing</Kicker>
             <ul className="mt-4 space-y-3">
               {briefing.slice(0, 3).map((item) => (
                 <li key={item.id}>
@@ -165,35 +165,19 @@ export function HomeScreen() {
       </section>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-5">
-        <button
-          type="button"
-          onClick={() => go("match")}
-          className="rounded-[1.75rem] border border-border bg-card p-5 text-left lg:col-span-3"
-        >
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <Kicker>Live · 3rd Test · Lord’s</Kicker>
-              <p className="font-display mt-2 text-3xl tracking-tight">England vs India</p>
-              <p className="mt-2 font-display text-5xl tabular-nums">
-                245<span className="text-lime">/4</span>
-              </p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Session in {countdown} · Root 89* · +21 vs model
-              </p>
-            </div>
-            <div className="min-w-40 flex-1">
-              <WinSplit eng={baseWin.eng} ind={baseWin.ind} />
-              <p className="mt-3 text-xs text-muted-foreground">Open Match Centre for explanations</p>
-            </div>
-          </div>
-        </button>
+        <div className="lg:col-span-3">
+          <LiveScoreStrip compact onOpenMatch={() => go("match")} />
+        </div>
         <div className="grid gap-4 lg:col-span-2">
           <button
             type="button"
             onClick={() => setShowUpcoming(true)}
             className="rounded-[1.75rem] border border-dashed border-border p-5 text-left"
           >
-            <Kicker>Upcoming</Kicker>
+            <div className="flex items-center gap-2">
+              <StatusBadge status="UPCOMING" />
+              <Kicker>Fixture</Kicker>
+            </div>
             <p className="mt-2 font-medium">{upcoming.title}</p>
             <p className="text-sm text-muted-foreground">{upcoming.meta}</p>
           </button>
@@ -246,9 +230,9 @@ export function HomeScreen() {
       <Panel className="mt-8">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <Kicker>Your AI briefing</Kicker>
+            <Kicker>Your intelligence briefing</Kicker>
             <p className="mt-2 text-sm text-muted-foreground">
-              Ranked for the teams and players you follow.
+              Ranked for the teams and players you follow · DEMO facts where match-linked.
             </p>
           </div>
           <Button type="button" variant="ghost" size="sm" onClick={() => go("feed")}>

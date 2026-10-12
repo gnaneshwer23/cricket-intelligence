@@ -81,7 +81,7 @@ export type Player = {
   opponents: string;
 };
 
-export type TeamId = "england" | "india" | "australia" | "new-zealand";
+export type TeamId = string;
 
 export type SquadRow = {
   name: string;
@@ -114,6 +114,14 @@ export type Team = {
   futures: FutureSquad[];
 };
 
+export type AnswerEvidence = {
+  id: string;
+  label: string;
+  detail: string;
+  /** fact | historical | model | hypothetical | demo */
+  kind: "fact" | "historical" | "model" | "hypothetical" | "demo";
+};
+
 export type Answer = {
   headline: string;
   paragraphs: string[];
@@ -121,6 +129,11 @@ export type Answer = {
   confidence?: number;
   followups: string[];
   speaker?: string;
+  /** How the answer was produced — never claim connected LLM unless configured. */
+  method?: "rule-engine" | "deterministic-calc" | "llm-explain";
+  evidence?: AnswerEvidence[];
+  /** Short provenance line shown under the answer. */
+  provenanceNote?: string;
 };
 
 export type ChatMessage =

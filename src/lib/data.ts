@@ -1,4 +1,26 @@
+import type { MatchMeta } from "@/lib/contracts";
 import type { MoodKey, Player, Team } from "@/lib/types";
+import { mergePlayers, rosterExtras } from "@/lib/roster";
+import { extraTeams } from "@/lib/teams-extra";
+import { featuredPlayerIds, internationalTeamIds } from "@/lib/onboarding-catalog";
+
+/** Canonical demo match — always DEMO unless a verified live provider is wired. */
+export const matchMeta: MatchMeta = {
+  id: "demo-eng-ind-lords-d2",
+  status: "DEMO",
+  title: "England vs India",
+  venue: "Lord's",
+  dayLabel: "Day 2 · session break",
+  series: "3rd Test (illustrative)",
+  score: { runs: 245, wickets: 4, overs: "48.2" },
+  winModel: { eng: 58, ind: 42 },
+  provenance: {
+    kind: "demo",
+    source: "Bundled CricketOS demo dataset",
+    asOf: "Session snapshot (illustrative)",
+    note: "Not a live or official scorecard. DEMO labels are intentional.",
+  },
+};
 
 export const dnaLabels: { key: keyof Player["dna"]; label: string }[] = [
   { key: "technical", label: "Technical skill" },
@@ -10,7 +32,7 @@ export const dnaLabels: { key: keyof Player["dna"]; label: string }[] = [
   { key: "adaptability", label: "Adaptability" },
 ];
 
-export const players: Player[] = [
+const corePlayers: Player[] = [
   {
     id: "joe-root",
     name: "Joe Root",
@@ -844,6 +866,8 @@ export const players: Player[] = [
   },
 ];
 
+export const players: Player[] = mergePlayers(corePlayers, rosterExtras);
+
 export const teams: Team[] = [
   {
     id: "england",
@@ -1042,6 +1066,7 @@ export const teams: Team[] = [
       },
     ],
   },
+  ...extraTeams,
 ];
 
 export const briefing = [
@@ -1246,8 +1271,8 @@ export const matchPredictions = [
 
 export const matchReport = {
   title: "Lord's session report · England 1st innings (so far)",
-  kicker: "AI match report",
-  status: "End of morning session · Day 2",
+  kicker: "Demo session report",
+  status: "DEMO · End of morning session · Day 2",
   summary:
     "England close the session 245 for 4, twenty-one runs ahead of the phase model. Root is the reason the lead exists. Brook was the tempo. Bumrah is still the over that can take it back.",
   whatHappened: [
@@ -1308,11 +1333,11 @@ export const smartAlerts = [
   },
   {
     id: "stokes-kuldeep",
-    title: "Live matchup spike",
-    detail: "Stokes vs Kuldeep: dismissal risk elevated for nine more balls.",
+    title: "Demo matchup spike",
+    detail: "Stokes vs Kuldeep: dismissal risk elevated for nine more balls (demo file).",
     playerId: "ben-stokes",
     teamId: "england",
-    kind: "live" as const,
+    kind: "matchup" as const,
   },
 ];
 
@@ -1354,17 +1379,18 @@ export const matchups = [
   {
     id: "root-bumrah",
     title: "Root vs Bumrah",
-    live: true,
+    /** Active in the demo snapshot — not a verified live feed. */
+    activeInDemo: true,
     balls: 46,
-    dismissals: "0 today · 6 in the career file",
+    dismissals: "0 in demo · 6 in the career file",
     sr: "41",
     control: 81,
-    insight: "Root has left 18 of 46 balls. Bumrah has not yet bowled the hip ball twice in one over. The duel is even, which counts as a win for the batter this morning.",
+    insight: "Root has left 18 of 46 balls. Bumrah has not yet bowled the hip ball twice in one over. The duel is even, which counts as a win for the batter in this demo session.",
   },
   {
     id: "brook-jadeja",
     title: "Brook vs Jadeja",
-    live: false,
+    activeInDemo: false,
     balls: 28,
     dismissals: "0 to Jadeja · Brook fell to Kuldeep",
     sr: "96",
@@ -1374,22 +1400,22 @@ export const matchups = [
   {
     id: "stokes-kuldeep",
     title: "Stokes vs Kuldeep",
-    live: true,
+    activeInDemo: true,
     balls: 6,
-    dismissals: "The spell has just started",
+    dismissals: "The spell has just started (demo)",
     sr: "50",
     control: 67,
-    insight: "This is the live battle. Stokes' dismissal risk against wrist spin is highest in the first fifteen balls. He has six of them behind him.",
+    insight: "Active duel in the demo snapshot. Stokes' dismissal risk against wrist spin is highest in the first fifteen balls. He has six of them behind him.",
   },
   {
     id: "bumrah-head",
     title: "Bumrah vs Head",
-    live: false,
+    activeInDemo: false,
     balls: 82,
     dismissals: "7 from 11 meetings",
     sr: "87",
     control: 71,
-    insight: "Not this match. The career file: Head's dismissal risk increases 48% within the first 15 balls. He plays the same fourth-ball slash, and Bumrah now waits for it.",
+    insight: "Historical file — not this match. Head's dismissal risk increases 48% within the first 15 balls in the sample. Small-sample warning applies.",
   },
 ];
 
@@ -1655,22 +1681,11 @@ export function getTeam(id: string) {
 }
 
 export function teamLabel(id: string) {
-  if (id === "sri-lanka") return "Sri Lanka";
-  if (id === "pakistan") return "Pakistan";
   return getTeam(id)?.name ?? id;
 }
 
-export const onboardingPlayers = [
-  "joe-root",
-  "harry-brook",
-  "ben-stokes",
-  "jasprit-bumrah",
-  "virat-kohli",
-  "babar-azam",
-  "kane-williamson",
-  "travis-head",
-];
+export const onboardingPlayers = featuredPlayerIds;
 
-export const onboardingTeams = ["england", "india", "australia", "new-zealand"] as const;
+export const onboardingTeams = internationalTeamIds;
 
-export const baseWin = { eng: 58, ind: 42 };
+export const baseWin = { eng: matchMeta.winModel.eng, ind: matchMeta.winModel.ind };

@@ -1,35 +1,86 @@
 # CricketOS
 
-**ChatGPT for Cricket** — an AI copilot for fans.
+**Follow the match. Understand the game. Explore what happens next.**
 
-Positioning: Fan → AI → Answers → Predictions → Community → Action.  
-Hero: **Ask Cricket Anything.**
+Interactive cricket intelligence — Match Room, grounded Copilot, player DNA, and what-if labs.  
+**DEMO mode by default:** the Lord’s England vs India board is a bundled illustrative dataset. It is **not** a live score, official record book, or betting product.
 
-Not a score app, news feed, or fantasy platform. The score is the start of the screen, not the whole of it. Copy and numbers are an illustrative model for this demo — not an official scorecard, record book, or betting product.
-
-## Run it
+## Run
 
 ```bash
 npm install
-npm run dev
+npm run dev -- --port 41731
 ```
 
-Open [http://localhost:3000](http://localhost:3000) (or the port printed by Next.js).
+Open [http://localhost:41731](http://localhost:41731).
 
-## MVP screens
+```bash
+npm run build    # production build
+npm run test     # deterministic calc tests
+npm run lint
+```
 
-1. **Home** — brand-first daily AI briefing, live match, trending asks, recommended questions, smart alerts
-2. **Ask Cricket** — conversational query engine with structured answers, confidence, figures, follow-ups, Cricket Twin
-3. **Match Centre** — above-expected, momentum, key matchup, turning point, predictions, fan mood, AI session report
-4. **Player Intelligence** — career DNA, living traits (Aggressive / Technical / …), forecast, similarities, Twin
-5. **My Feed** — favourites, saved/recent chats, alerts, predictions, England-only preference
+## Environment
 
-First visit runs a short onboarding (favourite teams + players), persisted in `localStorage`, then seeds Ask with a personal England briefing.
+Copy `.env.example` → `.env.local`. Secrets stay **server-side only** (never `NEXT_PUBLIC_` for API keys).
 
-## Also available (de-emphasised)
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `CRICKETOS_DATA_PROVIDER` | `demo` | `demo` \| `cricapi` \| `sportmonks` (live providers not wired yet) |
+| `CRICKETOS_DATA_API_KEY` | — | Server-only data API key |
+| `CRICKETOS_LLM_PROVIDER` | `off` | `off` \| `openai` \| `anthropic` |
+| `CRICKETOS_LLM_API_KEY` | — | Server-only LLM key (explain layer only) |
+| `CRICKETOS_LLM_MODEL` | — | Optional model id |
 
-Teams, Community, Fantasy, and Labs stay reachable under **Later** / **More**. They are not the primary journey.
+With no live credentials, the app stays in **DEMO** and labels match status accordingly. See `docs/PROVIDERS.md`.
+
+## Product surfaces
+
+| Surface | Route (hash) | Status |
+|---------|--------------|--------|
+| Intelligence Briefing | `#home` | Shipped |
+| Cricket Copilot | `#ask` | Grounded rule engine + deterministic calcs + evidence |
+| Match Room | `#match` | DEMO board · Match Graph · provenance |
+| Player Intelligence | `#players` | Filters + sample-size warnings |
+| My Cricket | `#feed` | Personalisation |
+| Team Intelligence | `#teams` | Secondary |
+| Community | `#community` | Secondary / light |
+| Fantasy | `#fantasy` | Experimental |
+| Labs (What-If) | `#labs` | Hypothetical · labelled |
+
+Press `/` to jump to Copilot.
+
+## Data honesty
+
+- **DEMO** — bundled illustrative match / authored DNA
+- **UPCOMING** — fixture with no ball in play
+- **HISTORICAL** — career / archive file
+- **Model** — session win prior / projections
+- **Hypothetical** — what-if & ball simulations
+
+Copilot pipeline (current): classify intent → retrieve from demo file → **calculate** (phase lead, SR, milestones, win swing) → explain with citations. No connected LLM unless configured; never invent numbers beyond the dataset.
+
+## Docs
+
+- `docs/AUDIT.md` — audit + staged plan
+- `docs/PROVIDERS.md` — provider investigation (no scraping Cricbuzz/Cricinfo)
+
+## Known limitations
+
+- No verified live score feed yet — the Match Room strip is a **scripted DEMO simulation**, labelled as such
+- LLM explain path is stubbed behind env (not implemented end-to-end)
+- Explorer charts (worm/manhattan) not shipped — mark unavailable when asked
+- Fantasy / Community remain light secondary surfaces
+- Similarity % and many DNA values are authored demo file, not trained model outputs
+
+## Roadmap (priority)
+
+1. Wire a licensed data provider behind the existing contract layer
+2. Optional LLM explain that may only restate calc + evidence
+3. Ball-by-ball Explorer visuals when innings series exist
+4. Broader calc test coverage + CI
+5. Personalisation depth (alerts with real freshness)
 
 ## Keyboard
 
-Press `/` to jump to Ask Cricket.
+`/` — Cricket Copilot

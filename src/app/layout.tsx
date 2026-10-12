@@ -19,9 +19,9 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "CricketOS · Ask Cricket Anything",
+  title: "CricketOS · Cricket Intelligence",
   description:
-    "ChatGPT for Cricket — an AI copilot for fans. Answers, predictions, match explanations, and player intelligence.",
+    "Follow the match. Understand the game. Explore what happens next — grounded cricket intelligence with honest DEMO labels.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

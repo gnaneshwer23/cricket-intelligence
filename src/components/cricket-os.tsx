@@ -34,27 +34,27 @@ import {
 import type { ScreenId } from "@/lib/types";
 
 const primaryNav: { id: ScreenId; label: string; short: string; icon: typeof House }[] = [
-  { id: "home", label: "Home", short: "Home", icon: House },
-  { id: "ask", label: "Ask Cricket", short: "Ask", icon: MessageCircle },
-  { id: "match", label: "Match Centre", short: "Match", icon: Activity },
+  { id: "home", label: "Briefing", short: "Home", icon: House },
+  { id: "ask", label: "Copilot", short: "Ask", icon: MessageCircle },
+  { id: "match", label: "Match Room", short: "Match", icon: Activity },
   { id: "players", label: "Players", short: "Players", icon: UserRound },
-  { id: "feed", label: "My Feed", short: "Feed", icon: Newspaper },
+  { id: "feed", label: "My Cricket", short: "Feed", icon: Newspaper },
 ];
 
 const laterNav: { id: ScreenId; label: string; icon: typeof House; note: string }[] = [
-  { id: "teams", label: "Teams", icon: Users, note: "DNA & squad health" },
-  { id: "community", label: "Community", icon: MessagesSquare, note: "Room · later depth" },
-  { id: "fantasy", label: "Fantasy", icon: Target, note: "Explained XI · later" },
-  { id: "labs", label: "Labs", icon: FlaskConical, note: "What-ifs · later" },
+  { id: "teams", label: "Team Intel", icon: Users, note: "DNA & squad health" },
+  { id: "community", label: "Community", icon: MessagesSquare, note: "Secondary" },
+  { id: "fantasy", label: "Fantasy", icon: Target, note: "Experimental" },
+  { id: "labs", label: "Labs", icon: FlaskConical, note: "What-If · experimental" },
 ];
 
 const titles: Record<ScreenId, string> = {
-  home: "Home",
-  ask: "Ask Cricket",
-  match: "Match Centre",
+  home: "Intelligence Briefing",
+  ask: "Cricket Copilot",
+  match: "Match Room",
   players: "Player Intelligence",
-  feed: "My Feed",
-  teams: "Teams",
+  feed: "My Cricket",
+  teams: "Team Intelligence",
   community: "Community",
   fantasy: "Fantasy",
   labs: "Labs",
@@ -101,7 +101,7 @@ function Shell() {
         <div className="px-2">
           <p className="font-display text-2xl tracking-tight">CricketOS</p>
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-            Ask Cricket Anything.
+            Follow · understand · explore what next.
           </p>
         </div>
         <nav className="mt-6 flex flex-1 flex-col gap-1" aria-label="Primary">
@@ -119,9 +119,6 @@ function Shell() {
               >
                 <Icon />
                 {item.label}
-                {item.id === "match" ? (
-                  <span className="ml-auto size-1.5 rounded-full bg-current" aria-hidden />
-                ) : null}
               </Button>
             );
           })}
@@ -147,9 +144,9 @@ function Shell() {
           })}
         </nav>
         <p className="px-2 text-[11px] leading-relaxed text-muted-foreground">
-          ChatGPT for Cricket
+          Cricket intelligence · DEMO mode
           <span className="mt-1 block">
-            Illustrative model. Not an official score or a betting slip.
+            Bundled dataset. Not a live score, official record, or betting product.
           </span>
         </p>
       </aside>
@@ -158,9 +155,9 @@ function Shell() {
         <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-background/80 px-4 py-3 backdrop-blur lg:hidden">
           <div>
             <p className="font-display text-xl">CricketOS</p>
-            <p className="text-[10px] tracking-[0.16em] text-lime uppercase">Ask Cricket Anything</p>
+            <p className="text-[10px] tracking-[0.16em] text-lime uppercase">Understand the game</p>
           </div>
-          <p className="text-xs text-muted-foreground">Lord’s · Day 2</p>
+          <p className="text-xs text-gold tracking-[0.12em] uppercase">DEMO · Lord&apos;s</p>
         </header>
         <main id="content" className="px-4 pt-5 pb-28 lg:px-8 lg:pt-8 lg:pb-16">
           {screen === "home" ? <HomeScreen /> : null}
