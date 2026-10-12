@@ -1,15 +1,27 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useApp } from "@/components/app-state";
 import { KindBadge } from "@/components/status-badge";
 import { Kicker, PageTitle, Panel, WinSplit } from "@/components/ui-bits";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { baseWin, draftPool, getTeam, histories, whatIfs } from "@/lib/data";
+import {
+  analyseChase,
+  ballsToOvers,
+  DEFAULT_SCENARIO_PRESETS,
+  formatMetric,
+  oversToBalls,
+  projectScenarios,
+  type ScenarioPreset,
+} from "@/lib/calc";
+import { baseWin, draftPool, getTeam, histories, matchMeta, whatIfs } from "@/lib/data";
 import type { Role } from "@/lib/types";
 
 export function LabsScreen() {
+  const { go, labsSeed, clearLabsSeed } = useApp();
   const [scenarioId, setScenarioId] = useState(whatIfs[0].id);
   const [xi, setXi] = useState<string[]>([]);
   const [draftError, setDraftError] = useState<string | null>(null);
@@ -18,9 +30,65 @@ export function LabsScreen() {
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
   const [historyId, setHistoryId] = useState(histories[0].id);
+
+  // Scenario builder state
+  const [runsRequired, setRunsRequired] = useState(105);
+  const [ballsRemaining, setBallsRemaining] = useState(120);
+  const [wicketsInHand, setWicketsInHand] = useState(7);
+  const [currentRuns, setCurrentRuns] = useState(matchMeta.score.runs);
+  const [ballsFaced, setBallsFaced] = useState(290);
+  const [assumedRpo, setAssumedRpo] = useState(4.5);
+  const [observedNote, setObservedNote] = useState<string | null>(null);
+  const [seedLabel, setSeedLabel] = useState<string | null>(null);
+  const [presets, setPresets] = useState<ScenarioPreset[]>(DEFAULT_SCENARIO_PRESETS);
+
   const scenario = whatIfs.find((item) => item.id === scenarioId) ?? whatIfs[0];
   const history = histories.find((item) => item.id === historyId) ?? histories[0];
   const picks = xi.map((id) => draftPool.find((player) => player.id === id)).filter((player) => player !== undefined);
+
+  const [appliedSeedLabel, setAppliedSeedLabel] = useState<string | null>(null);
+
+  // Apply Match Graph / Explorer seed when it arrives (adjust state during render).
+  if (labsSeed && labsSeed.label !== appliedSeedLabel) {
+    setAppliedSeedLabel(labsSeed.label);
+    setRunsRequired(labsSeed.runsRequired);
+    setBallsRemaining(labsSeed.ballsRemaining);
+    setWicketsInHand(labsSeed.wicketsInHand);
+    if (labsSeed.currentRuns !== undefined) setCurrentRuns(labsSeed.currentRuns);
+    if (labsSeed.ballsFaced !== undefined) setBallsFaced(labsSeed.ballsFaced);
+    if (labsSeed.assumedRpo !== undefined) setAssumedRpo(labsSeed.assumedRpo);
+    setObservedNote(labsSeed.observedNote ?? null);
+    setSeedLabel(labsSeed.label);
+    queueMicrotask(() => clearLabsSeed());
+  }
+
+  const chase = useMemo(
+    () =>
+      analyseChase({
+        runsRequired,
+        ballsRemaining,
+        wicketsInHand,
+        currentRuns,
+        ballsFaced,
+        assumedRpo,
+      }),
+    [runsRequired, ballsRemaining, wicketsInHand, currentRuns, ballsFaced, assumedRpo],
+  );
+
+  const projections = useMemo(
+    () =>
+      projectScenarios(
+        {
+          runsRequired,
+          ballsRemaining,
+          wicketsInHand,
+          currentRuns,
+          ballsFaced,
+        },
+        presets,
+      ),
+    [runsRequired, ballsRemaining, wicketsInHand, currentRuns, ballsFaced, presets],
+  );
 
   const balance = useMemo(() => {
     const count = (role: Role) => picks.filter((player) => player.role === role).length;
@@ -60,12 +128,18 @@ export function LabsScreen() {
     }, 700);
   }
 
+  function setPresetRpo(id: ScenarioPreset["id"], value: number) {
+    setPresets((current) =>
+      current.map((p) => (p.id === id ? { ...p, assumedRpo: value } : p)),
+    );
+  }
+
   return (
     <div className="mx-auto max-w-6xl">
       <PageTitle
         kicker="Labs · experimental"
         title="The futures that didn’t happen, and the ones that might."
-        lede="Hypothetical scenarios on the DEMO board. Labels stay honest: these are model swings, not live outcomes."
+        lede="Hypothetical scenario maths on the DEMO board — required rates and projections, not win probabilities or AI predictions."
       />
       <Tabs defaultValue="what-if">
         <TabsList variant="line" className="h-auto! w-full justify-start overflow-x-auto">
@@ -75,52 +149,225 @@ export function LabsScreen() {
           <TabsTrigger value="history">Alternate history</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="what-if" className="mt-4">
-          <p className="mb-3 text-sm text-muted-foreground">
+        <TabsContent value="what-if" className="mt-4 space-y-4">
+          <p className="text-sm text-muted-foreground">
             <KindBadge kind="hypothetical" className="mr-2" />
-            Deterministic swings on the DEMO win prior — not a live simulator.
+            Deterministic chase / rate maths. Cricket overs use ball remainder (17.4 = 17 overs + 4
+            balls). Never shows NaN/Infinity.
           </p>
-          <div className="grid gap-3 md:grid-cols-2">
-            {whatIfs.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setScenarioId(item.id)}
-                className={`rounded-3xl border p-4 text-left ${
-                  item.id === scenario.id ? "border-lime bg-card" : "border-border"
-                }`}
-              >
-                <p className="font-medium">{item.title}</p>
-                <p className="mt-1 text-sm text-muted-foreground">{item.detail}</p>
-              </button>
-            ))}
+
+          {seedLabel ? (
+            <Panel className="border-gold/40 bg-gold/5">
+              <Kicker>Opened from Match Graph / Explorer</Kicker>
+              <p className="mt-2 font-medium">{seedLabel}</p>
+              {observedNote ? (
+                <p className="mt-2 text-sm text-muted-foreground">
+                  <span className="text-gold tracking-[0.12em] uppercase">Observed · </span>
+                  {observedNote}
+                </p>
+              ) : null}
+              <p className="mt-2 text-sm text-muted-foreground">
+                <span className="text-gold tracking-[0.12em] uppercase">Hypothetical · </span>
+                Adjust the knobs below. Rates are not a win model.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button type="button" size="sm" variant="secondary" onClick={() => go("match")}>
+                  Return to Match Graph
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => go("explorer", { explorerFocus: { chart: "manhattan", from: "Labs" } })}
+                >
+                  Open Explorer
+                </Button>
+              </div>
+            </Panel>
+          ) : null}
+
+          <Panel>
+            <Kicker>Scenario builder</Kicker>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Immediate feedback from deterministic calcs — same modules Copilot uses.
+            </p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <NumField
+                label="Runs required"
+                value={runsRequired}
+                onChange={setRunsRequired}
+                tip="Runs still needed. 0 or negative = chase complete."
+              />
+              <NumField
+                label="Balls remaining"
+                value={ballsRemaining}
+                onChange={setBallsRemaining}
+                tip="Legal balls left. 0 → required rate undefined."
+              />
+              <NumField
+                label="Wickets in hand"
+                value={wicketsInHand}
+                onChange={setWicketsInHand}
+                tip="Affects plain-language risk notes, not a win %."
+              />
+              <NumField
+                label="Current runs (optional)"
+                value={currentRuns}
+                onChange={setCurrentRuns}
+                tip="For projected end totals under an assumed RPO."
+              />
+              <NumField
+                label="Balls faced (optional)"
+                value={ballsFaced}
+                onChange={setBallsFaced}
+                tip="Context only — overs faced shown as cricket notation."
+              />
+              <NumField
+                label="Assumed RPO"
+                value={assumedRpo}
+                onChange={setAssumedRpo}
+                step={0.1}
+                tip="Hypothetical scoring rate for projection."
+              />
+            </div>
+            <p className="mt-3 text-xs text-muted-foreground">
+              Overs remaining: {chase.oversRemaining} · Balls faced ≈ {ballsToOvers(Math.max(0, ballsFaced))}{" "}
+              ({oversToBalls(ballsToOvers(Math.max(0, ballsFaced)))} balls check)
+            </p>
+
+            <div className="mt-5 rounded-2xl border border-border bg-muted/30 p-4">
+              <Kicker>Result</Kicker>
+              <p className="mt-2 text-base leading-relaxed">{chase.plainLanguage}</p>
+              <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <Fig label="RRR" value={formatMetric(chase.requiredRunRate)} tip="Required runs per over" />
+                <Fig label="Per ball" value={formatMetric(chase.requiredRunPerBall, 2)} tip="Required runs per ball" />
+                <Fig
+                  label="Projected"
+                  value={formatMetric(chase.projectedScore, 0)}
+                  tip="Current runs + assumed RPO × overs left"
+                />
+                <Fig label="Status" value={chase.status} tip="ok / completed / zero-balls / invalid" />
+              </dl>
+              <ul className="mt-4 space-y-2">
+                {chase.alternatives.map((alt) => (
+                  <li key={alt.label} className="rounded-xl bg-background/60 px-3 py-2 text-sm">
+                    <span className="font-medium">{alt.label}</span>
+                    <span className="mt-0.5 block text-muted-foreground">{alt.detail}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </Panel>
+
+          <div>
+            <Kicker className="mb-2">Three scenarios · rates only</Kicker>
+            <p className="mb-3 text-sm text-muted-foreground">
+              Conservative / Baseline / Aggressive — editable assumed RPO. Not win probabilities.
+            </p>
+            <div className="grid gap-3 lg:grid-cols-3">
+              {projections.map(({ preset, analysis, runsAdded, endTotal }) => (
+                <Panel key={preset.id}>
+                  <div className="flex items-center justify-between gap-2">
+                    <Kicker>{preset.label}</Kicker>
+                    <KindBadge kind="hypothetical" />
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground">{preset.note}</p>
+                  <label className="mt-4 block text-sm" htmlFor={`rpo-${preset.id}`}>
+                    Assumed RPO {formatMetric(preset.assumedRpo)}
+                  </label>
+                  <Slider
+                    id={`rpo-${preset.id}`}
+                    min={1}
+                    max={12}
+                    step={0.1}
+                    value={[preset.assumedRpo]}
+                    onValueChange={(v) => setPresetRpo(preset.id, v[0] ?? preset.assumedRpo)}
+                    className="mt-2"
+                    aria-label={`${preset.label} assumed RPO`}
+                  />
+                  <p className="font-display mt-4 text-3xl tabular-nums text-lime">
+                    {formatMetric(endTotal, 0)}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Projected total · +{formatMetric(runsAdded)} runs if rate holds
+                  </p>
+                  <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                    {analysis.plainLanguage} Math: {formatMetric(preset.assumedRpo)} ×{" "}
+                    {analysis.oversRemaining} ov ≈ {formatMetric(runsAdded)} added to {currentRuns}.
+                  </p>
+                </Panel>
+              ))}
+            </div>
           </div>
-          <div className="mt-4 grid gap-4 lg:grid-cols-2">
-            <Panel>
-              <Kicker>DEMO baseline</Kicker>
-              <p className="font-display mt-3 text-5xl tabular-nums">{baseWin.ind}%</p>
-              <p className="text-sm text-muted-foreground">India win chance · England {baseWin.eng}%</p>
-              <div className="mt-4">
-                <WinSplit eng={baseWin.eng} ind={baseWin.ind} />
+
+          <Panel>
+            <Kicker>Authored DEMO win swings (separate)</Kicker>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Fixed scenario table on the session win prior — labelled model / hypothetical, not the
+              rate builder above.
+            </p>
+            <div className="mt-3 grid gap-3 md:grid-cols-2">
+              {whatIfs.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setScenarioId(item.id)}
+                  className={`rounded-3xl border p-4 text-left ${
+                    item.id === scenario.id ? "border-lime bg-card" : "border-border"
+                  }`}
+                >
+                  <p className="font-medium">{item.title}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{item.detail}</p>
+                </button>
+              ))}
+            </div>
+            <div className="mt-4 grid gap-4 lg:grid-cols-2">
+              <div className="rounded-2xl border border-border p-4">
+                <Kicker>DEMO baseline</Kicker>
+                <p className="font-display mt-3 text-5xl tabular-nums">{baseWin.ind}%</p>
+                <p className="text-sm text-muted-foreground">India win chance · England {baseWin.eng}%</p>
+                <div className="mt-4">
+                  <WinSplit eng={baseWin.eng} ind={baseWin.ind} />
+                </div>
               </div>
-            </Panel>
-            <Panel>
-              <Kicker>Hypothetical outcome</Kicker>
-              <p className="font-display mt-3 text-5xl tabular-nums text-lime">
-                {scenario.draw ? `${scenario.draw}%` : `${scenario.ind}%`}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {scenario.draw ? "Draw" : "India win chance"} · {scenario.extra}
-              </p>
-              <div className="mt-4">
-                <WinSplit eng={scenario.eng} ind={scenario.ind} draw={scenario.draw || undefined} />
+              <div className="rounded-2xl border border-border p-4">
+                <Kicker>Hypothetical outcome</Kicker>
+                <p className="font-display mt-3 text-5xl tabular-nums text-lime">
+                  {scenario.draw ? `${scenario.draw}%` : `${scenario.ind}%`}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {scenario.draw ? "Draw" : "India win chance"} · {scenario.extra}
+                </p>
+                <div className="mt-4">
+                  <WinSplit eng={scenario.eng} ind={scenario.ind} draw={scenario.draw || undefined} />
+                </div>
+                <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{scenario.note}</p>
+                <p className="mt-3 text-[11px] text-muted-foreground">
+                  Method: authored scenario table on DEMO prior — numbers are fixed file values, not
+                  Monte Carlo draws.
+                </p>
               </div>
-              <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{scenario.note}</p>
-              <p className="mt-3 text-[11px] text-muted-foreground">
-                Method: authored scenario table on DEMO prior — numbers are fixed file values, not
-                Monte Carlo draws.
-              </p>
-            </Panel>
+            </div>
+          </Panel>
+
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() =>
+                go("ask", {
+                  seedAsk: `Required rate for ${runsRequired} off ${ballsRemaining} balls with ${wicketsInHand} wickets`,
+                })
+              }
+            >
+              Ask Copilot about this situation
+            </Button>
+            <Button type="button" variant="secondary" onClick={() => go("explorer")}>
+              Explorer charts
+            </Button>
+            <Button type="button" variant="secondary" onClick={() => go("match")}>
+              Match Room
+            </Button>
           </div>
         </TabsContent>
 
@@ -281,6 +528,48 @@ export function LabsScreen() {
           </div>
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+function NumField({
+  label,
+  value,
+  onChange,
+  tip,
+  step = 1,
+}: {
+  label: string;
+  value: number;
+  onChange: (n: number) => void;
+  tip: string;
+  step?: number;
+}) {
+  return (
+    <label className="text-sm">
+      <span className="text-muted-foreground" title={tip}>
+        {label}
+      </span>
+      <Input
+        type="number"
+        step={step}
+        className="mt-1"
+        value={Number.isFinite(value) ? value : 0}
+        onChange={(e) => {
+          const n = Number(e.target.value);
+          onChange(Number.isFinite(n) ? n : 0);
+        }}
+        aria-label={label}
+      />
+    </label>
+  );
+}
+
+function Fig({ label, value, tip }: { label: string; value: string; tip: string }) {
+  return (
+    <div className="rounded-xl bg-background/70 p-3" title={tip}>
+      <dt className="text-[11px] tracking-wide text-muted-foreground uppercase">{label}</dt>
+      <dd className="mt-1 font-medium tabular-nums">{value}</dd>
     </div>
   );
 }

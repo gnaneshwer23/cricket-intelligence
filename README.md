@@ -2,7 +2,7 @@
 
 **Follow the match. Understand the game. Explore what happens next.**
 
-Interactive cricket intelligence — Match Room, grounded Copilot, player DNA, and what-if labs.  
+Interactive cricket intelligence — Match Room, Explorer charts, grounded Copilot, player DNA, and what-if labs.  
 **DEMO mode by default:** the Lord’s England vs India board is a bundled illustrative dataset. It is **not** a live score, official record book, or betting product.
 
 ## Run
@@ -16,7 +16,7 @@ Open [http://localhost:41731](http://localhost:41731).
 
 ```bash
 npm run build    # production build
-npm run test     # deterministic calc tests
+npm run test     # deterministic calc + innings tests (tsx)
 npm run lint
 ```
 
@@ -41,14 +41,34 @@ With no live credentials, the app stays in **DEMO** and labels match status acco
 | Intelligence Briefing | `#home` | Shipped |
 | Cricket Copilot | `#ask` | Grounded rule engine + deterministic calcs + evidence |
 | Match Room | `#match` | DEMO board · Match Graph · provenance |
+| Cricket Explorer | `#explorer` | Worm · Manhattan · Test phase rates (DEMO series) |
 | Player Intelligence | `#players` | Filters + sample-size warnings |
 | My Cricket | `#feed` | Personalisation |
+| Labs (What-If) | `#labs` | Scenario builder + authored swings · Hypothetical |
 | Team Intelligence | `#teams` | Secondary |
 | Community | `#community` | Secondary / light |
 | Fantasy | `#fantasy` | Experimental |
-| Labs (What-If) | `#labs` | Hypothetical · labelled |
 
 Press `/` to jump to Copilot.
+
+## Cricket Explorer
+
+Uses the authored England 1st-innings over series (totals match the DEMO scorecard / phase table / FOW):
+
+| Chart | What it shows | Required fields |
+|-------|---------------|-----------------|
+| Scoring progression | Cumulative runs vs legal balls; wickets / boundaries | `overs[]` with runs, balls, events |
+| Manhattan | Runs (and wicket markers) per over | Same over buckets |
+| Run-rate / phases | Test over-range & session bands; model table | Format + overs; LO powerplay/death only when format is ODI/T20 |
+
+Filters: match, innings, team, player (event highlight), phase. Clicking a linked point opens Match Graph. India batting compare is an honest empty state on this board.
+
+## What-If Lab
+
+- **Scenario builder** — runs required, balls remaining, wickets, optional current runs / assumed RPO. Immediate deterministic feedback (RRR, projection, alternatives).
+- **Three scenarios** — Conservative / Baseline / Aggressive assumed RPO only. **Not** win probabilities or AI predictions.
+- Cricket overs use ball remainder (`17.4` = 17 overs + 4 balls). Zero balls, completed chase, and invalid inputs never render NaN/Infinity.
+- Match Graph / Explorer can open a **revised situation**; Observed vs Hypothetical stay labelled.
 
 ## Data honesty
 
@@ -58,7 +78,7 @@ Press `/` to jump to Copilot.
 - **Model** — session win prior / projections
 - **Hypothetical** — what-if & ball simulations
 
-Copilot pipeline (current): classify intent → retrieve from demo file → **calculate** (phase lead, SR, milestones, win swing) → explain with citations. No connected LLM unless configured; never invent numbers beyond the dataset.
+Copilot pipeline (current): classify intent → retrieve from demo file → **calculate** (phase lead, Explorer Manhattan/phases, RRR, SR, milestones) → explain with citations. No connected LLM unless configured; never invent numbers beyond the dataset. Honest “can’t answer” when the series is missing.
 
 ## Docs
 
@@ -67,17 +87,18 @@ Copilot pipeline (current): classify intent → retrieve from demo file → **ca
 
 ## Known limitations
 
-- No verified live score feed yet — the Match Room strip is a **scripted DEMO simulation**, labelled as such
+- No verified live score feed — Match Room strip is a **scripted DEMO simulation**, labelled as such
 - LLM explain path is stubbed behind env (not implemented end-to-end)
-- Explorer charts (worm/manhattan) not shipped — mark unavailable when asked
+- Explorer has England 1st innings only — no second-innings compare yet
 - Fantasy / Community remain light secondary surfaces
 - Similarity % and many DNA values are authored demo file, not trained model outputs
+- Authored win-swing What-If cards are separate from the rate scenario builder
 
 ## Roadmap (priority)
 
 1. Wire a licensed data provider behind the existing contract layer
 2. Optional LLM explain that may only restate calc + evidence
-3. Ball-by-ball Explorer visuals when innings series exist
+3. Second innings / multi-match Explorer series
 4. Broader calc test coverage + CI
 5. Personalisation depth (alerts with real freshness)
 

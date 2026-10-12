@@ -2,12 +2,33 @@ export type ScreenId =
   | "home"
   | "ask"
   | "match"
+  | "explorer"
   | "players"
   | "feed"
   | "teams"
   | "community"
   | "fantasy"
   | "labs";
+
+/** Seed for What-If Lab from Match Graph / Explorer (hypothetical, labelled). */
+export type LabsSeed = {
+  source: "match-graph" | "explorer" | "manual";
+  label: string;
+  runsRequired: number;
+  ballsRemaining: number;
+  wicketsInHand: number;
+  currentRuns?: number;
+  ballsFaced?: number;
+  assumedRpo?: number;
+  observedNote?: string;
+};
+
+export type ExplorerFocus = {
+  chart?: "worm" | "manhattan" | "phases";
+  overNumber?: number;
+  ballIndex?: number;
+  from?: string;
+};
 
 export type AskMode =
   | "general"

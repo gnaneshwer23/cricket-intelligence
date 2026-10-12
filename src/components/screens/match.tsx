@@ -43,7 +43,7 @@ const graphKindLabel: Record<MatchGraphNode["kind"], string> = {
 };
 
 export function MatchScreen() {
-  const { mood, react, go } = useApp();
+  const { mood, react, go, graphNodeId, clearGraphNodeId } = useApp();
   const live = useLiveMatch();
   const [planId, setPlanId] = useState(fieldPlans[0].id);
   const [side, setSide] = useState<"england" | "india">("england");
@@ -52,6 +52,20 @@ export function MatchScreen() {
   const [running, setRunning] = useState(false);
   const [graphId, setGraphId] = useState(matchGraphNodes[0].id);
   const [evidenceId, setEvidenceId] = useState<string | null>(null);
+  const [tab, setTab] = useState("commentary");
+  const [appliedGraphNode, setAppliedGraphNode] = useState<string | null>(null);
+
+  // Apply deep-link from Explorer / Copilot when graphNodeId changes (React-recommended adjust-on-render).
+  if (graphNodeId && graphNodeId !== appliedGraphNode) {
+    const node = getGraphNode(graphNodeId);
+    setAppliedGraphNode(graphNodeId);
+    if (node) {
+      setGraphId(node.id);
+      setEvidenceId(node.evidenceIds?.[0] ?? null);
+      setTab("graph");
+    }
+    queueMicrotask(() => clearGraphNodeId());
+  }
   const plan = fieldPlans.find((item) => item.id === planId) ?? fieldPlans[0];
   const played = simScript.slice(0, step + 1);
   const simRuns = matchMeta.score.runs + played.reduce((sum, event) => sum + event.runs, 0);
@@ -88,7 +102,26 @@ export function MatchScreen() {
         />
       </div>
 
-      <Tabs defaultValue="commentary" className="mt-6">
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          onClick={() => go("explorer", { explorerFocus: { chart: "worm", from: "Match Room" } })}
+        >
+          Open Explorer charts
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          onClick={() => go("ask", { seedAsk: "Which over scored the most runs?" })}
+        >
+          Ask Copilot
+        </Button>
+      </div>
+
+      <Tabs value={tab} onValueChange={setTab} className="mt-6">
         <TabsList variant="line" className="h-auto! w-full justify-start overflow-x-auto">
           <TabsTrigger value="commentary">Demo Commentary</TabsTrigger>
           <TabsTrigger value="graph">Match Graph</TabsTrigger>
@@ -207,19 +240,49 @@ export function MatchScreen() {
                 </div>
               ) : null}
 
-              {graphNode.kind === "scenario" ? (
+              <div className="mt-6 flex flex-wrap gap-2">
+                {graphNode.kind === "scenario" || graphNode.kind === "event" ? (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() =>
+                      go("labs", {
+                        labsSeed: {
+                          source: "match-graph",
+                          label: graphNode.title,
+                          runsRequired: graphNode.id.includes("brook") ? 110 : 105,
+                          ballsRemaining: graphNode.id.includes("wicket") || graphNode.kind === "event" ? 96 : 120,
+                          wicketsInHand: graphNode.id.includes("brook") ? 6 : 7,
+                          currentRuns: matchMeta.score.runs,
+                          ballsFaced: 290,
+                          assumedRpo: 4.2,
+                          observedNote: `Observed (DEMO): ${matchMeta.score.runs}/${matchMeta.score.wickets} at ${matchMeta.score.overs}. Scenario is hypothetical.`,
+                        },
+                      })
+                    }
+                  >
+                    Revise situation in What-If Lab
+                  </Button>
+                ) : null}
                 <Button
                   type="button"
-                  className="mt-6"
                   variant="secondary"
-                  onClick={() => go("labs")}
+                  onClick={() =>
+                    go("explorer", {
+                      explorerFocus: {
+                        chart: graphNode.overs?.includes("–") ? "phases" : "manhattan",
+                        from: "Match Graph",
+                        overNumber: graphNode.overs && !graphNode.overs.includes("–")
+                          ? Number.parseInt(graphNode.overs, 10)
+                          : undefined,
+                      },
+                    })
+                  }
                 >
-                  Open What-If Lab
+                  View in Explorer
                 </Button>
-              ) : (
                 <Button
                   type="button"
-                  className="mt-6"
                   variant="secondary"
                   onClick={() =>
                     go("ask", { mode: "predictions", seedAsk: "What are the turning points?" })
@@ -227,7 +290,7 @@ export function MatchScreen() {
                 >
                   Ask Copilot about this phase
                 </Button>
-              )}
+              </div>
             </Panel>
           </div>
         </TabsContent>

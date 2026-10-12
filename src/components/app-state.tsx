@@ -16,6 +16,8 @@ import { answerQuestion } from "@/lib/engine";
 import type {
   AskMode,
   ChatMessage,
+  ExplorerFocus,
+  LabsSeed,
   MoodKey,
   Preferences,
   SavedChat,
@@ -26,6 +28,7 @@ const screens: ScreenId[] = [
   "home",
   "ask",
   "match",
+  "explorer",
   "players",
   "feed",
   "teams",
@@ -130,16 +133,29 @@ function hashScreen(): ScreenId {
   return screens.includes(id) ? id : "home";
 }
 
+type GoOpts = {
+  playerId?: string;
+  teamId?: string;
+  mode?: AskMode;
+  seedAsk?: string;
+  graphNodeId?: string;
+  labsSeed?: LabsSeed;
+  explorerFocus?: ExplorerFocus;
+};
+
 type AppValue = {
   screen: ScreenId;
-  go: (
-    screen: ScreenId,
-    opts?: { playerId?: string; teamId?: string; mode?: AskMode; seedAsk?: string },
-  ) => void;
+  go: (screen: ScreenId, opts?: GoOpts) => void;
   playerId: string;
   setPlayerId: (id: string) => void;
   teamId: string;
   setTeamId: (id: string) => void;
+  graphNodeId: string | null;
+  clearGraphNodeId: () => void;
+  labsSeed: LabsSeed | null;
+  clearLabsSeed: () => void;
+  explorerFocus: ExplorerFocus | null;
+  clearExplorerFocus: () => void;
   followedPlayers: string[];
   toggleFollow: (id: string) => void;
   followedTeams: string[];
@@ -180,6 +196,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [askError, setAskError] = useState<string | null>(null);
   const [mood, setMood] = useState(initialMood);
   const [pendingSeed, setPendingSeed] = useState<string | null>(null);
+  const [graphNodeId, setGraphNodeId] = useState<string | null>(null);
+  const [labsSeed, setLabsSeed] = useState<LabsSeed | null>(null);
+  const [explorerFocus, setExplorerFocus] = useState<ExplorerFocus | null>(null);
   const timer = useRef<number | null>(null);
 
   useEffect(() => {
@@ -188,28 +207,28 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const go = useCallback(
-    (
-      next: ScreenId,
-      opts?: { playerId?: string; teamId?: string; mode?: AskMode; seedAsk?: string },
-    ) => {
-      if (opts?.playerId) setPlayerId(opts.playerId);
-      if (opts?.teamId) setTeamId(opts.teamId);
-      if (opts?.mode) setAskMode(opts.mode);
-      if (opts?.seedAsk) setPendingSeed(opts.seedAsk);
-      // Prefer location.hash (fires hashchange) over history.replaceState —
-      // Next's patched history API can swallow hash-only replaceState updates.
-      const target = `#${next}`;
-      if (window.location.hash === target) {
-        window.dispatchEvent(new Event("hashchange"));
-      } else {
-        window.location.hash = next;
-      }
-    },
-    [],
-  );
+  const go = useCallback((next: ScreenId, opts?: GoOpts) => {
+    if (opts?.playerId) setPlayerId(opts.playerId);
+    if (opts?.teamId) setTeamId(opts.teamId);
+    if (opts?.mode) setAskMode(opts.mode);
+    if (opts?.seedAsk) setPendingSeed(opts.seedAsk);
+    if (opts?.graphNodeId) setGraphNodeId(opts.graphNodeId);
+    if (opts?.labsSeed) setLabsSeed(opts.labsSeed);
+    if (opts?.explorerFocus) setExplorerFocus(opts.explorerFocus);
+    // Prefer location.hash (fires hashchange) over history.replaceState —
+    // Next's patched history API can swallow hash-only replaceState updates.
+    const target = `#${next}`;
+    if (window.location.hash === target) {
+      window.dispatchEvent(new Event("hashchange"));
+    } else {
+      window.location.hash = next;
+    }
+  }, []);
 
   const clearPendingSeed = useCallback(() => setPendingSeed(null), []);
+  const clearGraphNodeId = useCallback(() => setGraphNodeId(null), []);
+  const clearLabsSeed = useCallback(() => setLabsSeed(null), []);
+  const clearExplorerFocus = useCallback(() => setExplorerFocus(null), []);
 
   const ask = useCallback(
     (question: string, mode?: AskMode) => {
@@ -318,6 +337,12 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       setPlayerId,
       teamId,
       setTeamId,
+      graphNodeId,
+      clearGraphNodeId,
+      labsSeed,
+      clearLabsSeed,
+      explorerFocus,
+      clearExplorerFocus,
       followedPlayers: stored.followedPlayers,
       toggleFollow,
       followedTeams: stored.followedTeams,
@@ -348,6 +373,12 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       go,
       playerId,
       teamId,
+      graphNodeId,
+      clearGraphNodeId,
+      labsSeed,
+      clearLabsSeed,
+      explorerFocus,
+      clearExplorerFocus,
       stored,
       toggleFollow,
       toggleFollowTeam,

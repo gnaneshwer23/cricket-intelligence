@@ -48,8 +48,12 @@
 - [x] Player filters / sample-size warnings
 - [x] Unit tests for calcs
 
-### Stage 4 (if time)
-- [x] What-If Lab transparency (hypothetical label + method)
+### Stage 4 (shipped)
+- [x] Cricket Explorer — worm, Manhattan, Test phase rates, filters, Match Graph links
+- [x] What-If Lab scenario builder (RRR / projections / three rate scenarios) + hypothetical labels
+- [x] Copilot intents for Explorer + required-rate questions (calc reuse + evidence)
+- [x] Cross-links Match Room ↔ Explorer ↔ Copilot ↔ Labs
+- [x] Expanded calc/innings tests; README / provider honesty
 - [ ] Personalisation polish (deferred — Feed already functional)
 - [x] Deployment notes (README)
 
@@ -58,3 +62,4 @@
 - Real-time official scores
 - Connected LLM unless `CRICKETOS_LLM_*` configured (optional; fallback is grounded engine)
 - Scraped Cricbuzz/Cricinfo data
+- Win probabilities from the rate scenario builder (rates only unless an evaluated model exists)

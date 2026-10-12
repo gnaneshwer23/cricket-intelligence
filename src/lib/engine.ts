@@ -1,5 +1,17 @@
-import { analysePhases, cumulativePhaseLead, runsToMilestone, speedUpliftPct, strikeRate } from "@/lib/calc";
+import {
+  analyseChase,
+  analysePhases,
+  cumulativePhaseLead,
+  formatMetric,
+  oversToBalls,
+  phaseBandsForFormat,
+  aggregatePhase,
+  runsToMilestone,
+  speedUpliftPct,
+  strikeRate,
+} from "@/lib/calc";
 import { getPlayer, matchMeta, phases, players } from "@/lib/data";
+import { buildExplorerView, explorerInnings } from "@/lib/innings";
 import { matchEvidence } from "@/lib/match-graph";
 import { hasWord } from "@/lib/format";
 import { playerAliases, searchPlayerList } from "@/lib/player-search";
@@ -109,6 +121,194 @@ function answerQuestionInner(raw: string, mode: AskMode, twinId: string): Answer
   const rootTo14k = root ? runsToMilestone(root.milestones[0].current, root.milestones[0].target) : 73;
   const bumrahUplift = speedUpliftPct(146.2, 134.1);
   const rootSr = root ? strikeRate(89, 120) : 74.2;
+  const explorerView = buildExplorerView({
+    matchId: matchMeta.id,
+    inningsId: explorerInnings[0]?.meta.id ?? "eng-1",
+    team: "all",
+    player: "all",
+    phaseId: "all",
+  });
+  const richestOver = explorerView.manhattan.reduce(
+    (best, over) => (over.runs > best.runs ? over : best),
+    explorerView.manhattan[0] ?? { overNumber: 0, runs: 0, wickets: 0, balls: 0, fours: 0, sixes: 0, startRuns: 0, endRuns: 0, events: [] },
+  );
+  const scoreEffectEvents = explorerView.worm.filter((p) => p.isWicket || (p.isBoundary && p.graphEventId));
+
+  // ── Explorer / What-If grounded intents (reuse calc + innings modules) ──
+
+  if (
+    (hasWord(query, "most") && (hasWord(query, "runs") || hasWord(query, "run")) && hasWord(query, "over")) ||
+    query.includes("richest over") ||
+    query.includes("which over scored")
+  ) {
+    if (!explorerView.manhattan.length) {
+      return finalize({
+        headline: "No over series available",
+        paragraphs: [
+          "The DEMO board has no Manhattan series for that filter. Open Explorer when an innings file exists.",
+        ],
+        followups: follow(["How did the run rate change by phase?", "Show Match Graph turning points"]),
+        method: "deterministic-calc",
+        evidence: cite("ev-phase-2230"),
+      });
+    }
+    return finalize({
+      headline: `Over ${richestOver.overNumber} scored the most — ${richestOver.runs} runs`,
+      paragraphs: [
+        `From the DEMO England 1st innings Manhattan: over ${richestOver.overNumber} has ${richestOver.runs} runs` +
+          (richestOver.wickets ? ` and ${richestOver.wickets} wicket(s)` : "") +
+          (richestOver.events[0]?.label ? ` (${richestOver.events[0].label})` : "") +
+          ".",
+        "Open Explorer → Manhattan and click that over to jump to Match Graph when a linked event exists.",
+      ],
+      figures: [
+        { label: "Over", value: String(richestOver.overNumber) },
+        { label: "Runs", value: String(richestOver.runs) },
+        { label: "Wickets", value: String(richestOver.wickets) },
+        { label: "Boundaries", value: String(richestOver.fours + richestOver.sixes) },
+      ],
+      confidence: 90,
+      followups: follow([
+        "How did the run rate change by phase?",
+        "What was the largest score-effect event?",
+        "Compare phase run rates in this innings",
+      ]),
+      method: "deterministic-calc",
+      evidence: cite("ev-over-27", "ev-phase-2230"),
+      provenanceNote: DEMO_PROVENANCE + " · Explorer Manhattan",
+    });
+  }
+
+  if (
+    (query.includes("run rate") && (hasWord(query, "phase") || hasWord(query, "change"))) ||
+    query.includes("phase run") ||
+    (hasWord(query, "compare") && hasWord(query, "innings")) ||
+    query.includes("compare phase")
+  ) {
+    const bands = phaseBandsForFormat("test", explorerView.manhattan.length || 49);
+    const rows = bands.map((band) => aggregatePhase(explorerView.innings?.overs ?? [], band));
+    const hottest = rows.reduce((best, row) => (row.rpo > best.rpo ? row : best), rows[0]);
+    const coolest = rows.reduce((best, row) => (row.rpo < best.rpo ? row : best), rows[0]);
+    if (!rows.length || !explorerView.innings) {
+      return finalize({
+        headline: "Can't answer from this dataset",
+        paragraphs: [
+          "Phase aggregation needs an innings over series. This DEMO only ships England 1st innings — India compare is unavailable.",
+        ],
+        followups: follow(["Which over scored the most runs?"]),
+        method: "deterministic-calc",
+      });
+    }
+    return finalize({
+      headline: `Phase rate swing: ${hottest.band.label} at ${formatMetric(hottest.rpo)} RPO`,
+      paragraphs: [
+        `Test bands (not LO powerplay/death): hottest ${hottest.band.label} (${hottest.runs} runs @ ${formatMetric(hottest.rpo)} RPO, ${hottest.wickets} wkts). Quietest ${coolest.band.label} @ ${formatMetric(coolest.rpo)} RPO.`,
+        `Session model table still shows overs 22–30 at ${surge?.scored ?? 72} vs ${surge?.expected ?? 48} expected (delta ${surgeDeltaDisplay(surge)}). Cumulative phase lead ${phaseLead > 0 ? `+${phaseLead}` : phaseLead}.`,
+        "India innings compare: not in the DEMO file — Explorer shows an honest empty state for that filter.",
+      ],
+      figures: rows.slice(0, 4).map((row) => ({
+        label: row.band.label,
+        value: `${row.runs} @ ${formatMetric(row.rpo)}`,
+      })),
+      confidence: 88,
+      followups: follow([
+        "Which over scored the most runs?",
+        "What was the largest score-effect event?",
+        "Required rate for 105 off 120 balls",
+      ]),
+      method: "deterministic-calc",
+      evidence: cite("ev-phase-2230", "ev-over-27"),
+      provenanceNote: DEMO_PROVENANCE + " · Explorer phase bands",
+    });
+  }
+
+  if (
+    query.includes("score-effect") ||
+    query.includes("score effect") ||
+    (hasWord(query, "largest") && (hasWord(query, "event") || hasWord(query, "swing") || hasWord(query, "moment")))
+  ) {
+    const brook = scoreEffectEvents.find((p) => p.eventLabel?.toLowerCase().includes("brook"));
+    const surgePoint = scoreEffectEvents.find((p) => p.graphEventId === "evt-over-27") ?? scoreEffectEvents[0];
+    return finalize({
+      headline: "Largest DEMO score-effect: overs 22–30 (+24 vs model)",
+      paragraphs: [
+        `The session model marks overs 22–30 as +24 vs expectation — most of the +${phaseLead} cumulative lead. Over 27 (14 off Jadeja) is the chart spike linked on Match Graph.`,
+        brook
+          ? `Brook’s dismissal at ${brook.overs} (${brook.cumulativeRuns}/${brook.wickets}) stopped the stand without giving the phase back.`
+          : "Brook’s dismissal at 47.5 stopped the stand without giving the phase back.",
+        "Open Explorer → Scoring progression (gold wickets / lime boundaries) or Match Graph node “Overs 22–30 surge”.",
+      ],
+      figures: [
+        { label: "Phase delta", value: surge ? `+${surge.scored - surge.expected}` : "+24" },
+        { label: "Cumulative lead", value: phaseLead > 0 ? `+${phaseLead}` : String(phaseLead) },
+        { label: "Spike over", value: surgePoint ? surgePoint.overs : "27" },
+      ],
+      confidence: 87,
+      followups: follow(["Which over scored the most runs?", "How did the run rate change by phase?"]),
+      method: "deterministic-calc",
+      evidence: cite("ev-phase-2230", "ev-over-27", "ev-brook-kuldeep"),
+    });
+  }
+
+  if (
+    query.includes("required rate") ||
+    query.includes("required run") ||
+    (hasWord(query, "rrr") && (hasWord(query, "need") || hasWord(query, "for") || query.includes("off"))) ||
+    (hasWord(query, "need") && hasWord(query, "off") && (hasWord(query, "ball") || hasWord(query, "over"))) ||
+    /required rate for\s+\d+/i.test(raw) ||
+    /\d+\s+off\s+\d+\s+balls?/i.test(query)
+  ) {
+    const parsed = parseChaseQuery(query, raw);
+    const analysis = analyseChase(parsed);
+    return finalize({
+      headline:
+        analysis.status === "ok"
+          ? `RRR ${formatMetric(analysis.requiredRunRate)} · ${analysis.oversRemaining} ov left`
+          : `Situation: ${analysis.status}`,
+      paragraphs: [
+        analysis.plainLanguage,
+        ...analysis.alternatives.slice(0, 2).map((a) => `${a.label}: ${a.detail}`),
+        "This is chase arithmetic (hypothetical if not the live equation) — open Labs to edit Conservative / Baseline / Aggressive assumed RPO. Not a win probability.",
+      ],
+      figures: [
+        { label: "Runs needed", value: String(analysis.runsRequired) },
+        { label: "Balls left", value: String(analysis.ballsRemaining) },
+        { label: "RRR", value: formatMetric(analysis.requiredRunRate) },
+        { label: "Overs left", value: analysis.oversRemaining },
+      ],
+      confidence: analysis.valid ? 92 : 40,
+      followups: follow([
+        "Required rate for 105 off 120 balls with 7 wickets",
+        "Which over scored the most runs?",
+        "How did the run rate change by phase?",
+      ]),
+      method: "deterministic-calc",
+      evidence: cite("ev-win-model"),
+      provenanceNote: DEMO_PROVENANCE + " · What-If calc module",
+    });
+  }
+
+  if (hasWord(query, "explorer") || query.includes("manhattan") || query.includes("worm chart")) {
+    return finalize({
+      headline: "Explorer is on the DEMO England innings",
+      paragraphs: [
+        `Cricket Explorer (#explorer) plots scoring progression, Manhattan, and Test phase bands for ${matchMeta.title}. Totals: ${explorerView.totals.runs}/${explorerView.totals.wickets} in ${explorerView.totals.overs} @ ${formatMetric(explorerView.totals.rpo)} RPO.`,
+        "Click chart points to open Match Graph events. Ask for most runs in an over, phase rate changes, or a required-rate situation.",
+      ],
+      figures: [
+        { label: "Runs", value: String(explorerView.totals.runs) },
+        { label: "RPO", value: formatMetric(explorerView.totals.rpo) },
+        { label: "Top over", value: `${richestOver.overNumber} (${richestOver.runs})` },
+      ],
+      followups: follow([
+        "Which over scored the most runs?",
+        "How did the run rate change by phase?",
+        "Required rate for 105 off 120 balls",
+      ]),
+      method: "deterministic-calc",
+      evidence: cite("ev-phase-2230"),
+    });
+  }
 
   if (
     query.includes("30 second") ||
@@ -787,13 +987,13 @@ function answerQuestionInner(raw: string, mode: AskMode, twinId: string): Answer
     headline: "Ask Cricket Anything",
     paragraphs: [
       `Grounded copilot on the DEMO Lord’s file — England ${matchMeta.score.runs} for ${matchMeta.score.wickets}, win model ${matchMeta.winModel.eng}/${matchMeta.winModel.ind}. Numbers come from the dataset and deterministic calcs, not an inventing LLM.`,
-      "Try Bumrah’s difficulty, Stokes’ chases, Root’s twins, Sachin vs Kohli at 24, Babar’s trajectory, or a 30-second summary of the demo match.",
+      "Try Explorer questions (richest over, phase rates), What-If required rates, Bumrah’s difficulty, Root’s twins, or a 30-second summary. If the file can’t support an answer, it says so.",
     ],
     followups: follow([
+      "Which over scored the most runs?",
+      "Required rate for 105 off 120 balls",
+      "How did the run rate change by phase?",
       "Summarise today's cricket in 30 seconds",
-      "Why is Bumrah difficult to face?",
-      "Most similar to Root",
-      "Closest trajectory to Babar",
     ]),
   };
 }
@@ -838,3 +1038,44 @@ function twinAnswer(player: NonNullable<ReturnType<typeof getPlayer>>): Answer {
     speaker: `Cricket Twin · ${player.name}`,
   };
 }
+
+function surgeDeltaDisplay(surge: { scored: number; expected: number } | undefined) {
+  if (!surge) return "+24";
+  const d = surge.scored - surge.expected;
+  return d > 0 ? `+${d}` : String(d);
+}
+
+/** Parse "105 off 120 balls with 7 wickets" style chase questions. */
+function parseChaseQuery(query: string, raw: string) {
+  const offBalls = query.match(/(\d+)\s+off\s+(\d+)\s+balls?/);
+  const forPattern = query.match(/required rate for\s+(\d+)\s+off\s+(\d+)/);
+  const wickets = query.match(/(\d+)\s+wickets?/);
+  const oversLeft = query.match(/(\d+(?:\.\d)?)\s+overs?\s+(?:left|remaining)/);
+  let runsRequired = 105;
+  let ballsRemaining = 120;
+  if (offBalls) {
+    runsRequired = Number(offBalls[1]);
+    ballsRemaining = Number(offBalls[2]);
+  } else if (forPattern) {
+    runsRequired = Number(forPattern[1]);
+    ballsRemaining = Number(forPattern[2]);
+  } else {
+    const nums = raw.match(/\d+/g)?.map(Number) ?? [];
+    if (nums.length >= 2) {
+      runsRequired = nums[0] ?? runsRequired;
+      ballsRemaining = nums[1] ?? ballsRemaining;
+    }
+  }
+  if (oversLeft && !offBalls) {
+    ballsRemaining = oversToBalls(oversLeft[1] ?? "0");
+  }
+  const wicketsInHand = wickets ? Number(wickets[1]) : 7;
+  return {
+    runsRequired,
+    ballsRemaining,
+    wicketsInHand,
+    currentRuns: matchMeta.score.runs,
+    ballsFaced: oversToBalls(matchMeta.score.overs),
+  };
+}
+

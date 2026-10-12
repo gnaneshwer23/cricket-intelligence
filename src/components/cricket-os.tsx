@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import {
   Activity,
+  ChartColumn,
   FlaskConical,
   House,
   MessageCircle,
@@ -16,6 +17,7 @@ import { AppStateProvider, useApp } from "@/components/app-state";
 import { Onboarding } from "@/components/onboarding";
 import { AskScreen } from "@/components/screens/ask";
 import { CommunityScreen } from "@/components/screens/community";
+import { ExplorerScreen } from "@/components/screens/explorer";
 import { FantasyScreen } from "@/components/screens/fantasy";
 import { FeedScreen } from "@/components/screens/feed";
 import { HomeScreen } from "@/components/screens/home";
@@ -37,21 +39,23 @@ const primaryNav: { id: ScreenId; label: string; short: string; icon: typeof Hou
   { id: "home", label: "Briefing", short: "Home", icon: House },
   { id: "ask", label: "Copilot", short: "Ask", icon: MessageCircle },
   { id: "match", label: "Match Room", short: "Match", icon: Activity },
+  { id: "explorer", label: "Explorer", short: "Explore", icon: ChartColumn },
   { id: "players", label: "Players", short: "Players", icon: UserRound },
-  { id: "feed", label: "My Cricket", short: "Feed", icon: Newspaper },
 ];
 
 const laterNav: { id: ScreenId; label: string; icon: typeof House; note: string }[] = [
+  { id: "feed", label: "My Cricket", icon: Newspaper, note: "Personal feed" },
+  { id: "labs", label: "Labs", icon: FlaskConical, note: "What-If · experimental" },
   { id: "teams", label: "Team Intel", icon: Users, note: "DNA & squad health" },
   { id: "community", label: "Community", icon: MessagesSquare, note: "Secondary" },
   { id: "fantasy", label: "Fantasy", icon: Target, note: "Experimental" },
-  { id: "labs", label: "Labs", icon: FlaskConical, note: "What-If · experimental" },
 ];
 
 const titles: Record<ScreenId, string> = {
   home: "Intelligence Briefing",
   ask: "Cricket Copilot",
   match: "Match Room",
+  explorer: "Cricket Explorer",
   players: "Player Intelligence",
   feed: "My Cricket",
   teams: "Team Intelligence",
@@ -163,6 +167,7 @@ function Shell() {
           {screen === "home" ? <HomeScreen /> : null}
           {screen === "ask" ? <AskScreen /> : null}
           {screen === "match" ? <MatchScreen /> : null}
+          {screen === "explorer" ? <ExplorerScreen /> : null}
           {screen === "players" ? <PlayersScreen /> : null}
           {screen === "feed" ? <FeedScreen /> : null}
           {screen === "teams" ? <TeamsScreen /> : null}
@@ -196,7 +201,7 @@ function Shell() {
         <button
           type="button"
           className={`flex flex-col items-center gap-1 py-1 text-[10px] ${
-            screen === "feed" || laterNav.some((item) => item.id === screen)
+            laterNav.some((item) => item.id === screen) || screen === "players"
               ? "text-lime"
               : "text-muted-foreground"
           }`}
@@ -211,20 +216,22 @@ function Shell() {
         <SheetContent side="bottom" className="rounded-t-3xl">
           <SheetHeader>
             <SheetTitle>More</SheetTitle>
-            <SheetDescription>Feed first. Fantasy, labs, and the room stay available later.</SheetDescription>
+            <SheetDescription>
+              Players, feed, labs, and secondary rooms. Explorer stays in the main bar.
+            </SheetDescription>
           </SheetHeader>
           <div className="grid gap-2 px-4 pb-6">
             <Button
               type="button"
-              variant={screen === "feed" ? "default" : "secondary"}
+              variant={screen === "players" ? "default" : "secondary"}
               className="h-11 justify-start"
               onClick={() => {
                 setMore(false);
-                go("feed");
+                go("players");
               }}
             >
-              <Newspaper />
-              My Feed
+              <UserRound />
+              Players
             </Button>
             {laterNav.map((item) => {
               const Icon = item.icon;
