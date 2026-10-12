@@ -49,7 +49,7 @@ export function LiveScoreStrip({ compact = false, onOpenMatch }: Props) {
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-1 text-[11px] tracking-[0.14em] text-gold uppercase">
               <span className="size-1.5 animate-pulse rounded-full bg-gold" aria-hidden />
-              {live.status === "ended" ? "Demo complete" : live.paused ? "Paused" : "DEMO sim"}
+              {live.status === "ended" ? "Demo complete" : live.paused ? "Paused" : "Sim live"}
             </span>
             <Kicker>{live.label}</Kicker>
           </div>

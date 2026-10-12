@@ -57,7 +57,7 @@ const BASE_FOW = [
   "4-241 (Brook, 47.5 ov)",
 ];
 
-const LIVE_LABEL = "DEMO · simulated innings (not a live feed)";
+const LIVE_LABEL = "Simulated live · demo innings";
 
 /** Scripted Lord's continuation from 245/4 after 48.2 overs. */
 export const liveScript: LiveBallEvent[] = [
