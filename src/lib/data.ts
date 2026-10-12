@@ -23,6 +23,12 @@ export const players: Player[] = [
     formLabel: "Last eight Test scores",
     formNote: "89 not out at Lord's. Needs 73 to reach 14,000 Test runs.",
     dna: { technical: 95, consistency: 97, spin: 94, pace: 91, mental: 92, leadership: 88, adaptability: 96 },
+    traits: [
+      { label: "Technical", level: 96, note: "Late hands, late leave, almost no wasted motion." },
+      { label: "Patient", level: 94, note: "Builds the day before he spends it." },
+      { label: "Calm", level: 91, note: "The dressing room's pulse stays level when he is set." },
+      { label: "Calculated", level: 88, note: "Risk arrives only when the field invents a pocket." },
+    ],
     similar: [
       { id: "kumar-sangakkara", score: 91, note: "Same late-career accumulation, same refusal to give a session away." },
       { id: "kane-williamson", score: 86, note: "Nearest active twin: control first, damage second, almost no false theatre." },
@@ -77,6 +83,12 @@ export const players: Player[] = [
     formLabel: "Last eight Test scores",
     formNote: "Best ten-match stretch of his career. Today's 64 ended to Kuldeep, caught at the keeper.",
     dna: { technical: 84, consistency: 78, spin: 72, pace: 96, mental: 86, leadership: 74, adaptability: 88 },
+    traits: [
+      { label: "Aggressive", level: 93, note: "Tries to end a spell before the plan settles." },
+      { label: "Explosive", level: 90, note: "Best stretch of his career is also the loudest." },
+      { label: "Creative", level: 82, note: "Inventive off the back foot against pace." },
+      { label: "Relentless", level: 78, note: "Keeps scoring until the wrist spinner finds him early." },
+    ],
     similar: [
       { id: "travis-head", score: 84, note: "Same instinct to hit the bowler off his length before the plan settles." },
       { id: "joe-root", score: 71, note: "The comparison everyone wants. The methods barely overlap." },
@@ -131,6 +143,12 @@ export const players: Player[] = [
     formLabel: "Wickets in last eight inns",
     formNote: "Release speed this series is 9% above his career mean: 146.2 kph versus 134.1.",
     dna: { technical: 98, consistency: 86, spin: 40, pace: 99, mental: 94, leadership: 82, adaptability: 90 },
+    traits: [
+      { label: "Relentless", level: 97, note: "One plan, three balls, no panic search for swing." },
+      { label: "Calculated", level: 94, note: "Yorker is a close, not a habit." },
+      { label: "Aggressive", level: 88, note: "Changes the win model by deciding to bowl." },
+      { label: "Technical", level: 98, note: "Release and wrist do the work the seam used to." },
+    ],
     similar: [
       { id: "ben-stokes", score: 42, note: "Not a bowling twin. The link is the match that bends when he decides to bowl." },
       { id: "travis-head", score: 38, note: "A rivalry, not a likeness. Head's first fifteen balls against him are a known failure mode." },
@@ -184,6 +202,12 @@ export const players: Player[] = [
     formLabel: "Last eight Test scores",
     formNote: "Yet to bat at Lord's. The chase file is still the one opponents prepare for.",
     dna: { technical: 90, consistency: 88, spin: 86, pace: 93, mental: 95, leadership: 91, adaptability: 84 },
+    traits: [
+      { label: "Aggressive", level: 90, note: "Chase cricket still feels like a decision." },
+      { label: "Relentless", level: 95, note: "Eighteen years, same rotation pattern until over 35." },
+      { label: "Technical", level: 88, note: "Cover drive remains a run once he is set." },
+      { label: "Explosive", level: 84, note: "Boundaries are a release after the singles do the work." },
+    ],
     similar: [
       { id: "steve-smith", score: 80, note: "Two batters who made the 2010s feel smaller than they were." },
       { id: "kane-williamson", score: 77, note: "Less alike in method than in the way a dressing room settles around them." },
@@ -238,6 +262,12 @@ export const players: Player[] = [
     formLabel: "Last eight Test scores",
     formNote: "Not out 3. Bowling will be a burst, not a spell. The batting is the brief.",
     dna: { technical: 82, consistency: 74, spin: 80, pace: 88, mental: 98, leadership: 96, adaptability: 93 },
+    traits: [
+      { label: "Aggressive", level: 94, note: "Eight quiet balls, then the shot that changes the plan." },
+      { label: "Relentless", level: 96, note: "Closes ugly games that should already be over." },
+      { label: "Explosive", level: 91, note: "Bowling is a burst. Batting can be one too." },
+      { label: "Calm", level: 72, note: "Clarity under pressure, not stillness." },
+    ],
     similar: [
       { id: "ravindra-jadeja", score: 70, note: "Different crafts, same effect: the match has another gear when they are fully fit." },
       { id: "joe-root", score: 60, note: "Partners, not twins. Root builds the day. Stokes decides it." },
@@ -291,6 +321,12 @@ export const players: Player[] = [
     formLabel: "Wickets in last eight inns",
     formNote: "One wicket today. Root has taken the sting out of the stock ball.",
     dna: { technical: 86, consistency: 90, spin: 92, pace: 70, mental: 93, leadership: 80, adaptability: 91 },
+    traits: [
+      { label: "Patient", level: 92, note: "Happy to bowl a maiden and walk back." },
+      { label: "Calculated", level: 90, note: "Holds an end while the quicks reload." },
+      { label: "Technical", level: 86, note: "Stock ball at the stumps until patience fails." },
+      { label: "Calm", level: 88, note: "Control first. Magic ball later, if at all." },
+    ],
     similar: [
       { id: "ben-stokes", score: 70, note: "The other player whose fitness changes the shape of an XI." },
       { id: "joe-root", score: 55, note: "Today's duel. Root's spin control is the reason Jadeja's spell looks ordinary." },
@@ -344,6 +380,12 @@ export const players: Player[] = [
     formLabel: "Last eight Test scores",
     formNote: "Not in this match. The Bumrah file is the one that follows him.",
     dna: { technical: 80, consistency: 76, spin: 74, pace: 95, mental: 88, leadership: 70, adaptability: 86 },
+    traits: [
+      { label: "Aggressive", level: 95, note: "Puts the bowler on the back foot by ball four." },
+      { label: "Explosive", level: 93, note: "Hundreds arrive fast enough to change a day." },
+      { label: "Creative", level: 80, note: "Left-hand angle opens the off side against pace." },
+      { label: "Calculated", level: 55, note: "The fourth-ball slash is still not a calculation." },
+    ],
     similar: [
       { id: "harry-brook", score: 84, note: "Two batters who try to end a spell before it starts." },
       { id: "ben-stokes", score: 66, note: "Shared habit of taking a match personally." },
@@ -397,6 +439,12 @@ export const players: Player[] = [
     formLabel: "Last eight Test scores",
     formNote: "The active batter the model keeps placing next to Root.",
     dna: { technical: 94, consistency: 93, spin: 90, pace: 88, mental: 95, leadership: 90, adaptability: 92 },
+    traits: [
+      { label: "Patient", level: 96, note: "Lets the first hour belong to the bowler on purpose." },
+      { label: "Technical", level: 94, note: "Leaves later than almost anyone." },
+      { label: "Calm", level: 97, note: "Removes your best hour without announcing it." },
+      { label: "Calculated", level: 90, note: "Waits until the field moves before inventing a shot." },
+    ],
     similar: [
       { id: "joe-root", score: 86, note: "Control, late hands, and a career built on not losing the first session." },
       { id: "kumar-sangakkara", score: 82, note: "The previous generation's version of the same patience." },
@@ -451,6 +499,12 @@ export const players: Player[] = [
     formLabel: "Last eight Test scores",
     formNote: "Still the odd method that makes a good length look like the wrong one.",
     dna: { technical: 96, consistency: 90, spin: 85, pace: 94, mental: 93, leadership: 78, adaptability: 88 },
+    traits: [
+      { label: "Technical", level: 97, note: "Turns a good length into a scoring ball by getting across." },
+      { label: "Calculated", level: 93, note: "Premeditates the movement, not the shot." },
+      { label: "Patient", level: 89, note: "Concentration outlasts a spell." },
+      { label: "Creative", level: 86, note: "A method that still does not look like anyone else." },
+    ],
     similar: [
       { id: "joe-root", score: 83, note: "Different hands, same ability to make a session feel short for the bowler." },
       { id: "kane-williamson", score: 75, note: "Two solutions to the same problem of the new ball." },
@@ -505,6 +559,12 @@ export const players: Player[] = [
     formLabel: "A late-career sample",
     formNote: "Retired. He sits in the model as Root's nearest historical twin.",
     dna: { technical: 95, consistency: 96, spin: 93, pace: 90, mental: 94, leadership: 92, adaptability: 93 },
+    traits: [
+      { label: "Technical", level: 95, note: "Converted starts at a rate the modern game still chases." },
+      { label: "Patient", level: 94, note: "Singles in clusters, then a boundary that did not look planned." },
+      { label: "Calm", level: 92, note: "Closed chases by keeping the rate from becoming a story." },
+      { label: "Calculated", level: 90, note: "Fluent against spin without forcing the day." },
+    ],
     similar: [
       { id: "joe-root", score: 91, note: "The likeness is accumulation without a collapse in average." },
       { id: "kane-williamson", score: 82, note: "Same family of batters: late, calm, hard to rush." },
@@ -558,6 +618,12 @@ export const players: Player[] = [
     formLabel: "Wickets in last eight inns",
     formNote: "Ownership 4% in the fantasy room. The model still has him at 61 expected points if he bowls day three.",
     dna: { technical: 78, consistency: 80, spin: 30, pace: 82, mental: 84, leadership: 60, adaptability: 77 },
+    traits: [
+      { label: "Relentless", level: 88, note: "Same length until the batter invents a shot." },
+      { label: "Patient", level: 85, note: "Not the bowler for a wicket this over." },
+      { label: "Calculated", level: 78, note: "Day-three footmarks are the brief." },
+      { label: "Calm", level: 80, note: "No slower ball he trusts, so the plan stays honest." },
+    ],
     similar: [
       { id: "jasprit-bumrah", score: 40, note: "Only in the job, not the method. Potts hits a length and waits." },
     ],
@@ -610,6 +676,12 @@ export const players: Player[] = [
     formLabel: "Wickets in last eight inns",
     formNote: "Has Brook already. Stokes is the live matchup.",
     dna: { technical: 88, consistency: 76, spin: 95, pace: 35, mental: 84, leadership: 62, adaptability: 86 },
+    traits: [
+      { label: "Creative", level: 94, note: "Wrong'un arrives without a tell." },
+      { label: "Aggressive", level: 86, note: "Strike spinner, not a holding end." },
+      { label: "Calculated", level: 82, note: "Wants the left-hander playing with turn that is not there." },
+      { label: "Explosive", level: 80, note: "A bad over goes for ten. A good one ends a stand." },
+    ],
     similar: [
       { id: "ravindra-jadeja", score: 58, note: "Same side of the ball, different job. Jadeja holds. Kuldeep strikes." },
     ],
@@ -649,6 +721,126 @@ export const players: Player[] = [
     away: "Away he needs a captain who will give him the over after a boundary.",
     chases: "In a chase he bowls at the stumps and invites the big shot.",
     opponents: "Left-handers early. Brook was the right-hand exception today because he charged.",
+  },
+  {
+    id: "babar-azam",
+    name: "Babar Azam",
+    teamId: "pakistan",
+    role: "Batter",
+    style: "Right-hand bat",
+    age: 31,
+    span: "2016 –",
+    form: [22, 8, 67, 14, 103, 5, 44, 31],
+    formLabel: "Last eight Test scores",
+    formNote: "Not in this Lord's Test. The file holds him for trajectory and similarity asks.",
+    dna: { technical: 92, consistency: 88, spin: 86, pace: 90, mental: 87, leadership: 84, adaptability: 85 },
+    traits: [
+      { label: "Technical", level: 93, note: "Timing first. The bat looks late and still finds the middle." },
+      { label: "Calm", level: 90, note: "Builds an innings without announcing the gear change." },
+      { label: "Patient", level: 86, note: "Will take the single until the field invents a drive." },
+      { label: "Calculated", level: 84, note: "Risk is staged, not invented in the first twenty balls." },
+    ],
+    similar: [
+      { id: "joe-root", score: 78, note: "Control batting with a higher ceiling on the drive." },
+      { id: "virat-kohli", score: 74, note: "Shared hunger for the innings that settles a side, different chase grammar." },
+      { id: "kane-williamson", score: 72, note: "Late hands, same refusal to gift the new ball." },
+    ],
+    projection: {
+      headline: "Pakistan's control batter",
+      elite: 88,
+      captain: 76,
+      worldXI: 70,
+      landmark: "10,000 international runs (all formats already close)",
+      landmarkChance: 82,
+      retire: "2032",
+      peakAge: 30,
+    },
+    report: {
+      strengths: [
+        "Elite timing through cover and midwicket",
+        "Rarely panics a chase into a collapse",
+        "Converts starts more often than the noise around him suggests",
+      ],
+      weaknesses: [
+        "Away seam that holds a fourth-stump line can occupy him",
+        "Captaincy load has occasionally thinned the batting clarity",
+      ],
+      development: "Peak age is now. The next three years decide whether the Test average climbs into the Root-Kohli band or stays a notch below.",
+    },
+    milestones: [
+      { label: "Test runs", current: 3890, target: 7000 },
+      { label: "Test centuries", current: 9, target: 20 },
+      { label: "Away centuries", current: 3, target: 8 },
+    ],
+    twinYears: 10,
+    twinLines: [
+      "Babar scores in soft hands until the bowler overpitches. The drive is a reward, not a hunt.",
+      "Under pressure he shrinks the game to singles first. Boundaries return once the field spreads.",
+    ],
+    blurb: "Pakistan's reference batter. Closest living trajectory asks often resolve to Root or Kohli, depending on whether you weight control or chase appetite.",
+    away: "Away hundreds are rarer than home ones. The method travels; the conversion rate is still climbing.",
+    chases: "Strike rotation first. He does not try to finish a chase in a burst unless the required rate forces it.",
+    opponents: "The ball that leaves him from a full length, and captains who starve the cover drive for a full hour.",
+  },
+  {
+    id: "sachin-tendulkar",
+    name: "Sachin Tendulkar",
+    teamId: "india",
+    role: "Batter",
+    style: "Right-hand bat · career complete",
+    age: 52,
+    span: "1989 – 2013",
+    form: [41, 122, 8, 76, 103, 15, 94, 37],
+    formLabel: "A late-career sample",
+    formNote: "Retired. Held for age-curve comparisons — especially Sachin at 24 vs modern batters.",
+    dna: { technical: 98, consistency: 94, spin: 92, pace: 95, mental: 96, leadership: 80, adaptability: 94 },
+    traits: [
+      { label: "Technical", level: 98, note: "The textbook and the exception in the same stance." },
+      { label: "Patient", level: 90, note: "Could bat time without looking like he was batting time." },
+      { label: "Calculated", level: 92, note: "Shot selection aged better than most careers." },
+      { label: "Calm", level: 88, note: "Dressing rooms settled when he walked out." },
+    ],
+    similar: [
+      { id: "virat-kohli", score: 76, note: "Kohli at 24 was already a chase batter. Sachin at 24 was already a library." },
+      { id: "joe-root", score: 71, note: "Shared accumulation instinct; different eras, different theatres." },
+      { id: "steve-smith", score: 68, note: "Two batters who made bowlers rewrite a length." },
+    ],
+    projection: {
+      headline: "Completed career",
+      elite: 99,
+      captain: 55,
+      worldXI: 99,
+      landmark: "Career already run",
+      landmarkChance: 100,
+      retire: "2013",
+      peakAge: 28,
+    },
+    report: {
+      strengths: [
+        "Mastered every bowling type across a generation",
+        "Converted starts into landmarks at a historic rate",
+        "Age-curve still the reference for young batters",
+      ],
+      weaknesses: [
+        "A finished career has no live development left",
+        "Captaincy was never the centre of the file",
+      ],
+      development: "No projected peak. He is here so age comparisons have a ground truth.",
+    },
+    milestones: [
+      { label: "Test runs", current: 15921, target: 15921 },
+      { label: "Test centuries", current: 51, target: 51 },
+      { label: "ODI runs", current: 18426, target: 18426 },
+    ],
+    twinYears: 24,
+    twinLines: [
+      "At 24 Sachin already had a full international vocabulary: leave, drive, pull, and the late cut that ended spells.",
+      "He treated bowling plans as information. Once read, he scored without needing the plan to fail first.",
+    ],
+    blurb: "The age-curve reference. Sachin at 24 vs Kohli at 24 is the cleanest historical comparison the model holds.",
+    away: "Away mastery was the argument for greatness, not a footnote.",
+    chases: "He closed chases by shrinking the required rate, then taking the pockets.",
+    opponents: "Every great bowler of two decades. The file is too wide for a single rivalry.",
   },
 ];
 
@@ -860,6 +1052,7 @@ export const briefing = [
     detail: "He is 89 not out. The milestone is a session, not a series.",
     screen: "players" as const,
     playerId: "joe-root",
+    teamIds: ["england"] as string[],
   },
   {
     id: "brook-run",
@@ -868,6 +1061,7 @@ export const briefing = [
     detail: "The 64 today fits the stretch. The dismissal, to spin, also fits the file.",
     screen: "players" as const,
     playerId: "harry-brook",
+    teamIds: ["england"] as string[],
   },
   {
     id: "bumrah-pace",
@@ -876,15 +1070,46 @@ export const briefing = [
     detail: "146.2 kph against a career mean of 134.1. This is the peak window.",
     screen: "players" as const,
     playerId: "jasprit-bumrah",
+    teamIds: ["india"] as string[],
+  },
+  {
+    id: "england-session",
+    icon: "📊",
+    title: "England are +21 vs the phase model",
+    detail: "Overs 22–30 did the damage. Win model: England 58%, India 42%.",
+    screen: "match" as const,
+    teamIds: ["england", "india"] as string[],
   },
   {
     id: "rain",
     icon: "⚠️",
     title: "Rain risk has increased",
     detail: "From 18% overnight to 34% for the last two sessions. The draw is back in the model.",
-    screen: "labs" as const,
+    screen: "match" as const,
+    teamIds: ["england", "india"] as string[],
+  },
+  {
+    id: "woakes",
+    icon: "🩹",
+    title: "Woakes calf alert for fantasy benches",
+    detail: "Availability 40%. Potts is the differential if you still play that game.",
+    screen: "fantasy" as const,
+    teamIds: ["england"] as string[],
   },
 ];
+
+export function personalBriefing(followedPlayers: string[], followedTeams: string[]) {
+  const ranked = [...briefing].sort((a, b) => {
+    const score = (item: (typeof briefing)[number]) => {
+      let n = 0;
+      if (item.playerId && followedPlayers.includes(item.playerId)) n += 3;
+      if (item.teamIds?.some((id) => followedTeams.includes(id))) n += 2;
+      return n;
+    };
+    return score(b) - score(a);
+  });
+  return ranked.slice(0, 4);
+}
 
 export const stories = [
   {
@@ -933,24 +1158,34 @@ export const upcoming = {
 };
 
 export const recommendations = [
-  { q: "Compare Root and Kohli at age 25", mode: "historical" as const },
-  { q: "Predict Brook's career", mode: "career" as const },
-  { q: "Why is Bumrah so effective?", mode: "general" as const },
-  { q: "Best Test innings since 2000", mode: "historical" as const },
+  { q: "Why is Bumrah difficult to face today?", mode: "general" as const },
+  { q: "Show Stokes' best chases", mode: "historical" as const },
+  { q: "Most similar to Root", mode: "general" as const },
+  { q: "Sachin at 24 vs Kohli", mode: "historical" as const },
+  { q: "Closest trajectory to Babar", mode: "career" as const },
+  { q: "Why is England winning?", mode: "predictions" as const },
+  { q: "Summarise today's cricket in 30 seconds", mode: "general" as const },
+];
+
+export const trending = [
+  { label: "Bumrah peak window", q: "Why is Bumrah dominating today?" },
+  { label: "Root → 14,000", q: "Will Root get to 14,000 today?" },
+  { label: "England +21", q: "Why is England winning?" },
+  { label: "Stokes vs Kuldeep", q: "Who likely scores next?" },
 ];
 
 export const askPrompts: Record<string, string[]> = {
   general: [
-    "Who is most similar to Joe Root?",
-    "How important is Jadeja today?",
-    "Why is Bumrah so effective?",
-    "What did overs 22 to 30 change?",
+    "Why is Bumrah difficult to face?",
+    "Summarise today's cricket in 30 seconds",
+    "Most similar to Root",
+    "Tell me everything important about England this week",
   ],
   predictions: [
-    "Who wins if they play the full day?",
-    "Will Harry Brook surpass Root?",
-    "What if the rain arrives after tea?",
-    "Where does the lead settle?",
+    "Why is England winning?",
+    "Project the final score",
+    "Who likely scores next?",
+    "What are the turning points?",
   ],
   fantasy: [
     "Who should captain?",
@@ -959,16 +1194,16 @@ export const askPrompts: Record<string, string[]> = {
     "Is Bumrah still a must-start?",
   ],
   historical: [
+    "Show Stokes' best chases",
+    "Sachin at 24 vs Kohli",
     "Compare Root and Kohli at age 25",
     "Best Test innings since 2000",
-    "How close is this side to 2005?",
-    "What if Bumrah played in the 1990s?",
   ],
   career: [
+    "Closest trajectory to Babar",
     "Predict Brook's career",
     "Will Root get to 14,000 today?",
-    "When does Kohli retire in the model?",
-    "Is Williamson the active twin?",
+    "Most similar to Root",
   ],
   twin: [
     "Explain how Virat Kohli approaches run chases.",
@@ -977,6 +1212,109 @@ export const askPrompts: Record<string, string[]> = {
     "How does Bumrah choose the yorker?",
   ],
 };
+
+export const matchPredictions = [
+  {
+    id: "top-scorer",
+    label: "Most likely top scorer",
+    pick: "Joe Root",
+    chance: 61,
+    note: "Already 89*. Model has him adding 28–45 more if he sees off Bumrah's first burst.",
+  },
+  {
+    id: "dangerous",
+    label: "Most dangerous bowler",
+    pick: "Jasprit Bumrah",
+    chance: 72,
+    note: "Two wickets in the book. First four overs of the session move the model more than thirty quiet runs.",
+  },
+  {
+    id: "next-bat",
+    label: "Who scores next",
+    pick: "Ben Stokes",
+    chance: 54,
+    note: "Live at the crease. Highest variance: a burst through Kuldeep or an early edge.",
+  },
+  {
+    id: "matchup",
+    label: "Key matchup",
+    pick: "Stokes vs Kuldeep",
+    chance: 68,
+    note: "Dismissal risk peaks in the first fifteen balls of wrist spin. Six are done.",
+  },
+];
+
+export const matchReport = {
+  title: "Lord's session report · England 1st innings (so far)",
+  kicker: "AI match report",
+  status: "End of morning session · Day 2",
+  summary:
+    "England close the session 245 for 4, twenty-one runs ahead of the phase model. Root is the reason the lead exists. Brook was the tempo. Bumrah is still the over that can take it back.",
+  whatHappened: [
+    "Bumrah removed Crawley and Duckett with the harder ball. Pope fell to Jadeja. At 108 for 3 the innings was level with expectation.",
+    "Overs 22 to 30 changed the match: 72 scored against 48 expected. Root took Jadeja's stock ball away. Brook forced India to abandon the holding plan.",
+    "Kuldeep broke the stand — Brook caught behind for 64. Stokes arrived. The session ended with Root 89* and England ahead of the model without yet owning the day.",
+  ],
+  why: [
+    "Root's leave-and-clip pattern neutralised spin before it could become a spell.",
+    "India's older-ball bowling never pulled the phase back after the 22–30 surge.",
+    "Brook's scoring rate bought time; his dismissal to wrist spin was the file's known hole, not a surprise.",
+  ],
+  keyOver: {
+    label: "Most important over",
+    value: "Over 27",
+    detail: "Root and Brook took 14 off Jadeja. The control end stopped controlling. Momentum flipped for the rest of the morning.",
+  },
+  keyPerformance: {
+    label: "Key performance",
+    value: "Joe Root 89*",
+    detail: "120 balls, nine fours, spin managed, milestone still 73 away. The innings that makes louder ones possible.",
+  },
+  implications: [
+    "If Root sees off Bumrah's first four overs, England's expected total climbs toward 340–360.",
+    "A wicket in that burst swings win chance back toward 50-50. Without Bumrah, India fall to 18%.",
+    "Rain at 34% for the back end keeps the draw alive — and freezes Root short of 14,000 if the covers win.",
+  ],
+  figures: [
+    { label: "Score", value: "245/4" },
+    { label: "vs model", value: "+21" },
+    { label: "Eng win", value: "58%" },
+    { label: "Rain risk", value: "34%" },
+  ],
+};
+
+export const smartAlerts = [
+  {
+    id: "root-milestone",
+    title: "Root milestone watch",
+    detail: "73 runs from 14,000. He is set on 89*. Alert when he reaches 95 or falls.",
+    playerId: "joe-root",
+    teamId: "england",
+    kind: "milestone" as const,
+  },
+  {
+    id: "woakes-fantasy",
+    title: "Fantasy injury concern",
+    detail: "Woakes calf tightness — 40% availability. Swap window before day three.",
+    teamId: "england",
+    kind: "injury" as const,
+  },
+  {
+    id: "lords-venue",
+    title: "India venue form",
+    detail: "Lord's still asks India to be good before the ball is old. Bumrah is the workaround.",
+    teamId: "india",
+    kind: "venue" as const,
+  },
+  {
+    id: "stokes-kuldeep",
+    title: "Live matchup spike",
+    detail: "Stokes vs Kuldeep: dismissal risk elevated for nine more balls.",
+    playerId: "ben-stokes",
+    teamId: "england",
+    kind: "live" as const,
+  },
+];
 
 export const batting = [
   { name: "Z. Crawley", how: "c Jaiswal b Bumrah", runs: 18, balls: 22, fours: 3, sixes: 0, out: true },
@@ -1318,7 +1656,21 @@ export function getTeam(id: string) {
 
 export function teamLabel(id: string) {
   if (id === "sri-lanka") return "Sri Lanka";
+  if (id === "pakistan") return "Pakistan";
   return getTeam(id)?.name ?? id;
 }
+
+export const onboardingPlayers = [
+  "joe-root",
+  "harry-brook",
+  "ben-stokes",
+  "jasprit-bumrah",
+  "virat-kohli",
+  "babar-azam",
+  "kane-williamson",
+  "travis-head",
+];
+
+export const onboardingTeams = ["england", "india", "australia", "new-zealand"] as const;
 
 export const baseWin = { eng: 58, ind: 42 };

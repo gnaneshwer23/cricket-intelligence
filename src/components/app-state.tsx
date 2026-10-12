@@ -13,18 +13,102 @@ import {
 } from "react";
 import { initialMood } from "@/lib/data";
 import { answerQuestion } from "@/lib/engine";
-import type { AskMode, ChatMessage, MoodKey, ScreenId } from "@/lib/types";
+import type {
+  AskMode,
+  ChatMessage,
+  MoodKey,
+  Preferences,
+  SavedChat,
+  ScreenId,
+} from "@/lib/types";
 
 const screens: ScreenId[] = [
   "home",
   "ask",
   "match",
   "players",
+  "feed",
   "teams",
   "community",
   "fantasy",
   "labs",
 ];
+
+const STORAGE_KEY = "cricketos-mvp-v1";
+const STORE_EVENT = "cricketos-store";
+
+type StoredState = {
+  onboarded: boolean;
+  followedPlayers: string[];
+  followedTeams: string[];
+  preferences: Preferences;
+  recentChats: SavedChat[];
+  savedChats: SavedChat[];
+};
+
+const defaults: StoredState = {
+  onboarded: false,
+  followedPlayers: ["joe-root", "harry-brook", "jasprit-bumrah", "virat-kohli"],
+  followedTeams: ["england", "india"],
+  preferences: { englandOnly: false, alerts: true },
+  recentChats: [],
+  savedChats: [],
+};
+
+const serverSnapshot: StoredState = { ...defaults, onboarded: true };
+
+let memoryStore: StoredState | null = null;
+
+function readStore(): StoredState {
+  if (memoryStore) return memoryStore;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      memoryStore = defaults;
+      return defaults;
+    }
+    const parsed = JSON.parse(raw) as Partial<StoredState>;
+    memoryStore = {
+      ...defaults,
+      ...parsed,
+      preferences: { ...defaults.preferences, ...parsed.preferences },
+      followedPlayers: parsed.followedPlayers ?? defaults.followedPlayers,
+      followedTeams: parsed.followedTeams ?? defaults.followedTeams,
+      recentChats: parsed.recentChats ?? [],
+      savedChats: parsed.savedChats ?? [],
+    };
+    return memoryStore;
+  } catch {
+    memoryStore = defaults;
+    return defaults;
+  }
+}
+
+function writeStore(next: StoredState) {
+  memoryStore = next;
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  window.dispatchEvent(new Event(STORE_EVENT));
+}
+
+function patchStore(patch: Partial<StoredState>) {
+  const current = readStore();
+  writeStore({
+    ...current,
+    ...patch,
+    preferences: patch.preferences
+      ? { ...current.preferences, ...patch.preferences }
+      : current.preferences,
+  });
+}
+
+function subscribeStore(onStoreChange: () => void) {
+  window.addEventListener(STORE_EVENT, onStoreChange);
+  window.addEventListener("storage", onStoreChange);
+  return () => {
+    window.removeEventListener(STORE_EVENT, onStoreChange);
+    window.removeEventListener("storage", onStoreChange);
+  };
+}
 
 function subscribeHash(onStoreChange: () => void) {
   window.addEventListener("hashchange", onStoreChange);
@@ -40,7 +124,7 @@ type AppValue = {
   screen: ScreenId;
   go: (
     screen: ScreenId,
-    opts?: { playerId?: string; teamId?: string; mode?: AskMode },
+    opts?: { playerId?: string; teamId?: string; mode?: AskMode; seedAsk?: string },
   ) => void;
   playerId: string;
   setPlayerId: (id: string) => void;
@@ -60,27 +144,32 @@ type AppValue = {
   ask: (question: string, mode?: AskMode) => void;
   mood: typeof initialMood;
   react: (side: "england" | "india", key: MoodKey) => void;
+  onboarded: boolean;
+  completeOnboarding: (teams: string[], players: string[]) => void;
+  skipOnboarding: () => void;
+  preferences: Preferences;
+  setPreferences: (next: Partial<Preferences>) => void;
+  recentChats: SavedChat[];
+  savedChats: SavedChat[];
+  saveChat: (chat: SavedChat) => void;
+  pendingSeed: string | null;
+  clearPendingSeed: () => void;
 };
 
 const AppContext = createContext<AppValue | null>(null);
 
 export function AppStateProvider({ children }: { children: ReactNode }) {
   const screen = useSyncExternalStore(subscribeHash, hashScreen, () => "home" as ScreenId);
+  const stored = useSyncExternalStore(subscribeStore, readStore, () => serverSnapshot);
   const [playerId, setPlayerId] = useState("joe-root");
   const [teamId, setTeamId] = useState("england");
-  const [followedPlayers, setFollowedPlayers] = useState([
-    "joe-root",
-    "harry-brook",
-    "jasprit-bumrah",
-    "virat-kohli",
-  ]);
-  const [followedTeams, setFollowedTeams] = useState(["england", "india"]);
   const [twinId, setTwinId] = useState("virat-kohli");
   const [askMode, setAskMode] = useState<AskMode>("general");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [asking, setAsking] = useState(false);
   const [askError, setAskError] = useState<string | null>(null);
   const [mood, setMood] = useState(initialMood);
+  const [pendingSeed, setPendingSeed] = useState<string | null>(null);
   const timer = useRef<number | null>(null);
 
   useEffect(() => {
@@ -90,16 +179,22 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const go = useCallback(
-    (next: ScreenId, opts?: { playerId?: string; teamId?: string; mode?: AskMode }) => {
+    (
+      next: ScreenId,
+      opts?: { playerId?: string; teamId?: string; mode?: AskMode; seedAsk?: string },
+    ) => {
       if (opts?.playerId) setPlayerId(opts.playerId);
       if (opts?.teamId) setTeamId(opts.teamId);
       if (opts?.mode) setAskMode(opts.mode);
+      if (opts?.seedAsk) setPendingSeed(opts.seedAsk);
       const url = `${window.location.pathname}${window.location.search}#${next}`;
       window.history.replaceState(null, "", url);
       window.dispatchEvent(new HashChangeEvent("hashchange"));
     },
     [],
   );
+
+  const clearPendingSeed = useCallback(() => setPendingSeed(null), []);
 
   const ask = useCallback(
     (question: string, mode?: AskMode) => {
@@ -121,6 +216,19 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
             ...current,
             { id: crypto.randomUUID(), role: "assistant", answer },
           ]);
+          const entry: SavedChat = {
+            id: crypto.randomUUID(),
+            question: text,
+            headline: answer.headline,
+            at: Date.now(),
+          };
+          const current = readStore();
+          patchStore({
+            recentChats: [entry, ...current.recentChats.filter((item) => item.question !== text)].slice(
+              0,
+              12,
+            ),
+          });
         } catch {
           setMessages((current) => [
             ...current,
@@ -146,15 +254,45 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const toggleFollow = useCallback((id: string) => {
-    setFollowedPlayers((current) =>
-      current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
-    );
+    const current = readStore();
+    patchStore({
+      followedPlayers: current.followedPlayers.includes(id)
+        ? current.followedPlayers.filter((item) => item !== id)
+        : [...current.followedPlayers, id],
+    });
   }, []);
 
   const toggleFollowTeam = useCallback((id: string) => {
-    setFollowedTeams((current) =>
-      current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
-    );
+    const current = readStore();
+    patchStore({
+      followedTeams: current.followedTeams.includes(id)
+        ? current.followedTeams.filter((item) => item !== id)
+        : [...current.followedTeams, id],
+    });
+  }, []);
+
+  const completeOnboarding = useCallback((teams: string[], players: string[]) => {
+    patchStore({
+      onboarded: true,
+      followedTeams: teams.length ? teams : ["england"],
+      followedPlayers: players.length ? players : ["joe-root"],
+    });
+    setPendingSeed("Tell me everything important about England this week.");
+  }, []);
+
+  const skipOnboarding = useCallback(() => {
+    patchStore({ onboarded: true });
+  }, []);
+
+  const setPreferences = useCallback((next: Partial<Preferences>) => {
+    const current = readStore();
+    patchStore({ preferences: { ...current.preferences, ...next } });
+  }, []);
+
+  const saveChat = useCallback((chat: SavedChat) => {
+    const current = readStore();
+    if (current.savedChats.some((item) => item.question === chat.question)) return;
+    patchStore({ savedChats: [chat, ...current.savedChats].slice(0, 20) });
   }, []);
 
   const value = useMemo<AppValue>(
@@ -165,9 +303,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       setPlayerId,
       teamId,
       setTeamId,
-      followedPlayers,
+      followedPlayers: stored.followedPlayers,
       toggleFollow,
-      followedTeams,
+      followedTeams: stored.followedTeams,
       toggleFollowTeam,
       twinId,
       setTwinId,
@@ -179,15 +317,24 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       ask,
       mood,
       react,
+      onboarded: stored.onboarded,
+      completeOnboarding,
+      skipOnboarding,
+      preferences: stored.preferences,
+      setPreferences,
+      recentChats: stored.recentChats,
+      savedChats: stored.savedChats,
+      saveChat,
+      pendingSeed,
+      clearPendingSeed,
     }),
     [
       screen,
       go,
       playerId,
       teamId,
-      followedPlayers,
+      stored,
       toggleFollow,
-      followedTeams,
       toggleFollowTeam,
       twinId,
       askMode,
@@ -197,6 +344,12 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       ask,
       mood,
       react,
+      completeOnboarding,
+      skipOnboarding,
+      setPreferences,
+      saveChat,
+      pendingSeed,
+      clearPendingSeed,
     ],
   );
 

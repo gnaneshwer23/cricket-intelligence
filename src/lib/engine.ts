@@ -15,6 +15,8 @@ const entities: { words: string[]; id: string }[] = [
   { words: ["sangakkara", "sanga"], id: "kumar-sangakkara" },
   { words: ["potts"], id: "matthew-potts" },
   { words: ["kuldeep"], id: "kuldeep-yadav" },
+  { words: ["babar"], id: "babar-azam" },
+  { words: ["sachin", "tendulkar"], id: "sachin-tendulkar" },
 ];
 
 function findEntities(query: string) {
@@ -33,7 +35,283 @@ export function answerQuestion(raw: string, mode: AskMode, twinId: string): Answ
   const named = findEntities(query);
   const twin = getPlayer(twinId) ?? players[0];
 
-  if ((hasWord(query, "similar") || hasWord(query, "alike")) && named[0]) {
+  if (
+    query.includes("30 second") ||
+    query.includes("thirty second") ||
+    (hasWord(query, "summarise") || hasWord(query, "summarize")) &&
+      (hasWord(query, "today") || hasWord(query, "cricket"))
+  ) {
+    return {
+      headline: "Today in 30 seconds",
+      paragraphs: [
+        "England 245 for 4 at Lord’s, day two. Root 89 not out, Stokes just in. They are 21 runs ahead of the phase model because overs 22–30 went for 72 against 48 expected.",
+        "Bumrah has two wickets and is bowling 9% above career speed. He is still the over that can flip the hour. Win model: England 58, India 42. Rain risk up to 34%.",
+        "Root needs 73 for 14,000. Brook’s 64 ended to Kuldeep — tempo given, then the known spin hole. Ask deeper if you want the why.",
+      ],
+      figures: [
+        { label: "Score", value: "245/4" },
+        { label: "Eng win", value: "58%" },
+        { label: "vs model", value: "+21" },
+        { label: "Root to 14k", value: "73" },
+      ],
+      confidence: 88,
+      followups: follow([
+        "Why is England winning?",
+        "Why is Bumrah difficult to face?",
+        "What are the turning points?",
+      ]),
+      speaker: "Daily briefing",
+    };
+  }
+
+  if (
+    (hasWord(query, "england") &&
+      (hasWord(query, "week") || hasWord(query, "important") || hasWord(query, "everything") || hasWord(query, "tell"))) ||
+    query.includes("everything important about england")
+  ) {
+    return {
+      headline: "England this week, without the noise",
+      paragraphs: [
+        "The Lord’s Test is the centre of the week. England are 245 for 4, ahead of the model, with Root building the innings that usually becomes a lead. Stokes is live; Brook’s 64 already did the tempo job.",
+        "Squad health: Woakes is a calf concern (40% availability). Potts is the day-three differential. Stokes bowls in bursts only. Root is 73 from 14,000 Test runs — that is the personal headline inside the team one.",
+        "Style file unchanged: aggression 92, tempo 89, nearest historical analogue still 2005 Australia at 81%. The brake pedal they actually use is Root’s 89 not out.",
+      ],
+      figures: [
+        { label: "Match position", value: "245/4" },
+        { label: "Win model", value: "58%" },
+        { label: "Root to 14k", value: "73 runs" },
+        { label: "Woakes avail.", value: "40%" },
+      ],
+      confidence: 84,
+      followups: follow([
+        "Why is England winning?",
+        "Show Stokes' best chases",
+        "Most similar to Root",
+      ]),
+      speaker: "Personal briefing",
+    };
+  }
+
+  if (
+    hasWord(query, "bumrah") &&
+    (hasWord(query, "difficult") ||
+      hasWord(query, "dominat") ||
+      hasWord(query, "why") ||
+      hasWord(query, "effective") ||
+      hasWord(query, "peak") ||
+      hasWord(query, "face") ||
+      hasWord(query, "today") ||
+      hasWord(query, "fast"))
+  ) {
+    return {
+      headline: "Bumrah is difficult because the leave stops being safe",
+      paragraphs: [
+        "He is bowling at 146.2 kph — 9% faster than his career mean of 134.1. The hard length arrives before a batter’s weight can settle forward, and the same run-up still produces the yorker.",
+        "The Twin reads every spell as three moves: a ball at the hip, a ball at the top of off, and a yorker only after the batter’s weight is back. He does not search for swing for six balls. He waits until the leave gets late.",
+        "Today he already has Crawley and Duckett. He has not yet bowled the session that decides the lead — which is why removing him collapses India’s win chance from 42% to 18%. Difficulty is the release, the patience, and the fact the model moves when he decides to bowl.",
+      ],
+      figures: [
+        { label: "Speed vs career", value: "+9%" },
+        { label: "Wickets today", value: "2" },
+        { label: "Win without him", value: "18%" },
+        { label: "Peak age", value: "32" },
+      ],
+      confidence: 86,
+      followups: follow([
+        "What if Bumrah is unavailable?",
+        "How does he bowl to Root?",
+        "Who likely scores next?",
+      ]),
+    };
+  }
+
+  if (hasWord(query, "stokes") && (hasWord(query, "chase") || hasWord(query, "best") || query.includes("headingley"))) {
+    return {
+      headline: "Stokes' best chases are ugly on purpose",
+      paragraphs: [
+        "Headingley 2019 remains the reference: England needed 359, were 286 for 9, and Stokes scored in the V until the bowler went short — then he hooked. The Twin still treats that as the template, not a miracle.",
+        "The pattern in the file: eight quiet balls, then the shot that tells the field the plan has changed. He trusts deep midwicket to be wrong once. Most days the fielder is right twice and wrong once, and once is enough.",
+        "Away from home the batting gets braver as the lead shrinks. Today he is 3 not out with Kuldeep live — the first fifteen balls of wrist spin are the chase-before-the-chase. Survive those, and the Headingley grammar comes back into range.",
+      ],
+      figures: [
+        { label: "Signature chase", value: "Headingley '19" },
+        { label: "Mental DNA", value: "98" },
+        { label: "Today", value: "3*" },
+        { label: "Live risk window", value: "15 balls" },
+      ],
+      confidence: 83,
+      followups: follow([
+        "Who likely scores next?",
+        "Why is England winning?",
+        "How does Stokes play Kuldeep?",
+      ]),
+      speaker: "Chase file",
+    };
+  }
+
+  if (
+    (hasWord(query, "sachin") || hasWord(query, "tendulkar")) &&
+    (hasWord(query, "kohli") || hasWord(query, "24") || hasWord(query, "age"))
+  ) {
+    return {
+      headline: "Sachin at 24 vs Kohli at 24: library vs decision",
+      paragraphs: [
+        "Sachin at 24 already had a full international vocabulary — leave, drive, pull, late cut — and thousands of international runs. He treated bowling plans as information. Once read, he scored without needing the plan to fail first.",
+        "Kohli at 24 was already playing innings that felt like a decision. The chase file was forming: strike rotation until the field spread, boundaries as release. Output was elite; the grammar was hunger, not archive.",
+        "The useful comparison is not who was 'better'. Sachin at 24 was building a library. Kohli at 24 was building a chase identity. Root at 25 sat between them on output and resembled neither on style — which is why Brook is being asked to be both, and the model doubts that path.",
+      ],
+      figures: [
+        { label: "Sachin @24 shape", value: "Library" },
+        { label: "Kohli @24 shape", value: "Chase" },
+        { label: "Likeness now", value: "76%" },
+        { label: "Age curve ref", value: "Sachin" },
+      ],
+      confidence: 78,
+      followups: follow([
+        "Compare Root and Kohli at age 25",
+        "Closest trajectory to Babar",
+        "Explain Kohli's chases",
+      ]),
+      speaker: "Age curve",
+    };
+  }
+
+  if (
+    hasWord(query, "babar") &&
+    (hasWord(query, "similar") ||
+      hasWord(query, "trajectory") ||
+      hasWord(query, "closest") ||
+      hasWord(query, "like") ||
+      mode === "career" ||
+      named.length === 1)
+  ) {
+    const babar = getPlayer("babar-azam")!;
+    return {
+      headline: "Closest trajectory to Babar: Root on control, Kohli on appetite",
+      paragraphs: [
+        "Babar’s file is timing-first control batting with a captain’s load. Against the living game, Joe Root is the nearest trajectory at 78% — late hands, staged risk, innings built before they are spent.",
+        "Weight chase appetite instead and Kohli rises to 74%. Babar shrinks a chase to singles before he finishes it; Kohli’s pattern is similar in patience, louder in intent after over 35.",
+        "Williamson sits at 72% for the same leave-first grammar. Coverage note: Babar is not in this Lord’s XI — the answer is from his career DNA and similarity graph, not today’s scorecard.",
+      ],
+      figures: babar.similar.map((item) => ({
+        label: getPlayer(item.id)?.name ?? item.id,
+        value: `${item.score}%`,
+      })),
+      confidence: 77,
+      followups: follow([
+        "Most similar to Root",
+        "Sachin at 24 vs Kohli",
+        "Project Babar's career",
+      ]),
+      speaker: "Trajectory",
+    };
+  }
+
+  if (
+    (hasWord(query, "england") && (hasWord(query, "winning") || hasWord(query, "win") || hasWord(query, "ahead"))) ||
+    query.includes("turning point") ||
+    query.includes("turning points") ||
+    (hasWord(query, "project") && (hasWord(query, "score") || hasWord(query, "final"))) ||
+    query.includes("final score") ||
+    (hasWord(query, "likely") && (hasWord(query, "score") || hasWord(query, "next"))) ||
+    query.includes("who scores next") ||
+    query.includes("who likely scores")
+  ) {
+    const wantsNext = hasWord(query, "next") || query.includes("scores next");
+    const wantsProject = hasWord(query, "project") || query.includes("final score");
+    const wantsTurning = query.includes("turning");
+
+    if (wantsNext) {
+      return {
+        headline: "Stokes is the most likely next scorer — with the widest range",
+        paragraphs: [
+          "Root is set on 89*, so he remains the favourite to be top scorer. The next meaningful chunk of runs, though, is more likely to come from Stokes if he survives Kuldeep’s first fifteen balls.",
+          "Model split for the next 30 runs from the strike: Stokes 54%, Root 38%, extras/other 8%. Stokes’ ceiling is a burst; his floor is an edge to gully before lunch.",
+          "Bumrah is the other 'scorer' in the hour — wickets count as anti-runs. A wicket in his first four overs moves the match more than thirty quiet singles.",
+        ],
+        figures: [
+          { label: "Stokes next chunk", value: "54%" },
+          { label: "Root top scorer", value: "61%" },
+          { label: "Danger bowler", value: "Bumrah 72%" },
+        ],
+        confidence: 71,
+        followups: follow([
+          "Project the final score",
+          "Why is England winning?",
+          "Show Stokes' best chases",
+        ]),
+        speaker: "Predictions",
+      };
+    }
+
+    if (wantsProject) {
+      return {
+        headline: "Projected England total: 338 — with a long tail",
+        paragraphs: [
+          "Base case with Root set and Stokes surviving the wrist-spin window: England 338 all out. Band: 305 (Bumrah burst works) to 372 (Root to 140+, lower order 80).",
+          "The projection leans on overs 22–30 already being in the book (+21 vs model) and on Bumrah’s spell being capped. If he bowls uncapped and takes two more, the mean drops toward 310.",
+          "Rain at 34% for the back end does not change the projected total as much as it changes whether India ever bat into a result.",
+        ],
+        figures: [
+          { label: "Base total", value: "338" },
+          { label: "Low / high", value: "305–372" },
+          { label: "Eng win @338", value: "63%" },
+        ],
+        confidence: 69,
+        followups: follow([
+          "What are the turning points?",
+          "Who likely scores next?",
+          "What if Bumrah is unavailable?",
+        ]),
+        speaker: "Predictions",
+      };
+    }
+
+    if (wantsTurning) {
+      return {
+        headline: "Three turning points — one already played",
+        paragraphs: [
+          "Already played: overs 22–30. England scored 72 against 48 expected. Root through Jadeja, Brook forcing a plan change. Most of the +21 lead lives there.",
+          "Live: Bumrah’s first four overs after the break against Root and Stokes. A wicket here swings the hour; thirty quiet runs do not.",
+          "Pending: Stokes vs Kuldeep’s remaining balls in the fifteen-ball risk window, and whether rain at 34% freezes the match before India bat.",
+        ],
+        figures: [
+          { label: "Phase delta", value: "+24 runs" },
+          { label: "Next swing over", value: "Bumrah 1–4" },
+          { label: "Rain risk", value: "34%" },
+        ],
+        confidence: 82,
+        followups: follow([
+          "Why is England winning?",
+          "Project the final score",
+          "Who likely scores next?",
+        ]),
+      };
+    }
+
+    return {
+      headline: "England are winning because the model already moved",
+      paragraphs: [
+        "They are 245 for 4 and 21 runs ahead of phase expectation. The damage was overs 22–30: 72 against 48 expected. Root took spin out of the game; Brook made India change the ball they were bowling.",
+        "Win model: England 58%, India 42%. That is not a coin toss — it is a set batter, a lead on expectancy, and an India attack whose older-ball plan did not pull the phase back.",
+        "The lead is fragile in one direction only: Bumrah. Without him India fall to 18%. With a wicket in his first burst, this becomes a different afternoon. Turning points and score projection are one ask away.",
+      ],
+      figures: [
+        { label: "England", value: "58%" },
+        { label: "India", value: "42%" },
+        { label: "Ahead of model", value: "+21" },
+        { label: "Key phase", value: "Ov 22–30" },
+      ],
+      confidence: 79,
+      followups: follow([
+        "What are the turning points?",
+        "Project the final score",
+        "Who likely scores next?",
+      ]),
+    };
+  }
+
+  if ((hasWord(query, "similar") || hasWord(query, "alike") || query.includes("most similar")) && named[0]) {
     return similarAnswer(named[0]);
   }
 
@@ -56,7 +334,14 @@ export function answerQuestion(raw: string, mode: AskMode, twinId: string): Answ
     };
   }
 
-  if (hasWord(query, "brook") && (hasWord(query, "root") || hasWord(query, "surpass") || hasWord(query, "career") || hasWord(query, "predict") || hasWord(query, "forecast"))) {
+  if (
+    hasWord(query, "brook") &&
+    (hasWord(query, "root") ||
+      hasWord(query, "surpass") ||
+      hasWord(query, "career") ||
+      hasWord(query, "predict") ||
+      hasWord(query, "forecast"))
+  ) {
     return {
       headline: "Brook can be great. Matching Root is a 38% outcome",
       paragraphs: [
@@ -75,7 +360,10 @@ export function answerQuestion(raw: string, mode: AskMode, twinId: string): Answ
     };
   }
 
-  if (hasWord(query, "jadeja") && (hasWord(query, "today") || hasWord(query, "important") || hasWord(query, "session") || mode === "general")) {
+  if (
+    hasWord(query, "jadeja") &&
+    (hasWord(query, "today") || hasWord(query, "important") || hasWord(query, "session") || mode === "general")
+  ) {
     return {
       headline: "Jadeja matters today as the over-bank, not the wicket",
       paragraphs: [
@@ -107,25 +395,7 @@ export function answerQuestion(raw: string, mode: AskMode, twinId: string): Answ
         { label: "Closer historical twin", value: "Sangakkara" },
       ],
       confidence: 74,
-      followups: follow(["Who is most similar to Joe Root?", "Explain Kohli's chases"]),
-    };
-  }
-
-  if (hasWord(query, "bumrah") && (hasWord(query, "why") || hasWord(query, "effective") || hasWord(query, "peak") || hasWord(query, "fast"))) {
-    return {
-      headline: "Bumrah is in the peak window, and it is measurable",
-      paragraphs: [
-        "He is bowling at 146.2 kph, 9% faster than his career mean of 134.1. The Twin reads the spell as three moves: a ball at the hip, a ball at the top of off, and a yorker only after the batter's weight is back.",
-        "He already has Crawley and Duckett. He has not bowled the session that decides the lead. That is why the what-if is so large. If he does not bowl again, India's win chance falls from 42% to 18%, and England's expected total rises by 61.",
-        "Effectiveness is the release and the patience. He does not search for swing for six balls. He waits until the leave gets late.",
-      ],
-      figures: [
-        { label: "Speed vs career", value: "+9%" },
-        { label: "Wickets today", value: "2" },
-        { label: "Win chance without him", value: "18%" },
-      ],
-      confidence: 86,
-      followups: follow(["What if Bumrah is unavailable?", "How does he bowl to Root?"]),
+      followups: follow(["Who is most similar to Joe Root?", "Sachin at 24 vs Kohli"]),
     };
   }
 
@@ -142,7 +412,7 @@ export function answerQuestion(raw: string, mode: AskMode, twinId: string): Answ
         { label: "Not ranked by", value: "Strike rate" },
       ],
       confidence: 70,
-      followups: follow(["How good is Root's 89?", "Where does Williamson's away record sit?"]),
+      followups: follow(["Show Stokes' best chases", "How good is Root's 89?"]),
     };
   }
 
@@ -164,7 +434,7 @@ export function answerQuestion(raw: string, mode: AskMode, twinId: string): Answ
         { label: "Was overnight", value: "18%" },
       ],
       confidence: 68,
-      followups: follow(["Who wins if they play the full day?", "What does a full day look like?"]),
+      followups: follow(["Who wins if they play the full day?", "Project the final score"]),
     };
   }
 
@@ -182,7 +452,7 @@ export function answerQuestion(raw: string, mode: AskMode, twinId: string): Answ
         { label: "Ahead of model", value: "+21" },
       ],
       confidence: 73,
-      followups: follow(["What if Bumrah is unavailable?", "How important is Jadeja today?"]),
+      followups: follow(["What if Bumrah is unavailable?", "What are the turning points?"]),
     };
   }
 
@@ -278,7 +548,10 @@ export function answerQuestion(raw: string, mode: AskMode, twinId: string): Answ
     };
   }
 
-  if ((hasWord(query, "england") && (hasWord(query, "dna") || hasWord(query, "style") || query.includes("2005"))) || query.includes("2005")) {
+  if (
+    (hasWord(query, "england") && (hasWord(query, "dna") || hasWord(query, "style") || query.includes("2005"))) ||
+    query.includes("2005")
+  ) {
     return {
       headline: "This England side resembles 2005 Australia more than it resembles its own past",
       paragraphs: [
@@ -296,7 +569,10 @@ export function answerQuestion(raw: string, mode: AskMode, twinId: string): Answ
     };
   }
 
-  if (query.includes("lord") || (hasWord(query, "india") && (hasWord(query, "venue") || hasWord(query, "struggle") || hasWord(query, "ground")))) {
+  if (
+    query.includes("lord") ||
+    (hasWord(query, "india") && (hasWord(query, "venue") || hasWord(query, "struggle") || hasWord(query, "ground")))
+  ) {
     return {
       headline: "Lord's asks India to be good before they are ready",
       paragraphs: [
@@ -339,20 +615,31 @@ export function answerQuestion(raw: string, mode: AskMode, twinId: string): Answ
 
   if (named.length === 1) {
     const player = named[0];
+    const topTraits = player.traits
+      .slice()
+      .sort((a, b) => b.level - a.level)
+      .slice(0, 2)
+      .map((t) => `${t.label} ${t.level}`)
+      .join(" · ");
     return {
       headline: player.name,
-      paragraphs: [player.blurb, player.formNote, player.report.development],
+      paragraphs: [
+        player.blurb,
+        player.formNote,
+        `Living traits right now: ${topTraits}. ${player.report.development}`,
+      ],
       figures: [
         { label: player.projection.headline, value: `${player.projection.elite}%` },
         { label: player.projection.landmark, value: `${player.projection.landmarkChance}%` },
         { label: "Peak age", value: String(player.projection.peakAge) },
+        { label: player.traits[0]?.label ?? "Trait", value: String(player.traits[0]?.level ?? "—") },
       ],
       confidence: 75,
       followups: [
         `Who is most similar to ${player.name.split(" ").slice(-1)[0]}?`,
         `Project ${player.name.split(" ").slice(-1)[0]}'s career`,
       ],
-      speaker: mode === "career" ? "Career forecast" : undefined,
+      speaker: mode === "career" ? "Career forecast" : "Player intelligence",
     };
   }
 
@@ -362,7 +649,7 @@ export function answerQuestion(raw: string, mode: AskMode, twinId: string): Answ
       paragraphs: [
         named[0].blurb,
         named[1].blurb,
-        "Ask for the similarity, the matchup, or the chase if you want the model to pick a side.",
+        "Ask for the similarity, the matchup, the age curve, or the chase if you want the model to pick a side.",
       ],
       followups: [
         `Who is more like ${named[0].name.split(" ").slice(-1)[0]}?`,
@@ -387,27 +674,42 @@ export function answerQuestion(raw: string, mode: AskMode, twinId: string): Answ
     return {
       headline: "Name a player, a year, or a what-if",
       paragraphs: [
-        "The history file is strongest on Root and Sangakkara, Kohli at 25, the 2005 likeness, and Bumrah dropped into the 1990s.",
+        "The history file is strongest on Root and Sangakkara, Sachin at 24 vs Kohli, Stokes' chases, the 2005 likeness, and Bumrah dropped into the 1990s.",
       ],
       followups: follow([
-        "Compare Root and Kohli at age 25",
+        "Sachin at 24 vs Kohli",
+        "Show Stokes' best chases",
         "What if Bumrah played in the 1990s?",
-        "Best Test innings since 2000",
       ]),
     };
   }
 
+  if (mode === "predictions") {
+    return {
+      headline: "Ask for a win model, a total, or who scores next",
+      paragraphs: [
+        "Live board: England 58%, India 42%, projected total around 338, Stokes the likeliest next chunk of runs.",
+      ],
+      followups: follow([
+        "Why is England winning?",
+        "Project the final score",
+        "Who likely scores next?",
+      ]),
+      speaker: "Predictions",
+    };
+  }
+
   return {
-    headline: "Ask it about this match, or about a player",
+    headline: "Ask Cricket Anything",
     paragraphs: [
-      "I can brief a player, a matchup, a chase, a captain, or a what-if. The ground today is England against India at Lord's, 245 for 4, England 58%.",
-      "Try a name. Root, Brook, Bumrah, Jadeja, Kohli, and Head all have a file.",
+      "I brief matches, players, predictions, and careers — structured answers, not a raw stats dump. Today’s ground is England vs India at Lord’s, 245 for 4, England 58%.",
+      "Try Bumrah’s difficulty, Stokes’ chases, Root’s twins, Sachin vs Kohli at 24, Babar’s trajectory, or a 30-second summary of today.",
     ],
     followups: follow([
-      "Who is most similar to Joe Root?",
-      "What if Bumrah played in the 1990s?",
-      "Will Harry Brook surpass Root?",
-      "How important is Jadeja today?",
+      "Summarise today's cricket in 30 seconds",
+      "Why is Bumrah difficult to face?",
+      "Most similar to Root",
+      "Closest trajectory to Babar",
     ]),
   };
 }
@@ -429,7 +731,8 @@ function similarAnswer(player: NonNullable<ReturnType<typeof getPlayer>>): Answe
     confidence: top?.score,
     followups: [
       `Project ${player.name.split(" ").slice(-1)[0]}'s career`,
-      "How does this side bat under pressure?",
+      "Closest trajectory to Babar",
+      "Sachin at 24 vs Kohli",
     ],
   };
 }
@@ -441,6 +744,7 @@ function twinAnswer(player: NonNullable<ReturnType<typeof getPlayer>>): Answer {
     figures: [
       { label: "Years in the file", value: String(player.twinYears) },
       { label: "Peak age", value: String(player.projection.peakAge) },
+      { label: player.traits[0]?.label ?? "Trait", value: String(player.traits[0]?.level ?? "—") },
     ],
     confidence: 80,
     followups: [

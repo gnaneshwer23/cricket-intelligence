@@ -76,9 +76,9 @@ export function PlayersScreen() {
   return (
     <div className="mx-auto max-w-6xl">
       <PageTitle
-        kicker="Players"
-        title="Identity, not a stats page."
-        lede="DNA, the career the model thinks is coming, the players it rhymes with, a scouting report, the milestones, a Twin you can ask, and the graph that ties them."
+        kicker="Player Intelligence"
+        title="Career DNA, living traits."
+        lede="Forecast, similarities, strengths, and personality traits that update with the match narrative — Aggressive, Technical, Calm, and the rest as a living file."
       />
       <div className="grid gap-6 lg:grid-cols-[16rem_1fr]">
         <div>
@@ -150,9 +150,10 @@ export function PlayersScreen() {
           <Tabs defaultValue="dna" className="mt-6">
             <TabsList variant="line" className="h-auto! w-full justify-start overflow-x-auto">
               <TabsTrigger value="dna">DNA</TabsTrigger>
-              <TabsTrigger value="projection">Projection</TabsTrigger>
+              <TabsTrigger value="traits">Traits</TabsTrigger>
+              <TabsTrigger value="projection">Forecast</TabsTrigger>
               <TabsTrigger value="similar">Similar</TabsTrigger>
-              <TabsTrigger value="report">AI report</TabsTrigger>
+              <TabsTrigger value="report">Strengths</TabsTrigger>
               <TabsTrigger value="milestones">Milestones</TabsTrigger>
               <TabsTrigger value="twin">Cricket Twin</TabsTrigger>
               <TabsTrigger value="universe">Universe</TabsTrigger>
@@ -160,11 +161,40 @@ export function PlayersScreen() {
 
             <TabsContent value="dna" className="mt-4">
               <Panel>
-                <Kicker>Player DNA</Kicker>
+                <Kicker>Career DNA</Kicker>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Continuously read against form notes and match context — not a static card.
+                </p>
                 <div className="mt-5 grid gap-4 sm:grid-cols-2">
                   {dnaLabels.map((item) => (
                     <Meter key={item.key} label={item.label} value={player.dna[item.key]} />
                   ))}
+                </div>
+              </Panel>
+            </TabsContent>
+
+            <TabsContent value="traits" className="mt-4">
+              <Panel>
+                <Kicker>Living personality traits</Kicker>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Updated as the profile narrative moves — today&apos;s match still colours the read.
+                </p>
+                <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                  {player.traits
+                    .slice()
+                    .sort((a, b) => b.level - a.level)
+                    .map((trait) => (
+                      <div key={trait.label} className="rounded-2xl bg-muted/50 p-4">
+                        <div className="flex items-baseline justify-between gap-3">
+                          <h3 className="font-display text-2xl">{trait.label}</h3>
+                          <span className="text-lime text-xl tabular-nums">{trait.level}</span>
+                        </div>
+                        <div className="mt-3">
+                          <Progress value={trait.level} aria-label={trait.label} className="h-1.5" />
+                        </div>
+                        <p className="mt-3 text-sm text-muted-foreground">{trait.note}</p>
+                      </div>
+                    ))}
                 </div>
               </Panel>
             </TabsContent>

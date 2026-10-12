@@ -16,6 +16,8 @@ import {
   fieldPlans,
   fow,
   lastOver,
+  matchPredictions,
+  matchReport,
   matchups,
   phases,
   simScript,
@@ -24,7 +26,7 @@ import { clamp, MOODS, moodBreakdown } from "@/lib/format";
 
 export function MatchScreen() {
   const countdown = useCountdown();
-  const { mood, react, go } = useApp();
+  const { mood, react, go, ask } = useApp();
   const [planId, setPlanId] = useState(fieldPlans[0].id);
   const [side, setSide] = useState<"england" | "india">("england");
   const [noted, setNoted] = useState<string | null>(null);
@@ -49,9 +51,9 @@ export function MatchScreen() {
   return (
     <div className="mx-auto max-w-6xl">
       <PageTitle
-        kicker="Live match · mission control"
+        kicker="Match Centre · explanations"
         title="England vs India"
-        lede="A scoreboard tells you 245 for 4. This tells you why it is 21 ahead of the model, who the next hour belongs to, and how the ground feels about it."
+        lede="Above expectation, momentum, key matchup, turning point, predictions, and an AI session report — the score is only the start."
       />
 
       <section className="overflow-hidden rounded-[2rem] border border-border bg-card">
@@ -104,13 +106,15 @@ export function MatchScreen() {
         </div>
       </section>
 
-      <Tabs defaultValue="scorecard" className="mt-6">
+      <Tabs defaultValue="intel" className="mt-6">
         <TabsList variant="line" className="h-auto! w-full justify-start overflow-x-auto">
-          <TabsTrigger value="scorecard">Scorecard</TabsTrigger>
           <TabsTrigger value="intel">Intelligence</TabsTrigger>
-          <TabsTrigger value="emotions">Emotions</TabsTrigger>
-          <TabsTrigger value="tactical">Tactical</TabsTrigger>
+          <TabsTrigger value="report">AI Report</TabsTrigger>
+          <TabsTrigger value="predictions">Predictions</TabsTrigger>
+          <TabsTrigger value="scorecard">Scorecard</TabsTrigger>
+          <TabsTrigger value="emotions">Mood</TabsTrigger>
           <TabsTrigger value="matchups">Matchups</TabsTrigger>
+          <TabsTrigger value="tactical">Tactical</TabsTrigger>
           <TabsTrigger value="sim">Simulations</TabsTrigger>
         </TabsList>
 
@@ -177,12 +181,29 @@ export function MatchScreen() {
         <TabsContent value="intel" className="mt-4">
           <div className="grid gap-4 lg:grid-cols-5">
             <Panel className="lg:col-span-3">
-              <Kicker>AI analysis</Kicker>
+              <Kicker>AI summary</Kicker>
               <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground">
                 <p>England are 21 runs ahead of expectation. The decisive phase was overs 22–30.</p>
-                <p>Root neutralised spin. Brook scored quickly enough to force a change of plan, then edged Kuldeep. India’s older-ball bowling never pulled the phase back.</p>
-                <p>The next shift is a wicket, not a quiet hour. Bumrah’s first four overs of the session are the model.</p>
+                <p>
+                  Root neutralised spin. Brook scored quickly enough to force a change of plan, then
+                  edged Kuldeep. India’s older-ball bowling never pulled the phase back.
+                </p>
+                <p>
+                  Key matchup now: Stokes vs Kuldeep. Turning point already played: over 27. The next
+                  shift is a wicket in Bumrah’s first four overs — not a quiet hour.
+                </p>
               </div>
+              <Button
+                type="button"
+                className="mt-5"
+                variant="secondary"
+                onClick={() => {
+                  go("ask", { mode: "predictions" });
+                  ask("Why is England winning?", "predictions");
+                }}
+              >
+                Ask: why is England winning?
+              </Button>
             </Panel>
             <Panel className="lg:col-span-2">
               <Kicker>Phase against the model</Kicker>
@@ -209,6 +230,112 @@ export function MatchScreen() {
               </ul>
             </Panel>
           </div>
+        </TabsContent>
+
+        <TabsContent value="report" className="mt-4">
+          <Panel>
+            <Kicker>{matchReport.kicker}</Kicker>
+            <p className="mt-2 text-xs tracking-[0.14em] text-lime uppercase">{matchReport.status}</p>
+            <h2 className="font-display mt-3 text-3xl tracking-tight">{matchReport.title}</h2>
+            <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{matchReport.summary}</p>
+            <dl className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {matchReport.figures.map((figure) => (
+                <div key={figure.label} className="rounded-xl bg-muted/50 px-3 py-2">
+                  <dt className="text-[11px] tracking-wide text-muted-foreground uppercase">
+                    {figure.label}
+                  </dt>
+                  <dd className="mt-1 font-medium tabular-nums">{figure.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </Panel>
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+            <Panel>
+              <Kicker>What happened</Kicker>
+              <ul className="mt-3 space-y-3 text-sm leading-relaxed text-muted-foreground">
+                {matchReport.whatHappened.map((item) => (
+                  <li key={item}>· {item}</li>
+                ))}
+              </ul>
+            </Panel>
+            <Panel>
+              <Kicker>Why</Kicker>
+              <ul className="mt-3 space-y-3 text-sm leading-relaxed text-muted-foreground">
+                {matchReport.why.map((item) => (
+                  <li key={item}>· {item}</li>
+                ))}
+              </ul>
+            </Panel>
+          </div>
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+            <Panel>
+              <Kicker>{matchReport.keyOver.label}</Kicker>
+              <p className="font-display mt-2 text-3xl">{matchReport.keyOver.value}</p>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                {matchReport.keyOver.detail}
+              </p>
+            </Panel>
+            <Panel>
+              <Kicker>{matchReport.keyPerformance.label}</Kicker>
+              <p className="font-display mt-2 text-3xl">{matchReport.keyPerformance.value}</p>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                {matchReport.keyPerformance.detail}
+              </p>
+            </Panel>
+          </div>
+          <Panel className="mt-4">
+            <Kicker>Future implications</Kicker>
+            <ul className="mt-3 space-y-3 text-sm leading-relaxed text-muted-foreground">
+              {matchReport.implications.map((item) => (
+                <li key={item}>· {item}</li>
+              ))}
+            </ul>
+          </Panel>
+        </TabsContent>
+
+        <TabsContent value="predictions" className="mt-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            {matchPredictions.map((item) => (
+              <Panel key={item.id}>
+                <Kicker>{item.label}</Kicker>
+                <div className="mt-3 flex items-baseline justify-between gap-3">
+                  <h3 className="font-display text-3xl">{item.pick}</h3>
+                  <span className="text-lime text-2xl tabular-nums">{item.chance}%</span>
+                </div>
+                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{item.note}</p>
+              </Panel>
+            ))}
+          </div>
+          <Panel className="mt-4">
+            <Kicker>Before / during style</Kicker>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+              Before the session: England slightly ahead on venue prior, Bumrah flagged as the swing
+              factor. During: Root set, Stokes in the Kuldeep window, projected total ~338 if the
+              burst fails to land.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  go("ask", { mode: "predictions" });
+                  ask("Project the final score", "predictions");
+                }}
+              >
+                Project final score
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  go("ask", { mode: "predictions" });
+                  ask("Who likely scores next?", "predictions");
+                }}
+              >
+                Who scores next?
+              </Button>
+            </div>
+          </Panel>
         </TabsContent>
 
         <TabsContent value="emotions" className="mt-4">

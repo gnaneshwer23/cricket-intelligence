@@ -1,8 +1,11 @@
 # CricketOS
 
-An AI cricket intelligence platform. The score is the start of the screen, not the whole of it: why the hour happened, what the next one looks like, how the ground feels, what it means for a career, and which futures fall apart if one player is missing.
+**ChatGPT for Cricket** — an AI copilot for fans.
 
-The copy and numbers are an illustrative model for this demo. They are not an official scorecard, a record book, or a betting product.
+Positioning: Fan → AI → Answers → Predictions → Community → Action.  
+Hero: **Ask Cricket Anything.**
+
+Not a score app, news feed, or fantasy platform. The score is the start of the screen, not the whole of it. Copy and numbers are an illustrative model for this demo — not an official scorecard, record book, or betting product.
 
 ## Run it
 
@@ -11,17 +14,22 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000) (or the port printed by Next.js).
 
-## What’s inside
+## MVP screens
 
-- **Home** — the morning briefing, the Lord’s session, stories, and an ask bar
-- **Ask Cricket** — general chat, predictions, fantasy, history, careers, and Cricket Twin
-- **Live Match** — scorecard, intelligence, fan mood, tactics, matchups, and a session simulation
-- **Players** — DNA, career projection, similar players, scouting reports, milestones, Twin, and the universe graph
-- **Teams** — team DNA, evolution, squad health, future squads
-- **Community** — match room, reactions, polls, debates
-- **Fantasy** — an explained XI, a captain call, injury alerts
-- **Labs** — what-if, draft builder, future XI, alternate history
+1. **Home** — brand-first daily AI briefing, live match, trending asks, recommended questions, smart alerts
+2. **Ask Cricket** — conversational query engine with structured answers, confidence, figures, follow-ups, Cricket Twin
+3. **Match Centre** — above-expected, momentum, key matchup, turning point, predictions, fan mood, AI session report
+4. **Player Intelligence** — career DNA, living traits (Aggressive / Technical / …), forecast, similarities, Twin
+5. **My Feed** — favourites, saved/recent chats, alerts, predictions, England-only preference
+
+First visit runs a short onboarding (favourite teams + players), persisted in `localStorage`, then seeds Ask with a personal England briefing.
+
+## Also available (de-emphasised)
+
+Teams, Community, Fantasy, and Labs stay reachable under **Later** / **More**. They are not the primary journey.
+
+## Keyboard
 
 Press `/` to jump to Ask Cricket.

@@ -28,15 +28,27 @@ export function AskScreen() {
     ask,
     twinId,
     setTwinId,
+    pendingSeed,
+    clearPendingSeed,
+    saveChat,
   } = useApp();
   const [draft, setDraft] = useState("");
   const scroller = useRef<HTMLDivElement>(null);
   const prompts = askPrompts[askMode] ?? askPrompts.general;
+  const seeded = useRef(false);
 
   useEffect(() => {
     const node = scroller.current;
     if (node) node.scrollTop = node.scrollHeight;
   }, [messages, asking]);
+
+  useEffect(() => {
+    if (!pendingSeed || seeded.current || asking) return;
+    seeded.current = true;
+    const text = pendingSeed;
+    clearPendingSeed();
+    ask(text, "general");
+  }, [pendingSeed, clearPendingSeed, ask, asking]);
 
   function submit(question: string) {
     const text = question.trim();
@@ -52,8 +64,8 @@ export function AskScreen() {
     <div className="mx-auto flex max-w-3xl flex-col">
       <PageTitle
         kicker="Ask Cricket"
-        title="Don’t search cricket. Ask it."
-        lede="General chat, a prediction, a fantasy call, a historical file, a career, or a player’s Twin."
+        title="Ask Cricket Anything."
+        lede="Conversational answers with figures, confidence, and follow-ups — match explainers, predictions, careers, and Cricket Twin."
       />
 
       <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
@@ -110,23 +122,33 @@ export function AskScreen() {
           {messages.map((message) => {
             if (message.role === "user") {
               return (
-                <div key={message.id} className="ml-8 rounded-2xl bg-primary px-4 py-3 text-sm text-primary-foreground">
+                <div
+                  key={message.id}
+                  className="ml-8 rounded-2xl bg-primary px-4 py-3 text-sm text-primary-foreground"
+                >
                   {message.text}
                 </div>
               );
             }
             if (message.role === "error") {
               return (
-                <p key={message.id} className="rounded-2xl border border-destructive/40 px-4 py-3 text-sm text-destructive">
+                <p
+                  key={message.id}
+                  className="rounded-2xl border border-destructive/40 px-4 py-3 text-sm text-destructive"
+                  role="alert"
+                >
                   {message.text}
                 </p>
               );
             }
+            const messageIndex = messages.findIndex((item) => item.id === message.id);
+            const prior = [...messages.slice(0, messageIndex)]
+              .reverse()
+              .find((item) => item.role === "user");
+            const priorText = prior && prior.role === "user" ? prior.text : message.answer.headline;
             return (
               <article key={message.id} className="rounded-2xl bg-muted/50 px-4 py-4">
-                {message.answer.speaker ? (
-                  <Kicker>{message.answer.speaker}</Kicker>
-                ) : null}
+                {message.answer.speaker ? <Kicker>{message.answer.speaker}</Kicker> : null}
                 <h2 className="font-display mt-1 text-2xl leading-tight">{message.answer.headline}</h2>
                 <div className="mt-3 space-y-3 text-sm leading-relaxed text-muted-foreground">
                   {message.answer.paragraphs.map((paragraph) => (
@@ -137,7 +159,9 @@ export function AskScreen() {
                   <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
                     {message.answer.figures.map((figure) => (
                       <div key={figure.label} className="rounded-xl bg-background/60 px-3 py-2">
-                        <dt className="text-[11px] tracking-wide text-muted-foreground uppercase">{figure.label}</dt>
+                        <dt className="text-[11px] tracking-wide text-muted-foreground uppercase">
+                          {figure.label}
+                        </dt>
                         <dd className="mt-1 font-medium tabular-nums">{figure.value}</dd>
                       </div>
                     ))}
@@ -160,13 +184,28 @@ export function AskScreen() {
                       {follow}
                     </Button>
                   ))}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-auto px-2 py-1 text-xs"
+                    onClick={() =>
+                      saveChat({
+                        id: crypto.randomUUID(),
+                        question: priorText,
+                        headline: message.answer.headline,
+                        at: Date.now(),
+                      })
+                    }
+                  >
+                    Save to feed
+                  </Button>
                 </div>
               </article>
             );
           })}
 
           {asking ? (
-            <p className="text-sm text-muted-foreground" role="status">
+            <p className="text-sm text-muted-foreground" role="status" aria-live="polite">
               Reading the file…
             </p>
           ) : null}
@@ -186,7 +225,7 @@ export function AskScreen() {
             id="ask-input"
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
-            placeholder={askMode === "twin" ? "Ask this Twin…" : "Ask anything about cricket…"}
+            placeholder={askMode === "twin" ? "Ask this Twin…" : "Ask Cricket Anything…"}
             aria-invalid={askError ? true : undefined}
             className="h-12! px-4"
             disabled={asking}
@@ -196,8 +235,14 @@ export function AskScreen() {
             <span className="sr-only">Send</span>
           </Button>
         </form>
-        {askError ? <p className="mt-2 text-sm text-destructive">{askError}</p> : null}
-        <p className="mt-3 text-xs text-muted-foreground">Press / from anywhere else in the app to come back here.</p>
+        {askError ? (
+          <p className="mt-2 text-sm text-destructive" role="alert">
+            {askError}
+          </p>
+        ) : null}
+        <p className="mt-3 text-xs text-muted-foreground">
+          Press / from anywhere else in the app to come back here.
+        </p>
       </Panel>
     </div>
   );

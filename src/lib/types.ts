@@ -3,6 +3,7 @@ export type ScreenId =
   | "ask"
   | "match"
   | "players"
+  | "feed"
   | "teams"
   | "community"
   | "fantasy"
@@ -21,6 +22,16 @@ export type Role = "Batter" | "Bowler" | "All-rounder" | "Keeper";
 export type MoodKey = "fire" | "clap" | "shock" | "cry" | "rage" | "mind";
 
 export type Risk = "Low" | "Watch" | "High";
+
+export type TraitLabel =
+  | "Aggressive"
+  | "Technical"
+  | "Calm"
+  | "Explosive"
+  | "Patient"
+  | "Creative"
+  | "Relentless"
+  | "Calculated";
 
 export type Dna = {
   technical: number;
@@ -44,6 +55,7 @@ export type Player = {
   formLabel: string;
   formNote: string;
   dna: Dna;
+  traits: { label: TraitLabel; level: number; note: string }[];
   similar: { id: string; score: number; note: string }[];
   projection: {
     headline: string;
@@ -115,3 +127,15 @@ export type ChatMessage =
   | { id: string; role: "user"; text: string }
   | { id: string; role: "assistant"; answer: Answer }
   | { id: string; role: "error"; text: string };
+
+export type SavedChat = {
+  id: string;
+  question: string;
+  headline: string;
+  at: number;
+};
+
+export type Preferences = {
+  englandOnly: boolean;
+  alerts: boolean;
+};
