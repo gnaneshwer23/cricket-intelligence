@@ -33,6 +33,7 @@ export function AskScreen() {
     pendingSeed,
     clearPendingSeed,
     saveChat,
+    go,
   } = useApp();
   const [draft, setDraft] = useState("");
   const [twinQuery, setTwinQuery] = useState("");
@@ -69,6 +70,26 @@ export function AskScreen() {
         title="Ask Cricket Anything."
         lede="Intent → retrieve → calculate → explain. Figures come from the DEMO dataset and deterministic calcs — not invented by an LLM."
       />
+
+      <div className="mb-4 flex flex-wrap gap-2">
+        <Button type="button" size="sm" variant="secondary" onClick={() => go("explorer")}>
+          Explorer charts
+        </Button>
+        <Button type="button" size="sm" variant="secondary" onClick={() => go("labs")}>
+          What-If Lab
+        </Button>
+        <Button type="button" size="sm" variant="secondary" onClick={() => go("match")}>
+          Match Room
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          onClick={() => submit("Which over scored the most runs?")}
+        >
+          Richest over
+        </Button>
+      </div>
 
       <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
         {modes.map((mode) => (
