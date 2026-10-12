@@ -3,11 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowUp } from "lucide-react";
 import { useApp } from "@/components/app-state";
+import { PlayerSearchPicker } from "@/components/player-search-picker";
 import { KindBadge } from "@/components/status-badge";
 import { Kicker, PageTitle, Panel } from "@/components/ui-bits";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { askPrompts, players } from "@/lib/data";
+import { askPrompts, getPlayer, players, teamLabel } from "@/lib/data";
 import type { AskMode } from "@/lib/types";
 
 const modes: { id: AskMode; label: string }[] = [
@@ -34,8 +35,10 @@ export function AskScreen() {
     saveChat,
   } = useApp();
   const [draft, setDraft] = useState("");
+  const [twinQuery, setTwinQuery] = useState("");
   const scroller = useRef<HTMLDivElement>(null);
   const prompts = askPrompts[askMode] ?? askPrompts.general;
+  const twinPlayer = getPlayer(twinId) ?? players[0];
 
   useEffect(() => {
     const node = scroller.current;
@@ -82,20 +85,31 @@ export function AskScreen() {
       </div>
 
       {askMode === "twin" ? (
-        <label className="mb-4 block text-sm">
-          <span className="mb-2 block text-muted-foreground">Twin on the mic</span>
-          <select
-            value={twinId}
-            onChange={(event) => setTwinId(event.target.value)}
-            className="h-10 w-full rounded-lg border border-input bg-transparent px-3 text-sm"
-          >
-            {players.map((player) => (
-              <option key={player.id} value={player.id} className="bg-popover text-popover-foreground">
-                {player.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="mb-4 rounded-2xl border border-border bg-card/60 p-4">
+          <p className="text-sm text-muted-foreground">Twin on the mic</p>
+          <p className="mt-1 font-medium">
+            {twinPlayer.name}{" "}
+            <span className="text-xs font-normal text-muted-foreground">
+              · {teamLabel(twinPlayer.teamId)} · {twinPlayer.span}
+            </span>
+          </p>
+          <PlayerSearchPicker
+            className="mt-3"
+            catalog={players}
+            query={twinQuery}
+            onQueryChange={setTwinQuery}
+            activeId={twinId}
+            onSelect={(player) => {
+              setTwinId(player.id);
+              setTwinQuery("");
+            }}
+            emptyPrompt="Search any era for a Twin subject — type two characters. We do not list the full catalog."
+            placeholder="Find a Twin… Bradman, Kohli, Warne"
+            inputId="twin-player-search"
+            listClassName="!grid-cols-1"
+            limit={12}
+          />
+        </div>
       ) : null}
 
       <Panel className="flex min-h-[28rem] flex-col">

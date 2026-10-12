@@ -2,7 +2,8 @@ import { analysePhases, cumulativePhaseLead, runsToMilestone, speedUpliftPct, st
 import { getPlayer, matchMeta, phases, players } from "@/lib/data";
 import { matchEvidence } from "@/lib/match-graph";
 import { hasWord } from "@/lib/format";
-import type { Answer, AskMode } from "@/lib/types";
+import { playerAliases, searchPlayerList } from "@/lib/player-search";
+import type { Answer, AskMode, Player } from "@/lib/types";
 
 const DEMO_PROVENANCE =
   "DEMO dataset · grounded rule engine · figures from bundled match file (not a live feed or LLM).";
@@ -28,7 +29,8 @@ function finalize(answer: Answer, extras?: Partial<Answer>): Answer {
   };
 }
 
-const entities: { words: string[]; id: string }[] = [
+/** High-priority short tokens for demo Copilot paths (kept for stable phrasing). */
+const priorityEntities: { words: string[]; id: string }[] = [
   { words: ["root"], id: "joe-root" },
   { words: ["brook"], id: "harry-brook" },
   { words: ["bumrah"], id: "jasprit-bumrah" },
@@ -56,11 +58,36 @@ const entities: { words: string[]; id: string }[] = [
   { words: ["rashid"], id: "rashid-khan" },
 ];
 
-function findEntities(query: string) {
-  return entities
-    .filter((entity) => entity.words.some((word) => hasWord(query, word)))
-    .map((entity) => getPlayer(entity.id))
-    .filter((player) => player !== undefined);
+function findEntities(query: string): Player[] {
+  const found = new Map<string, Player>();
+
+  for (const entity of priorityEntities) {
+    if (entity.words.some((word) => hasWord(query, word))) {
+      const player = getPlayer(entity.id);
+      if (player) found.set(player.id, player);
+    }
+  }
+
+  // Surname / alias / historical coverage from the searchable catalog
+  for (const player of players) {
+    if (found.has(player.id)) continue;
+    const parts = player.name.toLowerCase().split(/\s+/);
+    const last = parts[parts.length - 1] ?? "";
+    const aliases = playerAliases[player.id] ?? [];
+    if (
+      (last.length >= 4 && hasWord(query, last)) ||
+      aliases.some((alias) => alias.length >= 3 && hasWord(query, alias))
+    ) {
+      found.set(player.id, player);
+    }
+  }
+
+  // Multi-word name fragments via ranked search (e.g. "don bradman")
+  for (const player of searchPlayerList(players, query, { minChars: 3, limit: 6 })) {
+    found.set(player.id, player);
+  }
+
+  return Array.from(found.values());
 }
 
 function follow(list: string[]): string[] {

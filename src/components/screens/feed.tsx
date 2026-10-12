@@ -1,11 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { useApp } from "@/components/app-state";
+import { PlayerSearchPicker } from "@/components/player-search-picker";
 import { Kicker, PageTitle, Panel, Spark } from "@/components/ui-bits";
 import { Button } from "@/components/ui/button";
 import {
   getPlayer,
   personalBriefing,
+  players,
   smartAlerts,
   teamLabel,
   teams,
@@ -24,6 +27,7 @@ export function FeedScreen() {
     preferences,
     setPreferences,
   } = useApp();
+  const [followQuery, setFollowQuery] = useState("");
 
   const mine = followedPlayers.map((id) => getPlayer(id)).filter((p) => p !== undefined);
   const myTeams = teams.filter((team) => followedTeams.includes(team.id));
@@ -222,13 +226,15 @@ export function FeedScreen() {
           <div className="mb-3 flex items-center justify-between">
             <Kicker>Favourite players</Kicker>
             <Button type="button" size="sm" variant="ghost" onClick={() => go("players")}>
-              Browse
+              Open DNA
             </Button>
           </div>
           {mine.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Follow players for DNA and milestones.</p>
+            <p className="mb-3 text-sm text-muted-foreground">
+              Follow players for DNA and milestones — search any era below.
+            </p>
           ) : (
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="mb-4 grid gap-3 sm:grid-cols-2">
               {mine.map((player) => (
                 <div
                   key={player.id}
@@ -243,7 +249,9 @@ export function FeedScreen() {
                     >
                       {player.name}
                     </button>
-                    <p className="text-xs text-muted-foreground">{teamLabel(player.teamId)}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {teamLabel(player.teamId)} · {player.span}
+                    </p>
                     <Button
                       type="button"
                       size="sm"
@@ -258,6 +266,21 @@ export function FeedScreen() {
               ))}
             </div>
           )}
+          <PlayerSearchPicker
+            catalog={players}
+            query={followQuery}
+            onQueryChange={setFollowQuery}
+            selectedIds={followedPlayers}
+            onSelect={(player) => {
+              if (!followedPlayers.includes(player.id)) toggleFollow(player.id);
+              setFollowQuery("");
+            }}
+            showSelectedChips={false}
+            emptyPrompt="Follow more — type two characters. History and modern names, no roster dump."
+            placeholder="Follow Bradman, Kohli, Ambrose…"
+            inputId="feed-follow-search"
+            limit={12}
+          />
         </section>
       </div>
 

@@ -9,9 +9,16 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { sampleSizeWarning } from "@/lib/calc";
 import { dnaLabels, getPlayer, players, teamLabel } from "@/lib/data";
 import { answerQuestion } from "@/lib/engine";
+import {
+  PLAYER_SEARCH_DEBOUNCE_MS,
+  PLAYER_SEARCH_EXAMPLES,
+  PLAYER_SEARCH_MIN_CHARS,
+  searchPlayerList,
+} from "@/lib/player-search";
 import type { Answer, Role } from "@/lib/types";
 
 const roleFilters: Array<Role | "All"> = ["All", "Batter", "Bowler", "All-rounder", "Keeper"];
@@ -26,16 +33,25 @@ export function PlayersScreen() {
   const [twinLog, setTwinLog] = useState<Record<string, { q: string; a: Answer }[]>>({});
   const [thinking, setThinking] = useState(false);
 
+  const debouncedQuery = useDebouncedValue(query, PLAYER_SEARCH_DEBOUNCE_MS);
+  const searching = debouncedQuery.trim().length >= PLAYER_SEARCH_MIN_CHARS;
+
   const filtered = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    return players.filter((player) => {
-      if (roleFilter !== "All" && player.role !== roleFilter) return false;
-      if (!needle) return true;
-      return `${player.name} ${player.role} ${teamLabel(player.teamId)}`
-        .toLowerCase()
-        .includes(needle);
+    if (!searching) return [];
+    return searchPlayerList(players, debouncedQuery, {
+      role: roleFilter,
+      boostIds: followedPlayers,
+      limit: 30,
     });
-  }, [query, roleFilter]);
+  }, [debouncedQuery, searching, roleFilter, followedPlayers]);
+
+  const followedProfiles = useMemo(
+    () =>
+      followedPlayers
+        .map((id) => getPlayer(id))
+        .filter((player): player is NonNullable<typeof player> => Boolean(player)),
+    [followedPlayers],
+  );
 
   const player = getPlayer(playerId) ?? players[0];
   const followed = followedPlayers.includes(player.id);
@@ -97,8 +113,10 @@ export function PlayersScreen() {
             id="player-search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search players"
+            placeholder="Search Bradman, Kohli…"
             className="h-10"
+            autoComplete="off"
+            spellCheck={false}
           />
           <div className="mt-2 flex flex-wrap gap-1">
             {roleFilters.map((role) => (
@@ -115,9 +133,57 @@ export function PlayersScreen() {
             ))}
           </div>
           <ScrollArea className="mt-3 h-auto lg:h-[calc(100dvh-12rem)]">
-            {filtered.length === 0 ? (
-              <p className="px-1 py-6 text-sm text-muted-foreground">
-                No player matches. Try another role filter or Root, Bumrah, Williamson.
+            {followedProfiles.length > 0 ? (
+              <div className="mb-4">
+                <p className="px-1 text-[11px] tracking-[0.14em] text-muted-foreground uppercase">
+                  Following
+                </p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {followedProfiles.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        setPlayerId(item.id);
+                        setNodeId("self");
+                      }}
+                      className={`rounded-full border px-2.5 py-1 text-xs ${
+                        item.id === player.id
+                          ? "border-lime bg-lime/15 text-foreground"
+                          : "border-border bg-muted/40 text-muted-foreground hover:border-lime/30"
+                      }`}
+                    >
+                      {item.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {!searching ? (
+              <div className="px-1 py-2">
+                <p className="text-sm text-muted-foreground">
+                  Search cricket history — results appear after two characters. No full roster dump.
+                </p>
+                <p className="mt-3 text-[11px] tracking-[0.14em] text-muted-foreground uppercase">
+                  Try
+                </p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {PLAYER_SEARCH_EXAMPLES.map((example) => (
+                    <button
+                      key={example}
+                      type="button"
+                      className="rounded-full border border-border bg-muted/40 px-2.5 py-1 text-xs hover:border-lime/40 hover:text-lime"
+                      onClick={() => setQuery(example)}
+                    >
+                      {example}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : filtered.length === 0 ? (
+              <p className="px-1 py-6 text-sm text-muted-foreground" role="status">
+                No matches for “{debouncedQuery.trim()}”. Try another spelling or surname.
               </p>
             ) : (
               <ul className="flex gap-2 overflow-x-auto lg:block lg:space-y-1 lg:overflow-visible">
@@ -134,8 +200,12 @@ export function PlayersScreen() {
                       }`}
                     >
                       <span className="block font-medium">{item.name}</span>
-                      <span className={`block text-xs ${item.id === player.id ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
-                        {teamLabel(item.teamId)}
+                      <span
+                        className={`block text-xs ${
+                          item.id === player.id ? "text-primary-foreground/80" : "text-muted-foreground"
+                        }`}
+                      >
+                        {teamLabel(item.teamId)} · {item.span}
                       </span>
                     </button>
                   </li>

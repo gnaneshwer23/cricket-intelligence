@@ -1,8 +1,9 @@
 import type { MatchMeta } from "@/lib/contracts";
 import type { MoodKey, Player, Team } from "@/lib/types";
+import { historicalPlayers } from "@/lib/historical-catalog";
+import { catalogTeamLabel, featuredPlayerIds, internationalTeamIds } from "@/lib/onboarding-catalog";
 import { mergePlayers, rosterExtras } from "@/lib/roster";
 import { extraTeams } from "@/lib/teams-extra";
-import { featuredPlayerIds, internationalTeamIds } from "@/lib/onboarding-catalog";
 
 /** Canonical demo match — always DEMO unless a verified live provider is wired. */
 export const matchMeta: MatchMeta = {
@@ -866,7 +867,11 @@ const corePlayers: Player[] = [
   },
 ];
 
-export const players: Player[] = mergePlayers(corePlayers, rosterExtras);
+/** Core DNA + modern roster + historical stubs. Core wins on id collision. */
+export const players: Player[] = mergePlayers(corePlayers, [
+  ...historicalPlayers,
+  ...rosterExtras,
+]);
 
 export const teams: Team[] = [
   {
@@ -1681,7 +1686,7 @@ export function getTeam(id: string) {
 }
 
 export function teamLabel(id: string) {
-  return getTeam(id)?.name ?? id;
+  return getTeam(id)?.name ?? catalogTeamLabel(id);
 }
 
 export const onboardingPlayers = featuredPlayerIds;

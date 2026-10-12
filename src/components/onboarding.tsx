@@ -1,18 +1,19 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useApp } from "@/components/app-state";
+import { PlayerSearchPicker } from "@/components/player-search-picker";
 import { Kicker } from "@/components/ui-bits";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { getPlayer, players, teamLabel } from "@/lib/data";
+import { getPlayer, players } from "@/lib/data";
 import {
   catalogTeams,
   featuredPlayerIds,
   seedAskFromChoices,
   type CatalogTeam,
 } from "@/lib/onboarding-catalog";
+import type { Role } from "@/lib/types";
 
 const STEPS = ["Welcome", "Nations", "IPL", "Players", "Ready"] as const;
 
@@ -22,29 +23,10 @@ export function Onboarding() {
   const [pickedTeams, setPickedTeams] = useState<string[]>(["england"]);
   const [pickedPlayers, setPickedPlayers] = useState<string[]>(["joe-root", "ben-stokes"]);
   const [query, setQuery] = useState("");
-  const [roleFilter, setRoleFilter] = useState<"All" | "Batter" | "Bowler" | "All-rounder" | "Keeper">(
-    "All",
-  );
+  const [roleFilter, setRoleFilter] = useState<Role | "All">("All");
 
   const nations = catalogTeams.filter((team) => team.group === "international");
   const ipl = catalogTeams.filter((team) => team.group === "ipl");
-
-  const filteredPlayers = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    const list = [...players].sort((a, b) => {
-      const af = featuredPlayerIds.includes(a.id) ? 0 : 1;
-      const bf = featuredPlayerIds.includes(b.id) ? 0 : 1;
-      if (af !== bf) return af - bf;
-      return a.name.localeCompare(b.name);
-    });
-    return list.filter((player) => {
-      if (roleFilter !== "All" && player.role !== roleFilter) return false;
-      if (!needle) return true;
-      return `${player.name} ${player.role} ${teamLabel(player.teamId)}`
-        .toLowerCase()
-        .includes(needle);
-    });
-  }, [query, roleFilter]);
 
   if (onboarded) return null;
 
@@ -106,7 +88,8 @@ export function Onboarding() {
               "Follow · understand · explore what next. Choose sides and stars so briefing and Ask feel like yours. Match data starts in DEMO mode."}
             {step === 1 && "Multi-select. England through Bangladesh — build the map you care about."}
             {step === 2 && "Optional. Franchise follows sit beside your nations without bloating Ask."}
-            {step === 3 && "Search the roster. Openers, batters, all-rounders, bowlers, keepers."}
+            {step === 3 &&
+              "Search across cricket history. Type a name — we will not dump the whole catalog."}
             {step === 4 && "We will seed Ask from your top side and land you on a personal briefing."}
           </p>
         </div>
@@ -149,65 +132,22 @@ export function Onboarding() {
           ) : null}
 
           {step === 3 ? (
-            <div>
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <Input
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search Kohli, Starc, Rabada…"
-                  className="h-11"
-                  aria-label="Search players"
-                />
-                <div className="flex flex-wrap gap-1.5">
-                  {(["All", "Batter", "Bowler", "All-rounder", "Keeper"] as const).map((role) => (
-                    <Button
-                      key={role}
-                      type="button"
-                      size="sm"
-                      variant={roleFilter === role ? "default" : "secondary"}
-                      onClick={() => setRoleFilter(role)}
-                    >
-                      {role}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-              <p className="mt-3 text-xs text-muted-foreground">
-                {pickedPlayers.length} selected · {filteredPlayers.length} shown
-              </p>
-              <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {filteredPlayers.slice(0, 48).map((player) => {
-                  const active = pickedPlayers.includes(player.id);
-                  return (
-                    <button
-                      key={player.id}
-                      type="button"
-                      onClick={() => togglePlayer(player.id)}
-                      className={`rounded-2xl border px-3 py-3 text-left transition ${
-                        active
-                          ? "border-lime bg-lime/10"
-                          : "border-border bg-muted/35 hover:border-lime/30"
-                      }`}
-                    >
-                      <span className="flex items-start justify-between gap-2">
-                        <span className="block text-sm font-medium">{player.name}</span>
-                        {featuredPlayerIds.includes(player.id) ? (
-                          <span className="text-[10px] tracking-[0.12em] text-lime uppercase">
-                            Star
-                          </span>
-                        ) : null}
-                      </span>
-                      <span className="mt-1 block text-xs text-muted-foreground">
-                        {teamLabel(player.teamId)} · {player.role}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-              {filteredPlayers.length === 0 ? (
-                <p className="mt-4 text-sm text-muted-foreground">No players match that search.</p>
-              ) : null}
-            </div>
+            <PlayerSearchPicker
+              catalog={players}
+              query={query}
+              onQueryChange={setQuery}
+              roleFilter={roleFilter}
+              onRoleFilterChange={setRoleFilter}
+              showRoleFilters
+              selectedIds={pickedPlayers}
+              onToggleSelect={togglePlayer}
+              showSelectedChips
+              boostIds={featuredPlayerIds}
+              resolveName={(id) => getPlayer(id)?.name}
+              emptyPrompt="Follow stars from any era. Try a surname — results appear after two characters."
+              placeholder="Search Bradman, Kohli, Ambrose…"
+              inputId="onboarding-player-search"
+            />
           ) : null}
 
           {step === 4 ? (
