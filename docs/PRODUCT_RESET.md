@@ -127,8 +127,8 @@ See **`docs/DESIGN.md`** for IA, tokens (navy `#03314C` family + lime), and moti
 - [x] Seeds not used as Copilot live evidence (quarantine answer + filter)
 - [x] Historical Archive filters + coverage provenance + honest 1973 claim
 - [x] Motion language + reduced-motion; voice graceful fallback
-- [x] `npm test` / `lint` / `typecheck` / `build` — re-verify on ship
-- [ ] Deploy production redeploy after this branch — verify `/api/health` + `#archive`
+- [x] `npm test` (89 pass) / `lint` / `typecheck` / `build` — verified 2026-10-13
+- [x] Deploy production `52a7868` READY on cricket-intelligence-delta; `/api/health` truth mode; archive filters measured 1975+
 
 ## Risks / deferred
 
