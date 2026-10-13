@@ -143,6 +143,18 @@ export type AnswerEvidence = {
   kind: "fact" | "historical" | "model" | "hypothetical" | "demo";
 };
 
+/** Normalised match rows for Copilot historical mode (from `/api/matches`). */
+export type HistoricalMatchSummary = {
+  id: string;
+  title: string;
+  freshness: string;
+  venue: string;
+  format: string;
+  score?: { runs: number; wickets: number; overs: string };
+  teams?: { home: string; away: string };
+  provenance?: { source: string; note?: string };
+};
+
 export type Answer = {
   headline: string;
   paragraphs: string[];
@@ -155,6 +167,10 @@ export type Answer = {
   evidence?: AnswerEvidence[];
   /** Short provenance line shown under the answer. */
   provenanceNote?: string;
+};
+
+export type AnswerOptions = {
+  historicalMatches?: HistoricalMatchSummary[];
 };
 
 export type ChatMessage =

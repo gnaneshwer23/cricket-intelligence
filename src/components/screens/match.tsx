@@ -5,7 +5,12 @@ import { useApp } from "@/components/app-state";
 import { LiveCommentary } from "@/components/live-commentary";
 import { LiveScoreStrip } from "@/components/live-score-strip";
 import { DataStatusStrip } from "@/components/data-status-strip";
-import { KindBadge, ProvenanceStrip, StatusBadge } from "@/components/status-badge";
+import {
+  FreshnessBadge,
+  KindBadge,
+  ProvenanceStrip,
+  StatusBadge,
+} from "@/components/status-badge";
 import { Kicker, Meter, Panel, WinSplit } from "@/components/ui-bits";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,7 +20,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useLiveMatch } from "@/hooks/use-live-match";
+import { useMatchList } from "@/hooks/use-data-layer";
 import { analysePhases, applyWinSwing, strikeRate } from "@/lib/calc";
+import type { FreshnessStatus } from "@/lib/contracts";
 import {
   batting,
   bowling,
@@ -46,6 +53,7 @@ const graphKindLabel: Record<MatchGraphNode["kind"], string> = {
 export function MatchScreen() {
   const { mood, react, go, graphNodeId, clearGraphNodeId } = useApp();
   const live = useLiveMatch();
+  const matchList = useMatchList(12);
   const [planId, setPlanId] = useState(fieldPlans[0].id);
   const [side, setSide] = useState<"england" | "india">("england");
   const [noted, setNoted] = useState<string | null>(null);
@@ -129,6 +137,41 @@ export function MatchScreen() {
           note="Score strip is a scripted DEMO sim. Graph and report stay on the session snapshot."
         />
       </div>
+
+      <Panel className="mt-4 border-white/8 bg-card/40">
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <Kicker>Normalised fixtures · `/api/matches`</Kicker>
+            <p className="mt-1 text-xs text-muted-foreground">
+              DEMO board below stays scripted. Archive rows are HISTORICAL / UPCOMING — never LIVE
+              without a provider key.
+            </p>
+          </div>
+          <Button type="button" size="sm" variant="secondary" onClick={() => go("explorer")}>
+            Explorer archive
+          </Button>
+        </div>
+        {matchList.status === "unavailable" ? (
+          <p className="mt-3 text-sm text-gold">Match list UNAVAILABLE</p>
+        ) : matchList.status === "loading" ? (
+          <p className="mt-3 text-sm text-muted-foreground">Loading matches…</p>
+        ) : (
+          <ul className="mt-3 divide-y divide-white/8 text-sm">
+            {matchList.matches.slice(0, 6).map((m) => (
+              <li key={m.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                <div>
+                  <p className="font-medium">{m.title}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {m.venue} · {m.format}
+                    {m.score ? ` · ${m.score.runs}/${m.score.wickets}` : ""}
+                  </p>
+                </div>
+                <FreshnessBadge freshness={m.freshness as FreshnessStatus} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </Panel>
 
       <Tabs value={tab} onValueChange={setTab} className="mt-6">
         <TabsList variant="line" className="h-auto! w-full justify-start overflow-x-auto">

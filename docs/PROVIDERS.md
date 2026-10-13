@@ -37,4 +37,13 @@ Full evaluation with evidence links: **`docs/PROVIDER_EVALUATION.md`**.
 
 Copilot: `classify intent → retrieve facts → deterministic calculate → explain (LLM or rule) → cite evidence → validate numbers against calc outputs`
 
-Demo mode skips external retrieve and uses the local contract dataset with explicit DEMO provenance. Scripted Match Room sim remains labelled DEMO — never LIVE without a verified provider health check.
+Demo mode skips external retrieve and uses the local contract dataset with explicit DEMO provenance, plus a **seeded HISTORICAL archive** (same normalisation path as CricAPI). Scripted Match Room sim remains labelled DEMO — never LIVE without a verified provider health check.
+
+### Enable live / historical provider data
+
+1. Sign up at [CricketData.org / CricAPI](https://cricketdata.org/) (or Sportmonks) and copy an API key — do not scrape Cricbuzz/Cricinfo.
+2. In Vercel: Project → Settings → Environment Variables → add:
+   - `CRICKETOS_DATA_PROVIDER` = `cricapi` (or `sportmonks`)
+   - `CRICKETOS_DATA_API_KEY` = your key (Production + Preview)
+3. Redeploy. Locally: copy `.env.example` → `.env.local`, set the same vars, restart `next dev`.
+4. Confirm `GET /api/health` shows `demoMode: false` and adapter `ok`. LIVE badges only appear when the provider reports an in-progress match.

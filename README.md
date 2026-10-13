@@ -42,10 +42,13 @@ With no live credentials, the app stays in **DEMO** and labels match status acco
 | Endpoint | Purpose |
 |----------|---------|
 | `GET /api/health` | Provider + storage summary (no secrets) |
-| `GET /api/matches` | Historical search / filters |
+| `GET /api/matches` | Historical search / filters (DEMO + seeded archive + provider) |
 | `GET /api/matches/:id` | Match + scorecard + honest missing fields |
+| `GET /api/fixtures` | Fixture list for Home / Match Room |
 | `GET /api/ingestion/status` | Operator ingestion summary |
 | `POST /api/ingestion/run` | Token-gated ingest (refused without token) |
+
+**Wire a live provider:** set `CRICKETOS_DATA_PROVIDER` + `CRICKETOS_DATA_API_KEY` (Vercel → Project → Settings → Environment Variables, or `.env.local`), redeploy/restart. Until then the app uses the DEMO Lord’s board plus a small **seeded HISTORICAL** set imported through the same normalisation path — never labelled LIVE.
 
 Freshness labels: **LIVE / STALE / UNAVAILABLE / DEMO / HISTORICAL / UPCOMING**.  
 Default persistence is **in-memory** and labelled ephemeral — not production durable storage.

@@ -12,9 +12,12 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useApp } from "@/components/app-state";
+import { DataStatusStrip } from "@/components/data-status-strip";
 import { LiveScoreStrip } from "@/components/live-score-strip";
-import { StatusBadge } from "@/components/status-badge";
+import { FreshnessBadge, StatusBadge } from "@/components/status-badge";
 import { Kicker, Panel, Spark, useGreeting } from "@/components/ui-bits";
+import { useFixtures } from "@/hooks/use-data-layer";
+import type { FreshnessStatus, MatchLifecycle } from "@/lib/contracts";
 import {
   getPlayer,
   personalBriefing,
@@ -36,11 +39,15 @@ export function HomeScreen() {
     setPreferences,
   } = useApp();
   const { greeting, dateLabel } = useGreeting();
+  const fixtures = useFixtures();
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [storyId, setStoryId] = useState<string | null>(null);
   const [showUpcoming, setShowUpcoming] = useState(false);
   const story = stories.find((item) => item.id === storyId) ?? null;
+  const fixtureHighlight = fixtures.upcoming;
+  const fixtureFreshness = (fixtureHighlight?.freshness ?? "UPCOMING") as FreshnessStatus;
+  const fixtureStatus = (fixtureHighlight?.status ?? "UPCOMING") as MatchLifecycle;
 
   const briefing = useMemo(() => {
     const items = personalBriefing(followedPlayers, followedTeams);
@@ -88,8 +95,8 @@ export function HomeScreen() {
               Follow the match. Understand the game.
             </h1>
             <p className="mt-5 max-w-md text-[0.95rem] leading-relaxed text-muted-foreground sm:text-base">
-              {greeting}. Intelligence briefing with grounded answers — demo data labelled
-              honestly, not another scoreboard that pretends to be live.
+              {greeting}. Intelligence briefing with grounded answers — demo and seeded
+              historical data labelled honestly, not another scoreboard that pretends to be live.
             </p>
           </div>
 
@@ -141,6 +148,9 @@ export function HomeScreen() {
           >
             Open Match Room
           </Button>
+        </div>
+        <div className="mb-3">
+          <DataStatusStrip />
         </div>
         <LiveScoreStrip compact onOpenMatch={() => go("match")} />
       </section>
@@ -201,12 +211,24 @@ export function HomeScreen() {
             onClick={() => setShowUpcoming(true)}
             className="text-left transition hover:text-lime"
           >
-            <div className="flex items-center gap-2">
-              <StatusBadge status="UPCOMING" />
+            <div className="flex flex-wrap items-center gap-2">
+              <StatusBadge status={fixtureStatus === "LIVE" ? "UPCOMING" : fixtureStatus} />
+              <FreshnessBadge
+                freshness={fixtureFreshness === "LIVE" ? "UPCOMING" : fixtureFreshness}
+              />
               <Kicker>Fixture</Kicker>
             </div>
-            <p className="font-display mt-3 text-xl tracking-tight">{upcoming.title}</p>
-            <p className="mt-1 text-sm text-muted-foreground">{upcoming.meta}</p>
+            <p className="font-display mt-3 text-xl tracking-tight">
+              {fixtureHighlight?.title ?? upcoming.title}
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {fixtureHighlight
+                ? `${fixtureHighlight.venue}${fixtureHighlight.format ? ` · ${fixtureHighlight.format}` : ""}`
+                : upcoming.meta}
+            </p>
+            {fixtures.status === "unavailable" ? (
+              <p className="mt-2 text-xs text-gold">Fixtures UNAVAILABLE — not claiming LIVE</p>
+            ) : null}
           </button>
           <div>
             <div className="flex items-center justify-between gap-2">
@@ -260,7 +282,8 @@ export function HomeScreen() {
           <div>
             <Kicker>Your intelligence briefing</Kicker>
             <p className="mt-2 max-w-lg text-sm leading-relaxed text-muted-foreground">
-              Ranked for the teams and players you follow · DEMO facts where match-linked.
+              Ranked for the teams and players you follow · DEMO / seeded HISTORICAL via{" "}
+              <code className="text-[11px]">/api/matches</code> when available.
             </p>
           </div>
           <Button type="button" variant="ghost" size="sm" onClick={() => go("feed")}>
@@ -395,12 +418,32 @@ export function HomeScreen() {
       </Dialog>
 
       <Dialog open={showUpcoming} onOpenChange={setShowUpcoming}>
-        <DialogContent>
+        <DialogContent className="max-h-[85dvh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="font-display text-2xl">{upcoming.title}</DialogTitle>
-            <DialogDescription>{upcoming.meta}</DialogDescription>
+            <DialogTitle className="font-display text-2xl">
+              {fixtureHighlight?.title ?? upcoming.title}
+            </DialogTitle>
+            <DialogDescription>
+              {fixtureHighlight
+                ? `${fixtureHighlight.venue} · ${fixtureHighlight.freshness}`
+                : upcoming.meta}
+            </DialogDescription>
           </DialogHeader>
-          <p className="text-sm leading-relaxed text-muted-foreground">{upcoming.note}</p>
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            {fixtureHighlight?.provenance?.note ?? upcoming.note}
+          </p>
+          {fixtures.fixtures.length > 0 ? (
+            <ul className="mt-4 space-y-2 border-t border-border pt-4 text-sm">
+              {fixtures.fixtures.slice(0, 8).map((f) => (
+                <li key={f.id} className="flex flex-wrap items-baseline justify-between gap-2">
+                  <span className="font-medium">{f.title}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {f.freshness} · {f.venue}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </DialogContent>
       </Dialog>
     </div>

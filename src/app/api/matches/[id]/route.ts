@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { compareMatches, playerBattingTrend } from "@/lib/service/historical";
-import { getMatchById, getScorecardByMatchId } from "@/lib/service/match-service";
+import { playerBattingTrend } from "@/lib/service/historical";
+import { getDataService } from "@/lib/service/data-service";
 import { getStorage } from "@/lib/storage";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -11,9 +11,11 @@ export async function GET(request: Request, ctx: Ctx) {
     const { searchParams } = new URL(request.url);
     const compareId = searchParams.get("compare");
     const trendPlayer = searchParams.get("trendPlayer");
+    const service = getDataService();
+    await service.ensureReady();
 
     if (compareId) {
-      const cmp = await compareMatches(id, compareId);
+      const cmp = await service.compare(id, compareId);
       if (!cmp) {
         return NextResponse.json({ ok: false, error: "one or both matches missing" }, { status: 404 });
       }
@@ -33,11 +35,11 @@ export async function GET(request: Request, ctx: Ctx) {
       });
     }
 
-    const match = await getMatchById(id);
+    const match = await service.getMatch(id);
     if (!match) {
       return NextResponse.json({ ok: false, error: "match not found" }, { status: 404 });
     }
-    const scorecard = await getScorecardByMatchId(id);
+    const scorecard = await service.getScorecard(id);
     const balls = await getStorage().getBalls(id);
 
     return NextResponse.json({

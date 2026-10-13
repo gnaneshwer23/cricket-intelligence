@@ -17,6 +17,7 @@ import type {
   AskMode,
   ChatMessage,
   ExplorerFocus,
+  HistoricalMatchSummary,
   LabsSeed,
   MoodKey,
   Preferences,
@@ -168,6 +169,8 @@ type AppValue = {
   asking: boolean;
   askError: string | null;
   ask: (question: string, mode?: AskMode) => void;
+  historicalMatches: HistoricalMatchSummary[];
+  setHistoricalMatches: (rows: HistoricalMatchSummary[]) => void;
   mood: typeof initialMood;
   react: (side: "england" | "india", key: MoodKey) => void;
   onboarded: boolean;
@@ -199,6 +202,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [graphNodeId, setGraphNodeId] = useState<string | null>(null);
   const [labsSeed, setLabsSeed] = useState<LabsSeed | null>(null);
   const [explorerFocus, setExplorerFocus] = useState<ExplorerFocus | null>(null);
+  const [historicalMatches, setHistoricalMatches] = useState<HistoricalMatchSummary[]>([]);
   const timer = useRef<number | null>(null);
 
   useEffect(() => {
@@ -245,7 +249,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       if (timer.current) window.clearTimeout(timer.current);
       timer.current = window.setTimeout(() => {
         try {
-          const answer = answerQuestion(text, used, twinId);
+          const answer = answerQuestion(text, used, twinId, {
+            historicalMatches,
+          });
           setMessages((current) => [
             ...current,
             { id: crypto.randomUUID(), role: "assistant", answer },
@@ -277,7 +283,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         }
       }, 680);
     },
-    [askMode, asking, twinId],
+    [askMode, asking, twinId, historicalMatches],
   );
 
   const react = useCallback((side: "england" | "india", key: MoodKey) => {
@@ -355,6 +361,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       asking,
       askError,
       ask,
+      historicalMatches,
+      setHistoricalMatches,
       mood,
       react,
       onboarded: stored.onboarded,
@@ -388,6 +396,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       asking,
       askError,
       ask,
+      historicalMatches,
       mood,
       react,
       completeOnboarding,

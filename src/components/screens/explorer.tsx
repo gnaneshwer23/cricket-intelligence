@@ -95,9 +95,10 @@ export function ExplorerScreen() {
       <Panel className="mb-4 border-border/80">
         <Kicker>Historical / multi-match</Kicker>
         <p className="mt-2 text-sm text-muted-foreground">
-          Search and compare use the normalised match service (`/api/matches`). Only the Lord’s DEMO
-          board has an authored over series for worm/Manhattan. Other matches show an empty state —
-          second innings, wagon wheels, and missing series are never fabricated.
+          Search and compare use `getDataService()` via `/api/matches` (DEMO + seeded HISTORICAL +
+          provider when keyed). Only the Lord’s DEMO board has an authored over series for
+          worm/Manhattan. Other matches show an empty state — second innings, wagon wheels, and
+          missing series are never fabricated, and never labelled LIVE without a provider.
         </p>
         <HistoricalMatchPanel
           activeMatchId={filters.matchId}

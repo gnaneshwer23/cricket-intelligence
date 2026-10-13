@@ -16,7 +16,7 @@ import { matchEvidence } from "@/lib/match-graph";
 import { hasWord } from "@/lib/format";
 import { playerAliases, searchPlayerList } from "@/lib/player-search";
 import { copilotEvidenceScope } from "@/lib/service/evidence-scope";
-import type { Answer, AskMode, Player } from "@/lib/types";
+import type { Answer, AnswerOptions, AskMode, HistoricalMatchSummary, Player } from "@/lib/types";
 
 function demoProvenance(): string {
   return copilotEvidenceScope().provenanceNote;
@@ -117,11 +117,21 @@ function follow(list: string[]): string[] {
   return list;
 }
 
-export function answerQuestion(raw: string, mode: AskMode, twinId: string): Answer {
-  return finalize(answerQuestionInner(raw, mode, twinId));
+export function answerQuestion(
+  raw: string,
+  mode: AskMode,
+  twinId: string,
+  options?: AnswerOptions,
+): Answer {
+  return finalize(answerQuestionInner(raw, mode, twinId, options));
 }
 
-function answerQuestionInner(raw: string, mode: AskMode, twinId: string): Answer {
+function answerQuestionInner(
+  raw: string,
+  mode: AskMode,
+  twinId: string,
+  options?: AnswerOptions,
+): Answer {
   const query = raw.trim().toLowerCase();
   const named = findEntities(query);
   const twin = getPlayer(twinId) ?? players[0];
@@ -965,16 +975,41 @@ function answerQuestionInner(raw: string, mode: AskMode, twinId: string): Answer
   }
 
   if (mode === "historical") {
+    const hist = options?.historicalMatches ?? [];
+    const grounded = answerFromHistoricalArchive(query, hist);
+    if (grounded) return grounded;
+    const archiveLines =
+      hist.length > 0
+        ? [
+            `Normalised archive has ${hist.length} match${hist.length === 1 ? "" : "es"} (DEMO + seeded HISTORICAL — not a live feed):`,
+            ...hist.slice(0, 5).map((m) => formatHistoricalLine(m)),
+          ]
+        : [
+            "Historical archive not loaded yet — open Explorer or wait for `/api/matches`. Until then, player-era prompts still use the bundled DNA file.",
+          ];
     return {
-      headline: "Name a player, a year, or a what-if",
+      headline: hist.length
+        ? "Ask about a seeded / DEMO match, a player, or a year"
+        : "Name a player, a year, or a what-if",
       paragraphs: [
-        "The history file is strongest on Root and Sangakkara, Sachin at 24 vs Kohli, Stokes' chases, the 2005 likeness, and Bumrah dropped into the 1990s.",
+        ...archiveLines,
+        "Player-era prompts still work on Root / Sangakkara, Sachin at 24 vs Kohli, Stokes' chases, and the 2005 likeness. LIVE scores only appear when a provider key is configured and healthy.",
       ],
       followups: follow([
+        "List historical matches",
         "Sachin at 24 vs Kohli",
         "Show Stokes' best chases",
-        "What if Bumrah played in the 1990s?",
+        "Headingley 2019",
       ]),
+      speaker: "Historical · normalised archive",
+      method: "rule-engine",
+      evidence: hist.slice(0, 3).map((m) => ({
+        id: m.id,
+        label: m.title,
+        detail: `${m.venue} · ${m.freshness}${m.score ? ` · ${m.score.runs}/${m.score.wickets}` : ""}`,
+        kind: m.freshness === "DEMO" ? ("demo" as const) : ("historical" as const),
+      })),
+      provenanceNote: demoProvenance(),
     };
   }
 
@@ -1054,6 +1089,91 @@ function surgeDeltaDisplay(surge: { scored: number; expected: number } | undefin
   if (!surge) return "+24";
   const d = surge.scored - surge.expected;
   return d > 0 ? `+${d}` : String(d);
+}
+
+function formatHistoricalLine(m: HistoricalMatchSummary): string {
+  const score = m.score ? `${m.score.runs}/${m.score.wickets} (${m.score.overs})` : "no score on file";
+  const sides = m.teams ? `${m.teams.home} vs ${m.teams.away}` : m.title;
+  return `${sides} · ${m.venue} · ${m.format} · ${m.freshness} · ${score}`;
+}
+
+/** Ground historical asks against normalised `/api/matches` rows when they match. */
+function answerFromHistoricalArchive(
+  query: string,
+  matches: HistoricalMatchSummary[],
+): Answer | null {
+  if (!matches.length) return null;
+
+  if (
+    hasWord(query, "list") ||
+    hasWord(query, "archive") ||
+    query.includes("historical match") ||
+    query.includes("seeded")
+  ) {
+    return {
+      headline: `${matches.length} normalised matches in the archive`,
+      paragraphs: [
+        "These rows came through the CricketOS normalisation path (seeded HISTORICAL + DEMO board). None are labelled LIVE without a configured provider.",
+        ...matches.slice(0, 8).map(formatHistoricalLine),
+      ],
+      followups: follow([
+        matches.find((m) => /headingley/i.test(m.title + m.venue))?.title ?? "Headingley 2019",
+        "Sachin at 24 vs Kohli",
+        "Show Stokes' best chases",
+      ]),
+      speaker: "Historical · normalised archive",
+      method: "rule-engine",
+      evidence: matches.slice(0, 5).map((m) => ({
+        id: m.id,
+        label: m.title,
+        detail: `${m.freshness} · ${m.provenance?.source ?? "archive"}`,
+        kind: m.freshness === "DEMO" ? ("demo" as const) : ("historical" as const),
+      })),
+      provenanceNote: demoProvenance(),
+    };
+  }
+
+  const hit = matches.find((m) => {
+    const hay = `${m.title} ${m.venue} ${m.teams?.home ?? ""} ${m.teams?.away ?? ""} ${m.id}`.toLowerCase();
+    const tokens = query.split(/\s+/).filter((t) => t.length > 3);
+    return tokens.some((t) => hay.includes(t));
+  });
+  if (!hit) return null;
+  if (hit.freshness === "LIVE") {
+    // Honesty guard — never narrate LIVE from archive path
+    return null;
+  }
+  return {
+    headline: hit.title,
+    paragraphs: [
+      formatHistoricalLine(hit),
+      hit.provenance?.note ??
+        hit.provenance?.source ??
+        "Normalised archive row — not a live broadcast feed.",
+      hit.freshness === "DEMO"
+        ? "This is the bundled Lord’s DEMO board used by Match Room / Explorer charts."
+        : "Seeded completed result for offline historical intelligence. Add CRICKETOS_DATA_API_KEY to pull provider fixtures.",
+    ],
+    figures: hit.score
+      ? [
+          { label: "Runs / wkts", value: `${hit.score.runs}/${hit.score.wickets}` },
+          { label: "Overs", value: hit.score.overs },
+          { label: "Freshness", value: hit.freshness },
+        ]
+      : [{ label: "Freshness", value: hit.freshness }],
+    followups: follow(["List historical matches", "Show Stokes' best chases", "Open Explorer"]),
+    speaker: "Historical · normalised archive",
+    method: "rule-engine",
+    evidence: [
+      {
+        id: hit.id,
+        label: hit.title,
+        detail: `${hit.venue} · ${hit.freshness}`,
+        kind: hit.freshness === "DEMO" ? "demo" : "historical",
+      },
+    ],
+    provenanceNote: demoProvenance(),
+  };
 }
 
 /** Parse "105 off 120 balls with 7 wickets" style chase questions. */

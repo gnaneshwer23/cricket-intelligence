@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { FreshnessStatus } from "@/lib/contracts";
 import type { CricketFormat } from "@/lib/domain/models";
-import { searchHistoricalMatches } from "@/lib/service/historical";
+import { getDataService } from "@/lib/service/data-service";
 
 export async function GET(request: Request) {
   try {
@@ -16,7 +16,8 @@ export async function GET(request: Request) {
       : undefined;
     const limit = Number.parseInt(searchParams.get("limit") ?? "50", 10);
 
-    const matches = await searchHistoricalMatches({
+    const service = getDataService();
+    const matches = await service.listMatches({
       teamId,
       format: format || undefined,
       venueContains: venue,
@@ -46,7 +47,11 @@ export async function GET(request: Request) {
     });
   } catch (err) {
     return NextResponse.json(
-      { ok: false, error: err instanceof Error ? err.message : "matches failed" },
+      {
+        ok: false,
+        error: err instanceof Error ? err.message : "matches failed",
+        freshness: "UNAVAILABLE",
+      },
       { status: 500 },
     );
   }

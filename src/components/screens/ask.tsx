@@ -3,13 +3,16 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowUp } from "lucide-react";
 import { useApp } from "@/components/app-state";
+import { DataStatusStrip } from "@/components/data-status-strip";
 import { PlayerSearchPicker } from "@/components/player-search-picker";
-import { KindBadge } from "@/components/status-badge";
+import { FreshnessBadge, KindBadge } from "@/components/status-badge";
 import { Kicker, PageTitle, Panel } from "@/components/ui-bits";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useMatchList } from "@/hooks/use-data-layer";
 import { askPrompts, getPlayer, players, teamLabel } from "@/lib/data";
-import type { AskMode } from "@/lib/types";
+import type { FreshnessStatus } from "@/lib/contracts";
+import type { AskMode, HistoricalMatchSummary } from "@/lib/types";
 
 const modes: { id: AskMode; label: string }[] = [
   { id: "general", label: "General" },
@@ -34,12 +37,32 @@ export function AskScreen() {
     clearPendingSeed,
     saveChat,
     go,
+    setHistoricalMatches,
+    historicalMatches,
   } = useApp();
+  const matchList = useMatchList(20);
   const [draft, setDraft] = useState("");
   const [twinQuery, setTwinQuery] = useState("");
   const scroller = useRef<HTMLDivElement>(null);
   const prompts = askPrompts[askMode] ?? askPrompts.general;
   const twinPlayer = getPlayer(twinId) ?? players[0];
+
+  useEffect(() => {
+    if (matchList.status !== "ok") return;
+    const rows: HistoricalMatchSummary[] = matchList.matches.map((m) => ({
+      id: m.id,
+      title: m.title,
+      freshness: String(m.freshness),
+      venue: m.venue,
+      format: m.format,
+      score: m.score,
+      teams: m.teams,
+      provenance: m.provenance
+        ? { source: m.provenance.source, note: m.provenance.note }
+        : undefined,
+    }));
+    setHistoricalMatches(rows);
+  }, [matchList.status, matchList.matches, setHistoricalMatches]);
 
   useEffect(() => {
     const node = scroller.current;
@@ -68,8 +91,43 @@ export function AskScreen() {
       <PageTitle
         kicker="Cricket Copilot"
         title="Ask Cricket Anything."
-        lede="Intent → retrieve → calculate → explain. Figures come from the DEMO dataset and deterministic calcs — not invented by an LLM."
+        lede="Intent → retrieve → calculate → explain. Figures come from the DEMO dataset, seeded HISTORICAL archive via /api/matches, and deterministic calcs — not invented by an LLM."
       />
+
+      <div className="mb-4">
+        <DataStatusStrip />
+      </div>
+
+      {askMode === "historical" ? (
+        <Panel className="mb-4 border-white/8 bg-card/40">
+          <Kicker>Historical archive · normalised</Kicker>
+          {matchList.status === "unavailable" ? (
+            <p className="mt-2 text-sm text-gold">Archive UNAVAILABLE — not claiming LIVE</p>
+          ) : matchList.status === "loading" ? (
+            <p className="mt-2 text-sm text-muted-foreground">Loading `/api/matches`…</p>
+          ) : (
+            <ul className="mt-3 space-y-2 text-sm">
+              {(historicalMatches.length ? historicalMatches : matchList.matches)
+                .slice(0, 6)
+                .map((m) => (
+                  <li key={m.id} className="flex flex-wrap items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      className="text-left font-medium transition hover:text-lime"
+                      onClick={() => submit(m.title)}
+                    >
+                      {m.title}
+                    </button>
+                    <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <FreshnessBadge freshness={m.freshness as FreshnessStatus} />
+                      {m.venue}
+                    </span>
+                  </li>
+                ))}
+            </ul>
+          )}
+        </Panel>
+      ) : null}
 
       <div className="mb-4 flex flex-wrap gap-2">
         <Button type="button" size="sm" variant="secondary" onClick={() => go("explorer")}>

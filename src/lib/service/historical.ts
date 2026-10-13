@@ -15,8 +15,9 @@ import { getStorage } from "@/lib/storage";
 async function allMatches(): Promise<DomainMatch[]> {
   const stored = await getStorage().listMatches();
   const demo = getDemoMatch();
+  if (!stored.length) return [demo];
   if (!stored.some((m) => m.id === demo.id)) return [demo, ...stored];
-  return stored.length ? stored : [demo];
+  return stored;
 }
 
 export async function searchHistoricalMatches(

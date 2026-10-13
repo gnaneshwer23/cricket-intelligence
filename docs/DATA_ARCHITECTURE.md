@@ -53,7 +53,16 @@ Demo mode never promotes the board to LIVE.
 
 ## UI integration
 
-- Match Room / Explorer show `DataStatusStrip` (`/api/health`).
+- Prefer `getDataService()` for reads — bootstraps seeded HISTORICAL fixtures via the same `normaliseCricApiMatch` path, then optionally syncs a configured provider.
+- Home / Match Room / Explorer / Ask show `DataStatusStrip` (`/api/health`).
+- Fixtures list: `GET /api/fixtures` (seeded upcoming + archive; provider when keyed).
 - Explorer historical panel uses `/api/matches` + compare; charts remain DEMO over-series only.
-- Live score strip stays **scripted DEMO sim** (`live-sim.ts`).
-- Copilot uses deterministic calcs + `copilotEvidenceScope` (no LLM claim when stubbed).
+- Live score strip stays **scripted DEMO sim** (`live-sim.ts`) — never LIVE without provider health.
+- Copilot historical mode retrieves normalised `/api/matches` rows + deterministic calcs + `copilotEvidenceScope`.
+
+## Credentials path
+
+1. Set `CRICKETOS_DATA_PROVIDER=cricapi` (or `sportmonks`) and `CRICKETOS_DATA_API_KEY` in `.env.local` / Vercel project env.
+2. Restart / redeploy.
+3. `/api/health` shows `demoMode: false` and adapter health; freshness may become LIVE only when the provider reports an in-progress match.
+4. Without a key, UI stays DEMO + seeded HISTORICAL (honest labels).
