@@ -51,8 +51,11 @@ export type FixtureRow = {
   provenance?: { source: string; asOf: string; note?: string };
 };
 
+const DEFAULT_POLL_MS = 0;
+const HEALTH_POLL_MS = 60_000;
+
 /** Poll `/api/health` — UNAVAILABLE when fetch fails. Never invents LIVE. */
-export function useDataHealth(): HealthState {
+export function useDataHealth(pollMs = HEALTH_POLL_MS): HealthState {
   const [state, setState] = useState<HealthState>({
     status: "loading",
     summary: null,
@@ -62,8 +65,9 @@ export function useDataHealth(): HealthState {
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/health")
-      .then(async (r) => {
+    async function load() {
+      try {
+        const r = await fetch("/api/health");
         const json = (await r.json()) as {
           ok: boolean;
           summary?: HealthSummary;
@@ -88,8 +92,7 @@ export function useDataHealth(): HealthState {
           adapter: json.adapter ?? null,
           primaryFreshness: primary === "LIVE" && json.summary.demoMode ? "DEMO" : primary,
         });
-      })
-      .catch(() => {
+      } catch {
         if (!cancelled) {
           setState({
             status: "unavailable",
@@ -98,28 +101,38 @@ export function useDataHealth(): HealthState {
             primaryFreshness: "UNAVAILABLE",
           });
         }
-      });
+      }
+    }
+    void load();
+    const id = pollMs > 0 ? window.setInterval(() => void load(), pollMs) : undefined;
     return () => {
       cancelled = true;
+      if (id) window.clearInterval(id);
     };
-  }, []);
+  }, [pollMs]);
 
   return state;
 }
 
-export function useMatchList(limit = 20): {
+export function useMatchList(
+  limit = 20,
+  pollMs = DEFAULT_POLL_MS,
+): {
   status: "loading" | "ok" | "unavailable";
   matches: ApiMatchRow[];
   error: string | null;
+  refreshedAt: number | null;
 } {
   const [status, setStatus] = useState<"loading" | "ok" | "unavailable">("loading");
   const [matches, setMatches] = useState<ApiMatchRow[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [refreshedAt, setRefreshedAt] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`/api/matches?limit=${limit}`)
-      .then(async (r) => {
+    async function load() {
+      try {
+        const r = await fetch(`/api/matches?limit=${limit}`);
         const json = (await r.json()) as {
           ok: boolean;
           matches?: ApiMatchRow[];
@@ -135,37 +148,44 @@ export function useMatchList(limit = 20): {
         setMatches(json.matches ?? []);
         setStatus("ok");
         setError(null);
-      })
-      .catch(() => {
+        setRefreshedAt(Date.now());
+      } catch {
         if (!cancelled) {
           setStatus("unavailable");
           setError("Matches unavailable");
           setMatches([]);
         }
-      });
+      }
+    }
+    void load();
+    const id = pollMs > 0 ? window.setInterval(() => void load(), pollMs) : undefined;
     return () => {
       cancelled = true;
+      if (id) window.clearInterval(id);
     };
-  }, [limit]);
+  }, [limit, pollMs]);
 
-  return { status, matches, error };
+  return { status, matches, error, refreshedAt };
 }
 
-export function useFixtures(): {
+export function useFixtures(pollMs = DEFAULT_POLL_MS): {
   status: "loading" | "ok" | "unavailable";
   fixtures: FixtureRow[];
   upcoming: FixtureRow | null;
   historical: FixtureRow[];
   error: string | null;
+  refreshedAt: number | null;
 } {
   const [status, setStatus] = useState<"loading" | "ok" | "unavailable">("loading");
   const [fixtures, setFixtures] = useState<FixtureRow[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [refreshedAt, setRefreshedAt] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/fixtures")
-      .then(async (r) => {
+    async function load() {
+      try {
+        const r = await fetch("/api/fixtures");
         const json = (await r.json()) as {
           ok: boolean;
           fixtures?: FixtureRow[];
@@ -181,18 +201,22 @@ export function useFixtures(): {
         setFixtures(json.fixtures ?? []);
         setStatus("ok");
         setError(null);
-      })
-      .catch(() => {
+        setRefreshedAt(Date.now());
+      } catch {
         if (!cancelled) {
           setStatus("unavailable");
           setError("Fixtures unavailable");
           setFixtures([]);
         }
-      });
+      }
+    }
+    void load();
+    const id = pollMs > 0 ? window.setInterval(() => void load(), pollMs) : undefined;
     return () => {
       cancelled = true;
+      if (id) window.clearInterval(id);
     };
-  }, []);
+  }, [pollMs]);
 
   const upcoming =
     fixtures.find((f) => f.freshness === "UPCOMING" || f.status === "UPCOMING") ?? null;
@@ -200,5 +224,5 @@ export function useFixtures(): {
     (f) => f.freshness === "HISTORICAL" || f.status === "COMPLETED",
   );
 
-  return { status, fixtures, upcoming, historical, error };
+  return { status, fixtures, upcoming, historical, error, refreshedAt };
 }

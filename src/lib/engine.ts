@@ -6,9 +6,7 @@ import {
   oversToBalls,
   phaseBandsForFormat,
   aggregatePhase,
-  runsToMilestone,
   speedUpliftPct,
-  strikeRate,
 } from "@/lib/calc";
 import { getPlayer, matchMeta, phases, players } from "@/lib/data";
 import { buildExplorerView, explorerInnings } from "@/lib/innings";
@@ -138,10 +136,7 @@ function answerQuestionInner(
   const phaseLead = cumulativePhaseLead(phases);
   const phaseRows = analysePhases(phases);
   const surge = phaseRows.find((row) => row.label.includes("22–30"));
-  const root = getPlayer("joe-root");
-  const rootTo14k = root ? runsToMilestone(root.milestones[0].current, root.milestones[0].target) : 73;
   const bumrahUplift = speedUpliftPct(146.2, 134.1);
-  const rootSr = root ? strikeRate(89, 120) : 74.2;
   const explorerView = buildExplorerView({
     matchId: matchMeta.id,
     inningsId: explorerInnings[0]?.meta.id ?? "eng-1",
@@ -338,27 +333,49 @@ function answerQuestionInner(
       (hasWord(query, "today") || hasWord(query, "cricket"))
   ) {
     return {
-      headline: "Demo match in 30 seconds",
+      headline: "Cricket week in 30 seconds",
       paragraphs: [
-        `DEMO board: England ${matchMeta.score.runs} for ${matchMeta.score.wickets} at ${matchMeta.venue}, ${matchMeta.dayLabel}. Root 89* (SR ${rootSr}), Stokes just in. Phase lead ${phaseLead > 0 ? `+${phaseLead}` : phaseLead} — surge in overs 22–30 was ${surge ? `${surge.scored} vs ${surge.expected} expected` : "the key phase"}.`,
-        `Bumrah has two wickets and is bowling ${bumrahUplift}% above career speed in this file. Win model: England ${matchMeta.winModel.eng}, India ${matchMeta.winModel.ind}. Rain risk up to 34% (authored demo prior).`,
-        `Root needs ${rootTo14k} for 14,000. Brook’s 64 ended to Kuldeep — tempo given, then the known spin hole.`,
+        `Multi-team slate: India (Bumrah peak window, Kohli chase DNA), Australia (pace battery prior for Centurion), West Indies white-ball nights, IPL franchise follows, and India Women / Australia Women openers with Mandhana timing.`,
+        `Optional Lord’s DEMO board: England ${matchMeta.score.runs}/${matchMeta.score.wickets}, phase lead ${phaseLead > 0 ? `+${phaseLead}` : phaseLead}, Bumrah ${bumrahUplift}% above career speed in that file — labelled DEMO, not LIVE.`,
+        "Live Scores board polls fixtures/matches; real LIVE needs CRICKETOS_DATA_API_KEY. Seeded archive covers WI, IPL, women’s finals, and classic Tests.",
       ],
       figures: [
-        { label: "Score", value: `${matchMeta.score.runs}/${matchMeta.score.wickets}` },
-        { label: "Eng win", value: `${matchMeta.winModel.eng}%` },
-        { label: "vs model", value: phaseLead > 0 ? `+${phaseLead}` : String(phaseLead) },
-        { label: "Root to 14k", value: String(rootTo14k) },
+        { label: "DEMO score", value: `${matchMeta.score.runs}/${matchMeta.score.wickets}` },
+        { label: "Bumrah uplift", value: `${bumrahUplift}%` },
+        { label: "Formats", value: "Test · T20 · ODI · IPL" },
       ],
       confidence: 88,
       followups: follow([
-        "Why is England winning?",
         "Why is Bumrah difficult to face?",
-        "What are the turning points?",
+        "How does Kohli build a chase?",
+        "Tell me everything important about women's cricket this week",
       ]),
-      speaker: "Daily briefing · DEMO",
+      speaker: "Daily briefing · multi-team",
       method: "deterministic-calc",
-      evidence: cite("ev-phase-2230", "ev-root-innings", "ev-win-model"),
+      evidence: cite("ev-phase-2230", "ev-win-model"),
+    };
+  }
+
+  if (
+    query.includes("women") ||
+    hasWord(query, "mandhana") ||
+    hasWord(query, "perry") ||
+    (hasWord(query, "healy") && hasWord(query, "alyssa"))
+  ) {
+    return {
+      headline: "Women's cricket is a first-class briefing subject",
+      paragraphs: [
+        "India Women open with Mandhana's timing; Harmanpreet anchors the middle. Australia Women still set the system prior — Perry all-round gravity, Healy powerplay tempo.",
+        "Seeded archive includes Australia Women vs England Women (2022 final). Follow IND-W / AUS-W in onboarding or Feed and the home briefing rotates with them.",
+        "This is not a Root-only product lane — women's cricket sits beside IPL, WI, and men's internationals on the Live Scores board.",
+      ],
+      followups: follow([
+        "Where does Mandhana sit among openers?",
+        "Closest trajectory to Babar",
+        "Summarise today's cricket in 30 seconds",
+      ]),
+      speaker: "Women's cricket · curated",
+      method: "rule-engine",
     };
   }
 
@@ -993,12 +1010,12 @@ function answerQuestionInner(
         : "Name a player, a year, or a what-if",
       paragraphs: [
         ...archiveLines,
-        "Player-era prompts still work on Root / Sangakkara, Sachin at 24 vs Kohli, Stokes' chases, and the 2005 likeness. LIVE scores only appear when a provider key is configured and healthy.",
+        "Player-era prompts still work across Kohli, Babar, Mandhana, Warner, Root / Sangakkara, Sachin at 24, Stokes' chases, and the 2005 likeness. LIVE scores only appear when a provider key is configured and healthy.",
       ],
       followups: follow([
         "List historical matches",
         "Sachin at 24 vs Kohli",
-        "Show Stokes' best chases",
+        "India women vs Australia women — classic finals",
         "Headingley 2019",
       ]),
       speaker: "Historical · normalised archive",
@@ -1032,13 +1049,14 @@ function answerQuestionInner(
   return {
     headline: "Ask Cricket Anything",
     paragraphs: [
-      `Grounded copilot on the DEMO Lord’s file — England ${matchMeta.score.runs} for ${matchMeta.score.wickets}, win model ${matchMeta.winModel.eng}/${matchMeta.winModel.ind}. Numbers come from the dataset and deterministic calcs, not an inventing LLM.`,
-      "Try Explorer questions (richest over, phase rates), What-If required rates, Bumrah’s difficulty, Root’s twins, or a 30-second summary. If the file can’t support an answer, it says so.",
+      "Grounded multi-team copilot — India, Aus, WI, IPL, women’s cricket, legends, plus an optional Lord’s DEMO board. Numbers come from the dataset, seeded archive, and deterministic calcs — not an inventing LLM.",
+      "Try Bumrah’s difficulty, Kohli chases, Babar twins, Mandhana / women’s week, Warner powerplays, Explorer questions, or a 30-second summary. If the file can’t support an answer, it says so.",
     ],
     followups: follow([
-      "Which over scored the most runs?",
-      "Required rate for 105 off 120 balls",
-      "How did the run rate change by phase?",
+      "Why is Bumrah difficult to face?",
+      "How does Kohli build a chase?",
+      "Tell me everything important about women's cricket this week",
+      "Closest trajectory to Babar",
       "Summarise today's cricket in 30 seconds",
     ]),
   };

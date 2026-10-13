@@ -164,4 +164,20 @@ export const extraTeams: Team[] = [
     summary: "IPL franchise. Gill timing and Rashid's middle-over mystery.",
     styles: ["Top-order timing", "Mystery spin", "Auction discipline"],
   }),
+  lightTeam({
+    id: "india-women",
+    name: "India Women",
+    short: "IND-W",
+    accent: "ind",
+    summary: "Women's international side — Mandhana timing, chase craft, rising depth.",
+    styles: ["Left-hand openers", "Chase calm", "Spin options"],
+  }),
+  lightTeam({
+    id: "australia-women",
+    name: "Australia Women",
+    short: "AUS-W",
+    accent: "gold",
+    summary: "Women's international side — Perry all-round gravity, Healy tempo, system depth.",
+    styles: ["All-round depth", "Fielding standard", "White-ball pace"],
+  }),
 ];

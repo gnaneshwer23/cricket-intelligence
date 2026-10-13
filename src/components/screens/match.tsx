@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useApp } from "@/components/app-state";
 import { LiveCommentary } from "@/components/live-commentary";
+import { LiveFixturesBoard, type BoardRow } from "@/components/live-fixtures-board";
 import { LiveScoreStrip } from "@/components/live-score-strip";
 import { DataStatusStrip } from "@/components/data-status-strip";
 import {
@@ -20,9 +21,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useLiveMatch } from "@/hooks/use-live-match";
-import { useMatchList } from "@/hooks/use-data-layer";
 import { analysePhases, applyWinSwing, strikeRate } from "@/lib/calc";
-import type { FreshnessStatus } from "@/lib/contracts";
 import {
   batting,
   bowling,
@@ -53,7 +52,17 @@ const graphKindLabel: Record<MatchGraphNode["kind"], string> = {
 export function MatchScreen() {
   const { mood, react, go, graphNodeId, clearGraphNodeId } = useApp();
   const live = useLiveMatch();
-  const matchList = useMatchList(12);
+  const [selectedMatchId, setSelectedMatchId] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const pick = sessionStorage.getItem("cricketos-match-pick");
+      if (pick) sessionStorage.removeItem("cricketos-match-pick");
+      return pick;
+    } catch {
+      return null;
+    }
+  });
+  const [selectedRow, setSelectedRow] = useState<BoardRow | null>(null);
   const [planId, setPlanId] = useState(fieldPlans[0].id);
   const [side, setSide] = useState<"england" | "india">("england");
   const [noted, setNoted] = useState<string | null>(null);
@@ -63,6 +72,16 @@ export function MatchScreen() {
   const [evidenceId, setEvidenceId] = useState<string | null>(null);
   const [tab, setTab] = useState("commentary");
   const [appliedGraphNode, setAppliedGraphNode] = useState<string | null>(null);
+
+  const showDemoIntel =
+    selectedMatchId === matchMeta.id ||
+    selectedMatchId === "demo-eng-ind-lords-d2" ||
+    (selectedRow?.isDemo ?? false);
+
+  function pickMatch(row: BoardRow) {
+    setSelectedMatchId(row.id);
+    setSelectedRow(row);
+  }
 
   // Apply deep-link from Explorer / Copilot when graphNodeId changes (React-recommended adjust-on-render).
   if (graphNodeId && graphNodeId !== appliedGraphNode) {
@@ -98,13 +117,15 @@ export function MatchScreen() {
     <div className="mx-auto max-w-6xl">
       <header className="mb-7 flex flex-wrap items-end justify-between gap-4">
         <div className="max-w-2xl">
-          <Kicker className="text-cyan">Match Room · DEMO sim + intelligence</Kicker>
+          <Kicker className="text-cyan">Match Room · today&apos;s fixtures</Kicker>
           <h1 className="font-display mt-3 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-            {matchMeta.title}
+            {showDemoIntel
+              ? `${matchMeta.title} (DEMO)`
+              : selectedRow?.title ?? "Pick a match"}
           </h1>
           <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground">
-            Scripted DEMO score and commentary — explore graph, evidence, and consequences. Not a
-            broadcast feed.
+            Multi-match board first. Lord&apos;s England vs India is one DEMO option — not the whole
+            app. LIVE badges only when a provider key reports in-progress scores.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -121,57 +142,117 @@ export function MatchScreen() {
             type="button"
             size="sm"
             className="cos-cta"
-            onClick={() => go("ask", { seedAsk: "Which over scored the most runs?" })}
+            onClick={() => go("ask", { seedAsk: "Summarise today's cricket in 30 seconds" })}
           >
             Ask Copilot
           </Button>
         </div>
       </header>
 
-      <LiveScoreStrip />
-      <div className="mt-3 space-y-2">
+      <LiveFixturesBoard
+        selectedId={selectedMatchId}
+        onSelect={pickMatch}
+        limit={14}
+      />
+      <div className="mt-3">
         <DataStatusStrip />
-        <ProvenanceStrip
-          source={matchMeta.provenance.source}
-          asOf={matchMeta.provenance.asOf}
-          note="Score strip is a scripted DEMO sim. Graph and report stay on the session snapshot."
-        />
       </div>
 
-      <Panel className="mt-4 border-white/8 bg-card/40">
-        <div className="flex flex-wrap items-end justify-between gap-2">
-          <div>
-            <Kicker>Normalised fixtures · `/api/matches`</Kicker>
-            <p className="mt-1 text-xs text-muted-foreground">
-              DEMO board below stays scripted. Archive rows are HISTORICAL / UPCOMING — never LIVE
-              without a provider key.
-            </p>
-          </div>
-          <Button type="button" size="sm" variant="secondary" onClick={() => go("explorer")}>
-            Explorer archive
+      {!selectedMatchId ? (
+        <Panel className="mt-6 border-white/8 bg-card/40">
+          <Kicker>Select a fixture</Kicker>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Choose any row above. DEMO Lord&apos;s unlocks the scripted sim, graph, and intelligence
+            tabs. Other rows show archived / upcoming / provider scores with provenance.
+          </p>
+          <Button
+            type="button"
+            size="sm"
+            className="cos-cta mt-4"
+            onClick={() =>
+              pickMatch({
+                id: matchMeta.id,
+                title: `${matchMeta.title} (DEMO)`,
+                status: "DEMO",
+                freshness: "DEMO",
+                venue: matchMeta.venue,
+                format: "test",
+                series: matchMeta.series,
+                score: matchMeta.score,
+                isDemo: true,
+                provenance: {
+                  source: matchMeta.provenance.source,
+                  asOf: matchMeta.provenance.asOf,
+                  note: matchMeta.provenance.note,
+                },
+              })
+            }
+          >
+            Open Lord&apos;s DEMO
           </Button>
-        </div>
-        {matchList.status === "unavailable" ? (
-          <p className="mt-3 text-sm text-gold">Match list UNAVAILABLE</p>
-        ) : matchList.status === "loading" ? (
-          <p className="mt-3 text-sm text-muted-foreground">Loading matches…</p>
-        ) : (
-          <ul className="mt-3 divide-y divide-white/8 text-sm">
-            {matchList.matches.slice(0, 6).map((m) => (
-              <li key={m.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-                <div>
-                  <p className="font-medium">{m.title}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {m.venue} · {m.format}
-                    {m.score ? ` · ${m.score.runs}/${m.score.wickets}` : ""}
-                  </p>
-                </div>
-                <FreshnessBadge freshness={m.freshness as FreshnessStatus} />
-              </li>
-            ))}
-          </ul>
-        )}
-      </Panel>
+        </Panel>
+      ) : null}
+
+      {selectedMatchId && !showDemoIntel && selectedRow ? (
+        <Panel className="mt-6 border-white/8 bg-card/40">
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBadge status={selectedRow.status} />
+            <FreshnessBadge freshness={selectedRow.freshness} />
+          </div>
+          <h2 className="font-display mt-3 text-2xl tracking-tight">{selectedRow.title}</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {selectedRow.venue} · {selectedRow.format}
+            {selectedRow.series ? ` · ${selectedRow.series}` : ""}
+          </p>
+          {selectedRow.score ? (
+            <p className="font-display mt-4 text-5xl font-semibold tabular-nums">
+              {selectedRow.score.runs}
+              <span className="text-lime">/{selectedRow.score.wickets}</span>
+              {selectedRow.score.overs ? (
+                <span className="ml-3 font-mono text-base text-cyan">
+                  {selectedRow.score.overs} ov
+                </span>
+              ) : null}
+            </p>
+          ) : (
+            <p className="mt-4 text-sm text-muted-foreground">
+              {selectedRow.status === "UPCOMING"
+                ? "No ball in play yet — fixture prior only."
+                : "Scorecard detail not in this archive row."}
+            </p>
+          )}
+          {selectedRow.provenance ? (
+            <div className="mt-4">
+              <ProvenanceStrip
+                source={selectedRow.provenance.source}
+                asOf={selectedRow.provenance.asOf}
+                note={selectedRow.provenance.note}
+              />
+            </div>
+          ) : null}
+          <p className="mt-4 text-xs text-muted-foreground">
+            Full ball-by-ball intelligence tabs stay on the Lord&apos;s DEMO board. Provider LIVE
+            rows update when `/api/fixtures` refreshes.
+          </p>
+        </Panel>
+      ) : null}
+
+      {showDemoIntel ? (
+        <>
+          <div className="mt-6">
+            <Kicker className="text-gold">DEMO sim · scripted session</Kicker>
+            <p className="mt-1 mb-3 text-sm text-muted-foreground">
+              Not a broadcast feed — labelled DEMO, never LIVE.
+            </p>
+            <LiveScoreStrip />
+            <div className="mt-3">
+              <ProvenanceStrip
+                source={matchMeta.provenance.source}
+                asOf={matchMeta.provenance.asOf}
+                note="Score strip is a scripted DEMO sim. Graph and report stay on the session snapshot."
+              />
+            </div>
+          </div>
 
       <Tabs value={tab} onValueChange={setTab} className="mt-6">
         <TabsList variant="line" className="h-auto! w-full justify-start overflow-x-auto">
@@ -820,6 +901,8 @@ export function MatchScreen() {
           </Panel>
         </TabsContent>
       </Tabs>
+        </>
+      ) : null}
     </div>
   );
 }

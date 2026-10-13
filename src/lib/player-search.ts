@@ -2,12 +2,14 @@ import type { Player, Role } from "@/lib/types";
 
 /** Example queries shown in empty search states — not a dumped roster. */
 export const PLAYER_SEARCH_EXAMPLES = [
-  "Bradman",
   "Kohli",
-  "Ambrose",
-  "Tendulkar",
-  "Warne",
-  "Sobers",
+  "Mandhana",
+  "Babar",
+  "Warner",
+  "Bradman",
+  "Perry",
+  "Lara",
+  "Bumrah",
 ] as const;
 
 export const PLAYER_SEARCH_MIN_CHARS = 2;
@@ -52,6 +54,11 @@ export const playerAliases: Record<string, string[]> = {
   "mitchell-starc": ["starc"],
   "kane-williamson": ["williamson", "kane", "kw"],
   "babar-azam": ["babar"],
+  "smriti-mandhana": ["mandhana", "smriti"],
+  "harmanpreet-kaur": ["harmanpreet", "kaur"],
+  "ellyse-perry": ["perry", "ellyse"],
+  "alyssa-healy": ["healy", "alyssa"],
+  "shai-hope": ["hope", "shai"],
   "rohit-sharma": ["rohit", "hitman"],
   "ravindra-jadeja": ["jadeja", "jaddu"],
   "kagiso-rabada": ["rabada", "kg"],

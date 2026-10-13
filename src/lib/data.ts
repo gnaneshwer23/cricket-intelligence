@@ -1,5 +1,10 @@
 import type { MatchMeta } from "@/lib/contracts";
 import type { MoodKey, Player, Team } from "@/lib/types";
+import {
+  DIVERSE_ASK_PROMPTS,
+  DIVERSE_RECOMMENDATIONS,
+  DIVERSE_TRENDING,
+} from "@/lib/curated-slate";
 import { historicalPlayers } from "@/lib/historical-catalog";
 import { catalogTeamLabel, featuredPlayerIds, internationalTeamIds } from "@/lib/onboarding-catalog";
 import { mergePlayers, rosterExtras } from "@/lib/roster";
@@ -1079,45 +1084,99 @@ export const teams: Team[] = [
 
 export const briefing = [
   {
-    id: "root-runs",
-    icon: "🎯",
-    title: "Root needs 73 runs for 14,000",
-    detail: "He is 89 not out. The milestone is a session, not a series.",
-    screen: "players" as const,
-    playerId: "joe-root",
-    teamIds: ["england"] as string[],
-  },
-  {
-    id: "brook-run",
-    icon: "🔥",
-    title: "Brook is on his best 10-match run",
-    detail: "The 64 today fits the stretch. The dismissal, to spin, also fits the file.",
-    screen: "players" as const,
-    playerId: "harry-brook",
-    teamIds: ["england"] as string[],
-  },
-  {
     id: "bumrah-pace",
     icon: "📈",
     title: "Bumrah is bowling 9% faster than his career average",
-    detail: "146.2 kph against a career mean of 134.1. This is the peak window.",
+    detail: "146.2 kph against a career mean of 134.1. Peak window for India attacks.",
     screen: "players" as const,
     playerId: "jasprit-bumrah",
     teamIds: ["india"] as string[],
   },
   {
-    id: "england-session",
-    icon: "📊",
-    title: "England are +21 vs the phase model",
-    detail: "Overs 22–30 did the damage. Win model: England 58%, India 42%.",
-    screen: "match" as const,
-    teamIds: ["england", "india"] as string[],
+    id: "kohli-chase",
+    icon: "🎯",
+    title: "Kohli chase DNA still the India reference",
+    detail: "The model keeps weighting appetite over accumulation when India chase.",
+    screen: "players" as const,
+    playerId: "virat-kohli",
+    teamIds: ["india"] as string[],
   },
   {
-    id: "rain",
-    icon: "⚠️",
-    title: "Rain risk has increased",
-    detail: "From 18% overnight to 34% for the last two sessions. The draw is back in the model.",
+    id: "babar-control",
+    icon: "📊",
+    title: "Babar remains Pakistan's control batter",
+    detail: "Closest living trajectories ask often resolve to Root or Kohli — control vs appetite.",
+    screen: "players" as const,
+    playerId: "babar-azam",
+    teamIds: ["pakistan"] as string[],
+  },
+  {
+    id: "aus-pace",
+    icon: "⚡",
+    title: "Australia's pace battery still sets the length",
+    detail: "Cummins plans, Starc angles — the Test prior opens at Centurion.",
+    screen: "teams" as const,
+    playerId: "pat-cummins",
+    teamIds: ["australia"] as string[],
+  },
+  {
+    id: "wi-white-ball",
+    icon: "🔥",
+    title: "West Indies white-ball identity is loud again",
+    detail: "Hope and power hitters — Kensington nights still punish quiet starts.",
+    screen: "teams" as const,
+    playerId: "shai-hope",
+    teamIds: ["west-indies"] as string[],
+  },
+  {
+    id: "mandhana-form",
+    icon: "✨",
+    title: "Mandhana timing leads India Women openers",
+    detail: "Left-hand cover drives remain the file's first signal for IND-W.",
+    screen: "players" as const,
+    playerId: "smriti-mandhana",
+    teamIds: ["india-women"] as string[],
+  },
+  {
+    id: "ipl-night",
+    icon: "🏟️",
+    title: "IPL franchise follows are live in the briefing",
+    detail: "MI–CSK and orange nights sit beside internationals — pick sides in Feed.",
+    screen: "feed" as const,
+    teamIds: ["mi", "csk", "srh"] as string[],
+  },
+  {
+    id: "warner-white",
+    icon: "💥",
+    title: "Warner white-ball threat still shapes powerplays",
+    detail: "First-six damage is the archive note even after the Test chapter closed.",
+    screen: "players" as const,
+    playerId: "david-warner",
+    teamIds: ["australia"] as string[],
+  },
+  {
+    id: "brook-run",
+    icon: "🔥",
+    title: "Brook is on his best 10-match run",
+    detail: "Rate says elite. Spin early in the plan still the file's worry.",
+    screen: "players" as const,
+    playerId: "harry-brook",
+    teamIds: ["england"] as string[],
+  },
+  {
+    id: "root-runs",
+    icon: "🎯",
+    title: "Root milestone watch (England follow)",
+    detail: "73 from 14,000 on the DEMO Lord's board — one England story among many.",
+    screen: "players" as const,
+    playerId: "joe-root",
+    teamIds: ["england"] as string[],
+  },
+  {
+    id: "england-session",
+    icon: "📊",
+    title: "DEMO Lord's: England +21 vs the phase model",
+    detail: "Illustrative board only — open Match Room fixtures for the full slate.",
     screen: "match" as const,
     teamIds: ["england", "india"] as string[],
   },
@@ -1132,31 +1191,30 @@ export const briefing = [
 ];
 
 export function personalBriefing(followedPlayers: string[], followedTeams: string[]) {
-  const ranked = [...briefing].sort((a, b) => {
-    const score = (item: (typeof briefing)[number]) => {
-      let n = 0;
-      if (item.playerId && followedPlayers.includes(item.playerId)) n += 3;
-      if (item.teamIds?.some((id) => followedTeams.includes(id))) n += 2;
-      return n;
-    };
-    return score(b) - score(a);
-  });
-  return ranked.slice(0, 4);
+  const score = (item: (typeof briefing)[number]) => {
+    let n = 0;
+    if (item.playerId && followedPlayers.includes(item.playerId)) n += 3;
+    if (item.teamIds?.some((id) => followedTeams.includes(id))) n += 2;
+    return n;
+  };
+  const ranked = [...briefing].sort((a, b) => score(b) - score(a));
+  // Always mix in at least one non-England item when follows are England-heavy
+  const top = ranked.slice(0, 4);
+  const hasNonEng = top.some(
+    (item) => !item.teamIds?.every((id) => id === "england") || item.teamIds?.length === 0,
+  );
+  if (!hasNonEng) {
+    const diverse = ranked.find(
+      (item) => item.teamIds?.some((id) => id !== "england" && id !== "india") || false,
+    );
+    if (diverse && !top.includes(diverse)) {
+      top[top.length - 1] = diverse;
+    }
+  }
+  return top;
 }
 
 export const stories = [
-  {
-    id: "brook-goat",
-    kicker: "Career",
-    icon: "🔥",
-    title: "Can Brook become England's next GOAT?",
-    lede: "The rate says yes. The spin file says not yet.",
-    body: [
-      "Brook's last ten Tests are the loudest stretch of his career. He scores at a rate Root never needed, and he scores them against pace that most batters play for time. The model puts an elite Test career at 92%, and 10,000 Test runs at 76%.",
-      "The gap is not talent. It is the early ball from a wrist spinner, and the innings he gives away when the plan has not settled. Root at the same age was slower, uglier, and already harder to dismiss twice in a session. Brook exceeds Root's runs-per-innings pace by 14%. He does not yet exceed Root's refusal to get out.",
-      "Greatness, in this model, is the ugly afternoon as much as the hundred before lunch. Brook can become the best England batter of his era. Surpassing Root's career weight is a 38% outcome, and it depends on the next two years more than the last ten matches.",
-    ],
-  },
   {
     id: "bumrah-peak",
     kicker: "Peak",
@@ -1170,15 +1228,39 @@ export const stories = [
     ],
   },
   {
-    id: "lords",
-    kicker: "Venue",
-    icon: "📊",
-    title: "Why India struggle at this venue",
-    lede: "The slope, the first morning, and a batting order that likes the ball older than Lord's allows.",
+    id: "mandhana-era",
+    kicker: "Women's",
+    icon: "✨",
+    title: "Where Mandhana sits among openers",
+    lede: "Left-hand timing, white-ball ceiling, and a side still building depth.",
     body: [
-      "Lord's does not turn into a minefield. It does something meaner. The slope takes the ball across the right-hander, the first twenty overs move enough to reward a length, and the square boundaries flatter only the batter who is already in.",
-      "India's best cricket starts once the ball is older and a chase has a shape. Lord's asks them to be good before either of those things is true. Their right-hand heavy top order plays the same line they play at home, and the line is six inches away from where the slope puts the ball.",
-      "They have solved other away grounds with Bumrah. Here he has to do it twice: once with the new ball, and again if England's lower order gets a lead. That is why the what-if is so violent. Without him, India's win chance in this match falls from 42% to 18%.",
+      "Smriti Mandhana's cover drive is the first signal in the India Women file. The model treats her as a timing-first opener who scores before the middle order needs a rescue.",
+      "Against Australia Women the prior still favours Perry's all-round gravity and Healy's powerplay tempo. India Women win when Mandhana's fifty arrives before the 30th over and the chase has a shape.",
+      "This is not a secondary product lane. Women's cricket is a first-class briefing subject — follow IND-W / AUS-W and the Copilot prompts rotate with them.",
+    ],
+  },
+  {
+    id: "wi-power",
+    kicker: "Format",
+    icon: "🔥",
+    title: "West Indies white-ball nights still punish quiet starts",
+    lede: "Hope anchors; the hitters finish. Kensington is not a polite ground.",
+    body: [
+      "West Indies white-ball cricket is bounce, athleticism, and powerplay damage. The archive row from Bridgetown is the reminder: England can post a total and still lose the middle overs.",
+      "Shai Hope remains the calm in the middle. The model does not treat WI as a nostalgia act — franchise leagues keep the hitters sharp between internationals.",
+      "Follow West Indies and the home briefing stops pretending the week is only Lord's.",
+    ],
+  },
+  {
+    id: "brook-goat",
+    kicker: "Career",
+    icon: "🔥",
+    title: "Can Brook become England's next GOAT?",
+    lede: "The rate says yes. The spin file says not yet.",
+    body: [
+      "Brook's last ten Tests are the loudest stretch of his career. He scores at a rate Root never needed, and he scores them against pace that most batters play for time. The model puts an elite Test career at 92%, and 10,000 Test runs at 76%.",
+      "The gap is not talent. It is the early ball from a wrist spinner, and the innings he gives away when the plan has not settled. Root at the same age was slower, uglier, and already harder to dismiss twice in a session. Brook exceeds Root's runs-per-innings pace by 14%. He does not yet exceed Root's refusal to get out.",
+      "Greatness, in this model, is the ugly afternoon as much as the hundred before lunch. Brook can become the best England batter of his era. Surpassing Root's career weight is a 38% outcome, and it depends on the next two years more than the last ten matches.",
     ],
   },
 ];
@@ -1190,60 +1272,17 @@ export const upcoming = {
   note: "No ball in play. The model opens when the match starts. Until then it is a venue prior and a squad file, not a score.",
 };
 
-export const recommendations = [
-  { q: "Why is Bumrah difficult to face today?", mode: "general" as const },
-  { q: "Show Stokes' best chases", mode: "historical" as const },
-  { q: "Most similar to Root", mode: "general" as const },
-  { q: "Sachin at 24 vs Kohli", mode: "historical" as const },
-  { q: "Closest trajectory to Babar", mode: "career" as const },
-  { q: "Why is England winning?", mode: "predictions" as const },
-  { q: "Summarise today's cricket in 30 seconds", mode: "general" as const },
-];
+export const recommendations = [...DIVERSE_RECOMMENDATIONS];
 
-export const trending = [
-  { label: "Bumrah peak window", q: "Why is Bumrah dominating today?" },
-  { label: "Root → 14,000", q: "Will Root get to 14,000 today?" },
-  { label: "England +21", q: "Why is England winning?" },
-  { label: "Stokes vs Kuldeep", q: "Who likely scores next?" },
-];
+export const trending = [...DIVERSE_TRENDING];
 
 export const askPrompts: Record<string, string[]> = {
-  general: [
-    "Why is Bumrah difficult to face?",
-    "Summarise today's cricket in 30 seconds",
-    "Most similar to Root",
-    "Tell me everything important about England this week",
-  ],
-  predictions: [
-    "Why is England winning?",
-    "Project the final score",
-    "Who likely scores next?",
-    "What are the turning points?",
-  ],
-  fantasy: [
-    "Who should captain?",
-    "Why is Potts the differential?",
-    "Does the Woakes injury change the XI?",
-    "Is Bumrah still a must-start?",
-  ],
-  historical: [
-    "Show Stokes' best chases",
-    "Sachin at 24 vs Kohli",
-    "Compare Root and Kohli at age 25",
-    "Best Test innings since 2000",
-  ],
-  career: [
-    "Closest trajectory to Babar",
-    "Predict Brook's career",
-    "Will Root get to 14,000 today?",
-    "Most similar to Root",
-  ],
-  twin: [
-    "Explain how Virat Kohli approaches run chases.",
-    "How does Root play Jadeja once he is set?",
-    "What does Brook do in the first fifteen balls against spin?",
-    "How does Bumrah choose the yorker?",
-  ],
+  general: [...DIVERSE_ASK_PROMPTS.general],
+  predictions: [...DIVERSE_ASK_PROMPTS.predictions],
+  fantasy: [...DIVERSE_ASK_PROMPTS.fantasy],
+  historical: [...DIVERSE_ASK_PROMPTS.historical],
+  career: [...DIVERSE_ASK_PROMPTS.career],
+  twin: [...DIVERSE_ASK_PROMPTS.twin],
 };
 
 export const matchPredictions = [
@@ -1318,9 +1357,49 @@ export const matchReport = {
 
 export const smartAlerts = [
   {
+    id: "bumrah-spell",
+    title: "Bumrah spell window",
+    detail: "Peak pace window — alert when he starts a new burst (demo / provider when keyed).",
+    playerId: "jasprit-bumrah",
+    teamId: "india",
+    kind: "matchup" as const,
+  },
+  {
+    id: "kohli-chase",
+    title: "Kohli chase watch",
+    detail: "Chase DNA spikes when India need 80+ with six wickets in hand.",
+    playerId: "virat-kohli",
+    teamId: "india",
+    kind: "milestone" as const,
+  },
+  {
+    id: "mandhana-fifty",
+    title: "Mandhana fifty watch",
+    detail: "IND-W openers — alert when Mandhana crosses 40 in a chase.",
+    playerId: "smriti-mandhana",
+    teamId: "india-women",
+    kind: "milestone" as const,
+  },
+  {
+    id: "aus-pace",
+    title: "Australia new-ball alert",
+    detail: "Cummins / Starc first spell — length prior for Centurion and Gabba archives.",
+    playerId: "pat-cummins",
+    teamId: "australia",
+    kind: "venue" as const,
+  },
+  {
+    id: "wi-powerplay",
+    title: "WI powerplay damage",
+    detail: "West Indies white-ball — first six overs decide more than the middle.",
+    playerId: "shai-hope",
+    teamId: "west-indies",
+    kind: "matchup" as const,
+  },
+  {
     id: "root-milestone",
-    title: "Root milestone watch",
-    detail: "73 runs from 14,000. He is set on 89*. Alert when he reaches 95 or falls.",
+    title: "Root milestone watch (England)",
+    detail: "DEMO Lord's board: 73 from 14,000 when that fixture is selected.",
     playerId: "joe-root",
     teamId: "england",
     kind: "milestone" as const,
@@ -1331,21 +1410,6 @@ export const smartAlerts = [
     detail: "Woakes calf tightness — 40% availability. Swap window before day three.",
     teamId: "england",
     kind: "injury" as const,
-  },
-  {
-    id: "lords-venue",
-    title: "India venue form",
-    detail: "Lord's still asks India to be good before the ball is old. Bumrah is the workaround.",
-    teamId: "india",
-    kind: "venue" as const,
-  },
-  {
-    id: "stokes-kuldeep",
-    title: "Demo matchup spike",
-    detail: "Stokes vs Kuldeep: dismissal risk elevated for nine more balls (demo file).",
-    playerId: "ben-stokes",
-    teamId: "england",
-    kind: "matchup" as const,
   },
 ];
 

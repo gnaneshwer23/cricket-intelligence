@@ -41,9 +41,11 @@ Demo mode skips external retrieve and uses the local contract dataset with expli
 
 ### Enable live / historical provider data
 
-1. Sign up at [CricketData.org / CricAPI](https://cricketdata.org/) (or Sportmonks) and copy an API key — do not scrape Cricbuzz/Cricinfo.
-2. In Vercel: Project → Settings → Environment Variables → add:
-   - `CRICKETOS_DATA_PROVIDER` = `cricapi` (or `sportmonks`)
-   - `CRICKETOS_DATA_API_KEY` = your key (Production + Preview)
-3. Redeploy. Locally: copy `.env.example` → `.env.local`, set the same vars, restart `next dev`.
-4. Confirm `GET /api/health` shows `demoMode: false` and adapter `ok`. LIVE badges only appear when the provider reports an in-progress match.
+1. Sign up at [CricketData.org / CricAPI](https://cricketdata.org/) (or Sportmonks) and copy an API key — do not scrape Cricbuzz/Cricinfo. Signup needs your email / login (agent cannot complete OTP for you).
+2. **Local:** copy `.env.example` → `.env.local`:
+   - `CRICKETOS_DATA_PROVIDER=cricapi`
+   - `CRICKETOS_DATA_API_KEY=<paste key>`
+   Restart `next dev`.
+3. **Vercel:** Project → Settings → Environment Variables → add the same two vars for Production + Preview → Redeploy.
+4. Confirm `GET /api/health` shows `demoMode: false` and adapter `ok`. The Home / Match Room **Live Scores** board polls `/api/fixtures` + `/api/matches`; LIVE badges only when the provider reports an in-progress match. DEMO sim is never labelled LIVE.
+5. CricAPI adapter merges `currentMatches` (in-progress) with `matches` (schedule) when keyed.

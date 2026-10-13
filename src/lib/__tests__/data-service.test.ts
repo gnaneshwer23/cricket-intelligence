@@ -19,12 +19,13 @@ describe("seed historical normalisation", () => {
 
   it("builds quality-passing seed bundle with HISTORICAL + UPCOMING", () => {
     const bundle = buildSeedBundle();
-    assert.ok(bundle.matches.length >= 4);
+    assert.ok(bundle.matches.length >= 8);
     const historical = bundle.matches.filter((m) => m.freshness === "HISTORICAL");
     const upcoming = bundle.matches.filter((m) => m.freshness === "UPCOMING");
-    assert.ok(historical.length >= 4, `expected ≥4 HISTORICAL, got ${historical.length}`);
-    assert.equal(upcoming.length, 1);
+    assert.ok(historical.length >= 6, `expected ≥6 HISTORICAL, got ${historical.length}`);
+    assert.ok(upcoming.length >= 2, `expected ≥2 UPCOMING, got ${upcoming.length}`);
     assert.ok(bundle.matches.every((m) => m.freshness !== "LIVE"));
+    assert.ok(bundle.matches.some((m) => /Women|IPL|Knight|West Indies/i.test(m.title)));
   });
 });
 

@@ -53,45 +53,53 @@ export function PlayersScreen() {
     [followedPlayers],
   );
 
-  const player = getPlayer(playerId) ?? players[0];
-  const followed = followedPlayers.includes(player.id);
-  const log = twinLog[player.id] ?? [];
+  const resolvedId = playerId || followedPlayers[0] || "";
+  const player = resolvedId ? getPlayer(resolvedId) : undefined;
+  const followed = player ? followedPlayers.includes(player.id) : false;
+  const log = player ? (twinLog[player.id] ?? []) : [];
 
-  const nodes = [
-    { id: "self", title: player.name, body: player.blurb },
-    {
-      id: "similar",
-      title: "Most similar players",
-      body: player.similar
-        .map((item) => `${getPlayer(item.id)?.name ?? item.id} · ${item.score}%. ${item.note}`)
-        .join(" "),
-    },
-    {
-      id: "top",
-      title: getPlayer(player.similar[0]?.id ?? "")?.name ?? "Nearest twin",
-      body: player.similar[0]?.note ?? player.blurb,
-      openId: player.similar[0]?.id,
-    },
-    { id: "away", title: "Greatest away innings", body: player.away },
-    { id: "chases", title: "Best chases", body: player.chases },
-    { id: "opponents", title: "Historic opponents", body: player.opponents },
-  ];
+  const nodes = player
+    ? [
+        { id: "self", title: player.name, body: player.blurb },
+        {
+          id: "similar",
+          title: "Most similar players",
+          body: player.similar
+            .map((item) => `${getPlayer(item.id)?.name ?? item.id} · ${item.score}%. ${item.note}`)
+            .join(" "),
+        },
+        {
+          id: "top",
+          title: getPlayer(player.similar[0]?.id ?? "")?.name ?? "Nearest twin",
+          body: player.similar[0]?.note ?? player.blurb,
+          openId: player.similar[0]?.id,
+        },
+        { id: "away", title: "Greatest away innings", body: player.away },
+        { id: "chases", title: "Best chases", body: player.chases },
+        { id: "opponents", title: "Historic opponents", body: player.opponents },
+      ]
+    : [];
   const activeNode = nodes.find((node) => node.id === nodeId) ?? nodes[0];
 
   function askTwin(question: string) {
     const text = question.trim();
+    if (!player) {
+      setTwinError("Pick a player first.");
+      return;
+    }
     if (!text) {
       setTwinError("Ask the Twin something first.");
       return;
     }
+    const activePlayerId = player.id;
     setTwinError(null);
     setTwinDraft("");
     setThinking(true);
     window.setTimeout(() => {
-      const answer = answerQuestion(text, "twin", player.id);
+      const answer = answerQuestion(text, "twin", activePlayerId);
       setTwinLog((current) => ({
         ...current,
-        [player.id]: [...(current[player.id] ?? []), { q: text, a: answer }],
+        [activePlayerId]: [...(current[activePlayerId] ?? []), { q: text, a: answer }],
       }));
       setThinking(false);
     }, 600);
@@ -148,7 +156,7 @@ export function PlayersScreen() {
                         setNodeId("self");
                       }}
                       className={`rounded-full border px-2.5 py-1 text-xs ${
-                        item.id === player.id
+                        item.id === player?.id
                           ? "border-lime bg-lime/15 text-foreground"
                           : "border-border bg-muted/40 text-muted-foreground hover:border-lime/30"
                       }`}
@@ -196,13 +204,13 @@ export function PlayersScreen() {
                         setNodeId("self");
                       }}
                       className={`w-full rounded-2xl px-3 py-2 text-left text-sm ${
-                        item.id === player.id ? "bg-primary text-primary-foreground" : "hover:bg-muted"
+                        item.id === player?.id ? "bg-primary text-primary-foreground" : "hover:bg-muted"
                       }`}
                     >
                       <span className="block font-medium">{item.name}</span>
                       <span
                         className={`block text-xs ${
-                          item.id === player.id ? "text-primary-foreground/80" : "text-muted-foreground"
+                          item.id === player?.id ? "text-primary-foreground/80" : "text-muted-foreground"
                         }`}
                       >
                         {teamLabel(item.teamId)} · {item.span}
@@ -216,6 +224,43 @@ export function PlayersScreen() {
         </div>
 
         <div>
+          {!player ? (
+            <Panel className="border-white/8 bg-card/40">
+              <Kicker>Search first</Kicker>
+              <h2 className="font-display mt-3 text-3xl tracking-tight sm:text-4xl">
+                Find any player
+              </h2>
+              <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground">
+                CricketOS is multi-team — Kohli, Babar, Mandhana, Warner, legends. Search the
+                catalog or pick someone you follow. We do not open on Joe Root by default.
+              </p>
+              <div className="mt-5 flex flex-wrap gap-2">
+                {PLAYER_SEARCH_EXAMPLES.map((example) => (
+                  <button
+                    key={example}
+                    type="button"
+                    className="rounded-full border border-border bg-muted/40 px-3 py-1.5 text-sm hover:border-lime/40 hover:text-lime"
+                    onClick={() => setQuery(example)}
+                  >
+                    {example}
+                  </button>
+                ))}
+              </div>
+              {followedProfiles[0] ? (
+                <Button
+                  type="button"
+                  className="cos-cta mt-6"
+                  onClick={() => {
+                    setPlayerId(followedProfiles[0].id);
+                    setNodeId("self");
+                  }}
+                >
+                  Open {followedProfiles[0].name}
+                </Button>
+              ) : null}
+            </Panel>
+          ) : (
+            <>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <Kicker>
@@ -524,6 +569,8 @@ export function PlayersScreen() {
               </div>
             </TabsContent>
           </Tabs>
+            </>
+          )}
         </div>
       </div>
     </div>

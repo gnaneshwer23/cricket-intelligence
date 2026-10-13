@@ -8,6 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { getPlayer, players } from "@/lib/data";
 import {
+  ONBOARDING_DEFAULT_PLAYERS,
+  ONBOARDING_DEFAULT_TEAMS,
+} from "@/lib/curated-slate";
+import {
   catalogTeams,
   featuredPlayerIds,
   seedAskFromChoices,
@@ -20,8 +24,8 @@ const STEPS = ["Welcome", "Nations", "IPL", "Players", "Ready"] as const;
 export function Onboarding() {
   const { onboarded, completeOnboarding, skipOnboarding, go } = useApp();
   const [step, setStep] = useState(0);
-  const [pickedTeams, setPickedTeams] = useState<string[]>(["england"]);
-  const [pickedPlayers, setPickedPlayers] = useState<string[]>(["joe-root", "ben-stokes"]);
+  const [pickedTeams, setPickedTeams] = useState<string[]>([...ONBOARDING_DEFAULT_TEAMS]);
+  const [pickedPlayers, setPickedPlayers] = useState<string[]>([...ONBOARDING_DEFAULT_PLAYERS]);
   const [query, setQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<Role | "All">("All");
 

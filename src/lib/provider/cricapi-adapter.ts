@@ -92,21 +92,52 @@ export class CricApiAdapter implements CricketDataAdapter {
 
   async listFixtures(params?: ListFixturesParams): Promise<AdapterResult<DomainFixtureListItem[]>> {
     if (!this.apiKey) return { ok: false, error: "API key missing" };
-    const res = await providerFetch({
-      url: this.url("/matches", { offset: params?.offset ?? 0 }),
-      timeoutMs: this.timeoutMs,
-      maxRetries: this.maxRetries,
-      logLabel: "cricapi.listFixtures",
-      fetchImpl: this.fetchImpl,
-    });
-    if (!res.ok) return { ok: false, error: res.error, raw: res.body };
-    const validated = validateCricApiMatchList(res.body);
-    if (!validated.ok || !validated.value) {
-      return { ok: false, error: validated.issues.map((i) => i.message).join("; "), raw: res.body };
+    // Prefer currentMatches for in-progress scores, then schedule via /matches
+    const [currentRes, scheduleRes] = await Promise.all([
+      providerFetch({
+        url: this.url("/currentMatches", { offset: 0 }),
+        timeoutMs: this.timeoutMs,
+        maxRetries: this.maxRetries,
+        logLabel: "cricapi.currentMatches",
+        fetchImpl: this.fetchImpl,
+      }),
+      providerFetch({
+        url: this.url("/matches", { offset: params?.offset ?? 0 }),
+        timeoutMs: this.timeoutMs,
+        maxRetries: this.maxRetries,
+        logLabel: "cricapi.listFixtures",
+        fetchImpl: this.fetchImpl,
+      }),
+    ]);
+
+    const byId = new Map<string, DomainFixtureListItem>();
+    const ingestList = (body: unknown) => {
+      const validated = validateCricApiMatchList(body);
+      if (!validated.ok || !validated.value) return;
+      for (const row of validated.value) {
+        const match = normaliseCricApiMatch(row);
+        byId.set(match.id, toFixtureItem(match));
+      }
+    };
+
+    if (currentRes.ok) ingestList(currentRes.body);
+    if (scheduleRes.ok) ingestList(scheduleRes.body);
+
+    if (!byId.size) {
+      const err =
+        (!currentRes.ok ? currentRes.error : null) ??
+        (!scheduleRes.ok ? scheduleRes.error : null) ??
+        "no fixtures from currentMatches/matches";
+      return { ok: false, error: err, raw: { current: currentRes.body, schedule: scheduleRes.body } };
     }
-    const matches = validated.value.map(normaliseCricApiMatch);
+
+    const matches = [...byId.values()];
     const limit = params?.limit ?? matches.length;
-    return { ok: true, data: matches.slice(0, limit).map(toFixtureItem), raw: res.body };
+    return {
+      ok: true,
+      data: matches.slice(0, limit),
+      raw: { current: currentRes.body, schedule: scheduleRes.body },
+    };
   }
 
   async getMatch(id: string): Promise<AdapterResult<DomainMatch>> {

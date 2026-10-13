@@ -154,9 +154,9 @@ function Shell() {
           })}
         </nav>
         <p className="px-2 text-[11px] leading-relaxed text-muted-foreground">
-          Cricket intelligence · DEMO mode
+          Multi-team cricket intelligence
           <span className="mt-1.5 block text-muted-foreground/80">
-            Bundled dataset. Not a live score, official record, or betting product.
+            DEMO / seeded archive until a provider key is set. Never labels DEMO as LIVE.
           </span>
         </p>
       </aside>
@@ -169,7 +169,7 @@ function Shell() {
               Understand the game
             </p>
           </div>
-          <p className="text-[10px] tracking-[0.14em] text-gold uppercase">DEMO · Lord&apos;s</p>
+          <p className="text-[10px] tracking-[0.14em] text-gold uppercase">Multi-team · DEMO</p>
         </header>
         <main id="content" className="px-4 pt-6 pb-28 lg:px-10 lg:pt-10 lg:pb-20">
           {screen === "home" ? <HomeScreen /> : null}

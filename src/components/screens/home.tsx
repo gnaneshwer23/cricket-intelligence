@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useApp } from "@/components/app-state";
 import { DataStatusStrip } from "@/components/data-status-strip";
+import { LiveFixturesBoard, type BoardRow } from "@/components/live-fixtures-board";
 import { LiveScoreStrip } from "@/components/live-score-strip";
 import { FreshnessBadge, StatusBadge } from "@/components/status-badge";
 import { Kicker, Panel, Spark, useGreeting } from "@/components/ui-bits";
@@ -20,6 +21,7 @@ import { useFixtures } from "@/hooks/use-data-layer";
 import type { FreshnessStatus, MatchLifecycle } from "@/lib/contracts";
 import {
   getPlayer,
+  matchMeta,
   personalBriefing,
   recommendations,
   smartAlerts,
@@ -39,7 +41,7 @@ export function HomeScreen() {
     setPreferences,
   } = useApp();
   const { greeting, dateLabel } = useGreeting();
-  const fixtures = useFixtures();
+  const fixtures = useFixtures(15_000);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [storyId, setStoryId] = useState<string | null>(null);
@@ -48,6 +50,16 @@ export function HomeScreen() {
   const fixtureHighlight = fixtures.upcoming;
   const fixtureFreshness = (fixtureHighlight?.freshness ?? "UPCOMING") as FreshnessStatus;
   const fixtureStatus = (fixtureHighlight?.status ?? "UPCOMING") as MatchLifecycle;
+
+  function openMatchFromBoard(row: BoardRow) {
+    go("match");
+    // Match Room reads hash + selected demo via session flag
+    try {
+      sessionStorage.setItem("cricketos-match-pick", row.id);
+    } catch {
+      /* ignore */
+    }
+  }
 
   const briefing = useMemo(() => {
     const items = personalBriefing(followedPlayers, followedTeams);
@@ -95,8 +107,8 @@ export function HomeScreen() {
               Follow the match. Understand the game.
             </h1>
             <p className="mt-5 max-w-md text-[0.95rem] leading-relaxed text-muted-foreground sm:text-base">
-              {greeting}. Intelligence briefing with grounded answers — demo and seeded
-              historical data labelled honestly, not another scoreboard that pretends to be live.
+              {greeting}. Multi-team cricket intelligence — India, Aus, WI, IPL, women&apos;s,
+              legends — with DEMO and seeded archive labelled honestly until a provider key is set.
             </p>
           </div>
 
@@ -130,13 +142,13 @@ export function HomeScreen() {
         </div>
       </section>
 
-      {/* Scoreboard — sports retail clarity, DEMO labelled */}
+      {/* Live Scores board — multi-match; DEMO never labelled LIVE */}
       <section className="mt-10">
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <Kicker className="text-cyan">DEMO scoreboard</Kicker>
+            <Kicker className="text-cyan">Live Scores</Kicker>
             <p className="mt-1.5 text-sm text-muted-foreground">
-              Scripted Lord&apos;s session · not a live broadcast
+              Today&apos;s fixtures + archive · polls every 15s · provider LIVE when keyed
             </p>
           </div>
           <Button
@@ -152,7 +164,33 @@ export function HomeScreen() {
         <div className="mb-3">
           <DataStatusStrip />
         </div>
-        <LiveScoreStrip compact onOpenMatch={() => go("match")} />
+        <LiveFixturesBoard compact limit={8} onSelect={openMatchFromBoard} />
+      </section>
+
+      {/* Optional DEMO sim — clearly labelled, not the whole product */}
+      <section className="mt-8">
+        <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <Kicker className="text-gold">DEMO sim · {matchMeta.venue}</Kicker>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Scripted England vs India session — one Match Room option, not a live feed
+            </p>
+          </div>
+          <Button type="button" size="sm" variant="ghost" onClick={() => go("match")}>
+            Open DEMO board
+          </Button>
+        </div>
+        <LiveScoreStrip
+          compact
+          onOpenMatch={() => {
+            try {
+              sessionStorage.setItem("cricketos-match-pick", matchMeta.id);
+            } catch {
+              /* ignore */
+            }
+            go("match");
+          }}
+        />
       </section>
 
       {/* Trending / quick asks — below first composition */}
@@ -212,9 +250,23 @@ export function HomeScreen() {
             className="text-left transition hover:text-lime"
           >
             <div className="flex flex-wrap items-center gap-2">
-              <StatusBadge status={fixtureStatus === "LIVE" ? "UPCOMING" : fixtureStatus} />
+              <StatusBadge
+                status={
+                  fixtureStatus === "DEMO"
+                    ? "DEMO"
+                    : fixtureStatus === "LIVE"
+                      ? "LIVE"
+                      : fixtureStatus
+                }
+              />
               <FreshnessBadge
-                freshness={fixtureFreshness === "LIVE" ? "UPCOMING" : fixtureFreshness}
+                freshness={
+                  fixtureFreshness === "DEMO"
+                    ? "DEMO"
+                    : fixtureFreshness === "LIVE"
+                      ? "LIVE"
+                      : fixtureFreshness
+                }
               />
               <Kicker>Fixture</Kicker>
             </div>

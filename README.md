@@ -2,8 +2,9 @@
 
 **Follow the match. Understand the game. Explore what happens next.**
 
-Interactive cricket intelligence — Match Room, Explorer charts, grounded Copilot, player DNA, and what-if labs.  
-**DEMO mode by default:** the Lord’s England vs India board is a bundled illustrative dataset. It is **not** a live score, official record book, or betting product.
+Multi-team cricket intelligence — India, Australia, West Indies, IPL, women’s cricket, and historical legends — with Match Room, Explorer charts, grounded Copilot, player DNA, and what-if labs.
+
+**DEMO mode by default:** the Lord’s England vs India board is **one labelled DEMO option**, not the whole product. It is **not** a live score, official record book, or betting product.
 
 ## Run
 
@@ -37,6 +38,22 @@ Copy `.env.example` → `.env.local`. Secrets stay **server-side only** (never `
 
 With no live credentials, the app stays in **DEMO** and labels match status accordingly. See `docs/PROVIDERS.md` and `docs/PROVIDER_EVALUATION.md`.
 
+### One-click live scores (CricAPI / CricketData.org)
+
+Real **LIVE** badges need a free API key (signup requires your email — cannot be completed by the agent without OTP):
+
+1. Open [https://cricketdata.org/](https://cricketdata.org/) → **Sign Up / Login** → copy your API key.
+2. **Local:** copy `.env.example` → `.env.local` and set:
+   ```bash
+   CRICKETOS_DATA_PROVIDER=cricapi
+   CRICKETOS_DATA_API_KEY=paste_your_key_here
+   ```
+   Restart `npm run dev -- --port 41731`. Confirm `GET /api/health` shows `demoMode: false`.
+3. **Vercel:** Project → Settings → Environment Variables → add the same two vars for **Production** + **Preview** → Redeploy.
+4. Home **Live Scores** and Match Room poll `/api/fixtures` + `/api/matches` every 15s. In-progress provider matches show real scores with provenance + timestamp. **DEMO sim is never labelled LIVE.**
+
+Without a key, the Live Scores board still lists many seeded HISTORICAL / UPCOMING fixtures (IPL, WI, women’s, Tests) plus the Lord’s DEMO option.
+
 ## Data layer (Stage 5)
 
 | Endpoint | Purpose |
@@ -48,7 +65,7 @@ With no live credentials, the app stays in **DEMO** and labels match status acco
 | `GET /api/ingestion/status` | Operator ingestion summary |
 | `POST /api/ingestion/run` | Token-gated ingest (refused without token) |
 
-**Wire a live provider:** set `CRICKETOS_DATA_PROVIDER` + `CRICKETOS_DATA_API_KEY` (Vercel → Project → Settings → Environment Variables, or `.env.local`), redeploy/restart. Until then the app uses the DEMO Lord’s board plus a small **seeded HISTORICAL** set imported through the same normalisation path — never labelled LIVE.
+**Wire a live provider:** see [One-click live scores](#one-click-live-scores-cricapi--cricketdataorg) above. Until then the app uses a diverse **seeded HISTORICAL / UPCOMING** slate plus the Lord’s DEMO board — never labelled LIVE.
 
 Freshness labels: **LIVE / STALE / UNAVAILABLE / DEMO / HISTORICAL / UPCOMING**.  
 Default persistence is **in-memory** and labelled ephemeral — not production durable storage.
@@ -111,7 +128,8 @@ Copilot pipeline (current): classify intent → retrieve from demo file → **ca
 
 ## Known limitations
 
-- No verified live score feed — Match Room strip is a **scripted DEMO simulation**, labelled as such
+- No provider key on Vercel by default — Live Scores board shows seeds + DEMO until you paste a CricAPI key
+- Match Room DEMO strip is a **scripted simulation**, labelled DEMO (never LIVE)
 - Provider adapters are implemented and **unit-tested with mocks**; live keyed calls need credentials + license confirmation
 - Persistence defaults to **in-memory** until `DATABASE_URL` + migrations + a Postgres client are wired
 - LLM explain path is stubbed behind env (not implemented end-to-end)

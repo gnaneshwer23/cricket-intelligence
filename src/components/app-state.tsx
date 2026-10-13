@@ -12,6 +12,11 @@ import {
   type ReactNode,
 } from "react";
 import { initialMood } from "@/lib/data";
+import {
+  DEFAULT_FOLLOWED_PLAYERS,
+  DEFAULT_FOLLOWED_TEAMS,
+  defaultSeedAsk,
+} from "@/lib/curated-slate";
 import { answerQuestion } from "@/lib/engine";
 import type {
   AskMode,
@@ -52,8 +57,8 @@ type StoredState = {
 
 const defaults: StoredState = {
   onboarded: false,
-  followedPlayers: ["joe-root", "harry-brook", "jasprit-bumrah", "virat-kohli"],
-  followedTeams: ["england", "india"],
+  followedPlayers: [...DEFAULT_FOLLOWED_PLAYERS],
+  followedTeams: [...DEFAULT_FOLLOWED_TEAMS],
   preferences: { englandOnly: false, alerts: true },
   recentChats: [],
   savedChats: [],
@@ -190,8 +195,9 @@ const AppContext = createContext<AppValue | null>(null);
 export function AppStateProvider({ children }: { children: ReactNode }) {
   const screen = useSyncExternalStore(subscribeHash, hashScreen, () => "home" as ScreenId);
   const stored = useSyncExternalStore(subscribeStore, readStore, () => serverSnapshot);
-  const [playerId, setPlayerId] = useState("joe-root");
-  const [teamId, setTeamId] = useState("england");
+  /** Empty = Player Intelligence search-first empty state (not Joe Root by default). */
+  const [playerId, setPlayerId] = useState("");
+  const [teamId, setTeamId] = useState("india");
   const [twinId, setTwinId] = useState("virat-kohli");
   const [askMode, setAskMode] = useState<AskMode>("general");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -314,10 +320,13 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const completeOnboarding = useCallback((teams: string[], players: string[], seedAsk?: string) => {
     patchStore({
       onboarded: true,
-      followedTeams: teams.length ? teams : ["england"],
-      followedPlayers: players.length ? players : ["joe-root"],
+      followedTeams: teams.length ? teams : [...DEFAULT_FOLLOWED_TEAMS],
+      followedPlayers: players.length ? players : [...DEFAULT_FOLLOWED_PLAYERS],
     });
-    setPendingSeed(seedAsk ?? "Tell me everything important about England this week.");
+    if (players[0]) setPlayerId(players[0]);
+    else if (DEFAULT_FOLLOWED_PLAYERS[0]) setPlayerId(DEFAULT_FOLLOWED_PLAYERS[0]);
+    if (teams[0]) setTeamId(teams[0]);
+    setPendingSeed(seedAsk ?? defaultSeedAsk());
   }, []);
 
   const skipOnboarding = useCallback(() => {
