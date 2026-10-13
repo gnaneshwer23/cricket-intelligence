@@ -1,11 +1,10 @@
-import { NextResponse } from "next/server";
+import { connection, NextResponse } from "next/server";
 import { getDataService } from "@/lib/service/data-service";
-
-export const dynamic = "force-dynamic";
 
 /** Fixture list from normalised storage (+ provider when configured). Never invents LIVE. */
 export async function GET() {
   try {
+    await connection(); // runtime bootstrap / env-sensitive
     const service = getDataService();
     await service.ensureReady();
     const fixtures = await service.listFixtures();

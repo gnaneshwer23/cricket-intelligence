@@ -1,12 +1,11 @@
-import { NextResponse } from "next/server";
+import { connection, NextResponse } from "next/server";
 import { getDataAdapter } from "@/lib/provider";
 import { getBriefingDataFlags, getDataService } from "@/lib/service/data-service";
-
-export const dynamic = "force-dynamic";
 
 /** Public operator-safe health — no secrets, no API keys. */
 export async function GET() {
   try {
+    await connection(); // runtime bootstrap / env-sensitive
     const service = getDataService();
     const summary = await service.health();
     const adapter = getDataAdapter();
