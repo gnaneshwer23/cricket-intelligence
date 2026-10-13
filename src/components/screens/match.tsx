@@ -6,6 +6,8 @@ import { LiveCommentary } from "@/components/live-commentary";
 import { LiveFixturesBoard, type BoardRow } from "@/components/live-fixtures-board";
 import { LiveScoreStrip } from "@/components/live-score-strip";
 import { DataStatusStrip } from "@/components/data-status-strip";
+import { DemoPlaygroundBanner } from "@/components/demo-playground-banner";
+import { TruthSetupPanel } from "@/components/truth-setup-panel";
 import {
   FreshnessBadge,
   KindBadge,
@@ -20,6 +22,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useDataHealth } from "@/hooks/use-data-layer";
 import { useLiveMatch } from "@/hooks/use-live-match";
 import { analysePhases, applyWinSwing, strikeRate } from "@/lib/calc";
 import {
@@ -41,6 +44,12 @@ import {
   type MatchGraphNode,
 } from "@/lib/match-graph";
 import { clamp, MOODS, moodBreakdown } from "@/lib/format";
+import {
+  DEMO_PLAYGROUND_ID,
+  DEMO_PLAYGROUND_STORAGE_KEY,
+  isDemoPlaygroundHash,
+  openDemoPlayground,
+} from "@/lib/truth-mode";
 
 const graphKindLabel: Record<MatchGraphNode["kind"], string> = {
   event: "Event",
@@ -49,20 +58,68 @@ const graphKindLabel: Record<MatchGraphNode["kind"], string> = {
   scenario: "Scenario",
 };
 
+function enterDemoPlaygroundSelection(): BoardRow {
+  return {
+    id: DEMO_PLAYGROUND_ID,
+    title: `${matchMeta.title} (DEMO)`,
+    status: "DEMO",
+    freshness: "DEMO",
+    venue: matchMeta.venue,
+    format: "test",
+    series: matchMeta.series,
+    score: matchMeta.score,
+    isDemo: true,
+    provenance: {
+      source: matchMeta.provenance.source,
+      asOf: matchMeta.provenance.asOf,
+      note: matchMeta.provenance.note,
+    },
+  };
+}
+
 export function MatchScreen() {
   const { mood, react, go, graphNodeId, clearGraphNodeId } = useApp();
   const live = useLiveMatch();
+  const health = useDataHealth();
+  const providerReady =
+    health.status === "ok" &&
+    health.summary &&
+    !health.summary.demoMode &&
+    health.summary.dataApiKeyConfigured;
+
+  const [playground, setPlayground] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return (
+        isDemoPlaygroundHash() ||
+        sessionStorage.getItem(DEMO_PLAYGROUND_STORAGE_KEY) === "1"
+      );
+    } catch {
+      return isDemoPlaygroundHash();
+    }
+  });
+
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
     try {
+      if (isDemoPlaygroundHash() || sessionStorage.getItem(DEMO_PLAYGROUND_STORAGE_KEY) === "1") {
+        return DEMO_PLAYGROUND_ID;
+      }
       const pick = sessionStorage.getItem("cricketos-match-pick");
       if (pick) sessionStorage.removeItem("cricketos-match-pick");
+      // Never auto-open DEMO from product board picks that aren't playground
+      if (pick === DEMO_PLAYGROUND_ID || pick?.startsWith("demo-")) {
+        sessionStorage.setItem(DEMO_PLAYGROUND_STORAGE_KEY, "1");
+        return pick;
+      }
       return pick;
     } catch {
       return null;
     }
   });
-  const [selectedRow, setSelectedRow] = useState<BoardRow | null>(null);
+  const [selectedRow, setSelectedRow] = useState<BoardRow | null>(() =>
+    playground ? enterDemoPlaygroundSelection() : null,
+  );
   const [planId, setPlanId] = useState(fieldPlans[0].id);
   const [side, setSide] = useState<"england" | "india">("england");
   const [noted, setNoted] = useState<string | null>(null);
@@ -73,12 +130,40 @@ export function MatchScreen() {
   const [tab, setTab] = useState("commentary");
   const [appliedGraphNode, setAppliedGraphNode] = useState<string | null>(null);
 
+  useEffect(() => {
+    function syncHash() {
+      if (!isDemoPlaygroundHash()) return;
+      try {
+        sessionStorage.setItem(DEMO_PLAYGROUND_STORAGE_KEY, "1");
+      } catch {
+        /* ignore */
+      }
+      setPlayground(true);
+      setSelectedMatchId(DEMO_PLAYGROUND_ID);
+      setSelectedRow(enterDemoPlaygroundSelection());
+    }
+    syncHash();
+    window.addEventListener("hashchange", syncHash);
+    return () => window.removeEventListener("hashchange", syncHash);
+  }, []);
+
   const showDemoIntel =
-    selectedMatchId === matchMeta.id ||
-    selectedMatchId === "demo-eng-ind-lords-d2" ||
-    (selectedRow?.isDemo ?? false);
+    playground &&
+    (selectedMatchId === matchMeta.id ||
+      selectedMatchId === "demo-eng-ind-lords-d2" ||
+      (selectedRow?.isDemo ?? false));
 
   function pickMatch(row: BoardRow) {
+    if (row.isDemo) {
+      try {
+        sessionStorage.setItem(DEMO_PLAYGROUND_STORAGE_KEY, "1");
+      } catch {
+        /* ignore */
+      }
+      setPlayground(true);
+    } else {
+      setPlayground(false);
+    }
     setSelectedMatchId(row.id);
     setSelectedRow(row);
   }
@@ -117,80 +202,89 @@ export function MatchScreen() {
     <div className="mx-auto max-w-6xl">
       <header className="mb-7 flex flex-wrap items-end justify-between gap-4">
         <div className="max-w-2xl">
-          <Kicker className="text-cyan">Live Scores · Match Centre</Kicker>
+          <Kicker className="text-cyan">
+            {showDemoIntel ? "DEMO playground · Match Centre" : "Live Scores · Match Centre"}
+          </Kicker>
           <h1 className="font-display mt-3 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
             {showDemoIntel
               ? `${matchMeta.title} (DEMO)`
               : selectedRow?.title ?? "Live Scores"}
           </h1>
           <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground">
-            Scan Live · Upcoming · Recent, then open a card. Lord&apos;s is one DEMO option — never
-            labelled LIVE. Real LIVE needs a keyed CricAPI / Sportmonks provider.
+            {showDemoIntel
+              ? "Quarantined scripted session — watermarked DEMO, never labelled LIVE."
+              : providerReady
+                ? "Provider fixtures only · series, venue, status, scores from the licensed feed."
+                : "Live and historical facts require a data provider. No invented scores on this surface."}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="cos-cta border-white/12"
-            onClick={() => go("explorer", { explorerFocus: { chart: "worm", from: "Match Room" } })}
-          >
-            Open Explorer charts
-          </Button>
+          {showDemoIntel ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="cos-cta border-white/12"
+              onClick={() =>
+                go("explorer", { explorerFocus: { chart: "worm", from: "DEMO playground" } })
+              }
+            >
+              DEMO Explorer charts
+            </Button>
+          ) : null}
           <Button
             type="button"
             size="sm"
             className="cos-cta"
-            onClick={() => go("ask", { seedAsk: "Summarise today's cricket in 30 seconds" })}
+            onClick={() =>
+              go("ask", {
+                seedAsk: providerReady
+                  ? "What fixtures are available?"
+                  : "What data do you have?",
+              })
+            }
           >
             Ask Copilot
           </Button>
         </div>
       </header>
 
-      <LiveFixturesBoard
-        selectedId={selectedMatchId}
-        onSelect={pickMatch}
-        limit={14}
-        initialTab="all"
-      />
-      <div className="mt-3">
-        <DataStatusStrip />
-      </div>
+      {showDemoIntel ? <DemoPlaygroundBanner /> : null}
 
-      {!selectedMatchId ? (
+      {!showDemoIntel ? (
+        <>
+          <LiveFixturesBoard
+            selectedId={selectedMatchId}
+            onSelect={pickMatch}
+            limit={14}
+            initialTab="all"
+          />
+          <div className="mt-3">
+            <DataStatusStrip />
+          </div>
+        </>
+      ) : null}
+
+      {!providerReady && !showDemoIntel && !selectedMatchId ? (
+        <div className="mt-6">
+          <TruthSetupPanel showDemoLink />
+        </div>
+      ) : null}
+
+      {providerReady && !selectedMatchId && !showDemoIntel ? (
         <Panel className="mt-6 border-white/8 bg-card/40">
           <Kicker>Select a fixture</Kicker>
           <p className="mt-2 text-sm text-muted-foreground">
-            Choose any row above. DEMO Lord&apos;s unlocks the scripted sim, graph, and intelligence
-            tabs. Other rows show archived / upcoming / provider scores with provenance.
+            Choose a provider row above for scores and provenance. Optional:{" "}
+            <button
+              type="button"
+              className="text-gold underline-offset-2 hover:underline"
+              onClick={() => openDemoPlayground()}
+            >
+              Try DEMO playground
+            </button>
+            .
           </p>
-          <Button
-            type="button"
-            size="sm"
-            className="cos-cta mt-4"
-            onClick={() =>
-              pickMatch({
-                id: matchMeta.id,
-                title: `${matchMeta.title} (DEMO)`,
-                status: "DEMO",
-                freshness: "DEMO",
-                venue: matchMeta.venue,
-                format: "test",
-                series: matchMeta.series,
-                score: matchMeta.score,
-                isDemo: true,
-                provenance: {
-                  source: matchMeta.provenance.source,
-                  asOf: matchMeta.provenance.asOf,
-                  note: matchMeta.provenance.note,
-                },
-              })
-            }
-          >
-            Open Lord&apos;s DEMO
-          </Button>
         </Panel>
       ) : null}
 

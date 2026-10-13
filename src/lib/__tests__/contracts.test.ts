@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 import { deriveFreshness, freshnessLabel } from "../contracts.ts";
 
 describe("freshness", () => {
-  it("forces DEMO when demoMode", () => {
+  it("forces DEMO freshness when demoMode (never LIVE)", () => {
     assert.equal(
       deriveFreshness({ lifecycle: "LIVE", demoMode: true, updatedAtIso: new Date().toISOString() }),
       "DEMO",

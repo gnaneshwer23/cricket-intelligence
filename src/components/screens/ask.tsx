@@ -91,7 +91,7 @@ export function AskScreen() {
       <PageTitle
         kicker="Cricket Copilot"
         title="Ask Cricket Anything."
-        lede="Intent → retrieve → calculate → explain. Figures come from the DEMO dataset, seeded HISTORICAL archive via /api/matches, and deterministic calcs — not invented by an LLM."
+        lede="Intent → retrieve → calculate → explain. Figures come only from a licensed provider feed or the labelled DEMO playground — Copilot will not invent match scores or stats."
       />
 
       <div className="mb-4">

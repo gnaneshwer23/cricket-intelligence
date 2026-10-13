@@ -126,11 +126,8 @@ function primaryFreshness(
   demoMode: boolean,
 ): FreshnessStatus {
   if (demoMode) {
-    // Prefer DEMO when present; never claim LIVE in demoMode
-    if (counts.DEMO) return "DEMO";
-    if (counts.HISTORICAL) return "HISTORICAL";
-    if (counts.UPCOMING) return "UPCOMING";
-    return "DEMO";
+    // Truth mode: never claim LIVE; product surfaces stay UNAVAILABLE until keyed
+    return "UNAVAILABLE";
   }
   const order: FreshnessStatus[] = ["LIVE", "STALE", "UPCOMING", "HISTORICAL", "DEMO", "UNAVAILABLE"];
   for (const key of order) {
@@ -145,23 +142,30 @@ async function listFixturesUnified(): Promise<DomainFixtureListItem[]> {
   const stored = await listStoredMatches();
   const fromStorage = stored.map(toFixtureItem);
 
-  if (!cfg.demoMode) {
-    const adapter = getDataAdapter();
-    const remote = await adapter.listFixtures({ limit: 20 });
-    if (remote.ok && remote.data?.length) {
-      // Merge by id; remote wins when not demo
-      const map = new Map<string, DomainFixtureListItem>();
-      for (const f of fromStorage) map.set(f.id, f);
-      for (const f of remote.data) {
-        // Never accept LIVE if somehow still in demoMode (belt + braces)
-        if (cfg.demoMode && f.freshness === "LIVE") continue;
-        map.set(f.id, f);
-      }
-      return [...map.values()];
+  // Truth mode: seeds + DEMO stay in storage for tests / playground lookups,
+  // but never populate the customer-facing fixtures board as "truth".
+  if (cfg.demoMode) {
+    return [];
+  }
+
+  const adapter = getDataAdapter();
+  const remote = await adapter.listFixtures({ limit: 20 });
+  const map = new Map<string, DomainFixtureListItem>();
+
+  // Prefer remote provider rows; exclude seed/demo archive from product fixtures
+  for (const f of fromStorage) {
+    if (f.id.startsWith("seed-") || f.id.startsWith("demo-") || f.freshness === "DEMO") continue;
+    if (f.provenance?.provider === "seed" || f.provenance?.provider === "demo") continue;
+    map.set(f.id, f);
+  }
+  if (remote.ok && remote.data?.length) {
+    for (const f of remote.data) {
+      if (f.freshness === "DEMO" || f.status === "DEMO") continue;
+      map.set(f.id, f);
     }
   }
 
-  return fromStorage;
+  return [...map.values()];
 }
 
 export function getDataService(): DataService {
@@ -207,7 +211,7 @@ export function getBriefingDataFlags() {
     dataProvider: flags.dataProvider,
     hasLiveProvider: !flags.demoMode,
     label: flags.demoMode
-      ? "DEMO + seeded HISTORICAL archive"
+      ? "Truth mode · awaiting CRICKETOS_DATA_API_KEY (CricAPI)"
       : `Provider ${flags.dataProvider} · LIVE only when feed confirms`,
   };
 }

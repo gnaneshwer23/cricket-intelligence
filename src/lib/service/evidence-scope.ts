@@ -15,7 +15,7 @@ export function copilotEvidenceScope(): {
   return {
     method: "deterministic-calc",
     provenanceNote: flags.demoMode
-      ? "DEMO dataset + seeded HISTORICAL archive · grounded rule engine · not a live feed or LLM. Set CRICKETOS_DATA_PROVIDER + CRICKETOS_DATA_API_KEY for provider data."
+      ? "Truth mode · no licensed provider key. Copilot will not invent match scores or stats. Set CRICKETOS_DATA_PROVIDER=cricapi + CRICKETOS_DATA_API_KEY, or open the labelled DEMO playground for the scripted Lord’s sim."
       : `Provider ${flags.dataProvider} · deterministic calcs + retrieved facts · LLM explain ${flags.llmEnabled ? "configured (must not invent numbers)" : "off"}.`,
     llmEnabled: flags.llmEnabled,
   };

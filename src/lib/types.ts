@@ -100,6 +100,13 @@ export type Player = {
   away: string;
   chases: string;
   opponents: string;
+  /**
+   * Catalog / light stub without verified official stats.
+   * UI must show name/era/role only — hide DNA % or label illustrative.
+   */
+  catalogStub?: boolean;
+  /** True only when DNA / form figures come from a verified provider (not yet wired). */
+  statsVerified?: boolean;
 };
 
 export type TeamId = string;
@@ -171,6 +178,10 @@ export type Answer = {
 
 export type AnswerOptions = {
   historicalMatches?: HistoricalMatchSummary[];
+  /** True when a licensed provider key is configured and healthy. */
+  providerReady?: boolean;
+  /** True when the user is in the quarantined DEMO playground (or explicitly asks about it). */
+  demoPlayground?: boolean;
 };
 
 export type ChatMessage =

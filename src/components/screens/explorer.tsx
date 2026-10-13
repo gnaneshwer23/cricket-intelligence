@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useApp } from "@/components/app-state";
 import { DataStatusStrip } from "@/components/data-status-strip";
+import { DemoPlaygroundBanner } from "@/components/demo-playground-banner";
+import { TruthSetupPanel } from "@/components/truth-setup-panel";
 import { FreshnessBadge, KindBadge, ProvenanceStrip, StatusBadge } from "@/components/status-badge";
 import { Kicker, PageTitle, Panel } from "@/components/ui-bits";
 import { Button } from "@/components/ui/button";
@@ -11,6 +13,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useDataHealth } from "@/hooks/use-data-layer";
 import { formatMetric } from "@/lib/calc";
 import { matchMeta } from "@/lib/data";
 import {
@@ -20,11 +23,37 @@ import {
   graphEventForOver,
   type ExplorerFilters,
 } from "@/lib/innings";
+import { DEMO_PLAYGROUND_STORAGE_KEY, isDemoPlaygroundHash } from "@/lib/truth-mode";
 
 type ChartTab = "worm" | "manhattan" | "phases";
 
 export function ExplorerScreen() {
   const { go, explorerFocus, clearExplorerFocus } = useApp();
+  const health = useDataHealth();
+  const providerReady =
+    health.status === "ok" &&
+    health.summary &&
+    !health.summary.demoMode &&
+    health.summary.dataApiKeyConfigured;
+
+  const [playground, setPlayground] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return (
+        isDemoPlaygroundHash() ||
+        sessionStorage.getItem(DEMO_PLAYGROUND_STORAGE_KEY) === "1" ||
+        explorerFocus?.from?.includes("DEMO") === true
+      );
+    } catch {
+      return Boolean(explorerFocus?.from?.includes("DEMO"));
+    }
+  });
+
+  // Adjust-on-render when opened from DEMO playground (avoid setState-in-effect)
+  if (explorerFocus?.from?.includes("DEMO") && !playground) {
+    setPlayground(true);
+  }
+
   const [chart, setChart] = useState<ChartTab>(explorerFocus?.chart ?? "worm");
   const [filters, setFilters] = useState<ExplorerFilters>({
     matchId: matchMeta.id,
@@ -42,6 +71,7 @@ export function ExplorerScreen() {
 
   const view = useMemo(() => buildExplorerView(filters), [filters]);
   const highlightPlayer = filters.player;
+  const showCharts = playground || Boolean(providerReady);
 
   function openGraph(eventId?: string) {
     if (!eventId) {
@@ -70,13 +100,49 @@ export function ExplorerScreen() {
     });
   }
 
+  if (!showCharts) {
+    return (
+      <div className="mx-auto max-w-6xl">
+        <PageTitle
+          kicker="Cricket Explorer"
+          title="Charts need verified innings data."
+          lede="Worm, Manhattan, and phase rates are not invented for the product home. Open the DEMO playground for the scripted Lord’s series, or add a provider key for real fixtures."
+        />
+        <div className="mb-4">
+          <DataStatusStrip />
+        </div>
+        <TruthSetupPanel showDemoLink />
+        <p className="mt-4 text-center text-sm text-muted-foreground">
+          Or{" "}
+          <button
+            type="button"
+            className="text-gold underline-offset-2 hover:underline"
+            onClick={() => {
+              try {
+                sessionStorage.setItem(DEMO_PLAYGROUND_STORAGE_KEY, "1");
+              } catch {
+                /* ignore */
+              }
+              setPlayground(true);
+            }}
+          >
+            enter DEMO Explorer
+          </button>{" "}
+          with an explicit DEMO watermark.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-6xl">
       <PageTitle
-        kicker="Cricket Explorer · DEMO"
+        kicker="Cricket Explorer · DEMO playground"
         title="See how the innings was built."
-        lede="Scoring progression, Manhattan, and phase rates from the bundled Lord’s series — not a live feed. Click a point to open Match Graph evidence."
+        lede="Scoring progression, Manhattan, and phase rates from the scripted Lord’s DEMO series — not a live feed. Click a point to open Match Graph evidence."
       />
+
+      <DemoPlaygroundBanner note="Explorer charts use the authored DEMO over series only. Not provider truth." />
 
       <div className="mb-4 space-y-2">
         <div className="flex flex-wrap items-center gap-2">

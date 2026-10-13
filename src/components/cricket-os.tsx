@@ -162,7 +162,7 @@ function Shell() {
         <p className="px-2 text-[11px] leading-relaxed text-muted-foreground">
           Multi-team cricket intelligence
           <span className="mt-1.5 block text-muted-foreground/80">
-            DEMO / seeded archive until a provider key is set. Never labels DEMO as LIVE.
+            Truth mode until a provider key is set. DEMO playground is opt-in only.
           </span>
         </p>
       </aside>

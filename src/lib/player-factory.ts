@@ -57,6 +57,8 @@ export function lightPlayer(input: {
     form: input.form ?? [12, 44, 8, 67, 3, 91, 18, 35],
     formLabel: role === "Bowler" ? "Wickets in last eight inns" : "Last eight scores",
     formNote,
+    catalogStub: true,
+    statsVerified: false,
     dna,
     traits: [
       { label: trait, level: 86, note: input.blurb },

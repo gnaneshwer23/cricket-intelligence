@@ -4,7 +4,7 @@
 
 Multi-team cricket intelligence — India, Australia, West Indies, IPL, women’s cricket, and historical legends — with Match Room, Explorer charts, grounded Copilot, player DNA, and what-if labs.
 
-**DEMO mode by default:** the Lord’s England vs India board is **one labelled DEMO option**, not the whole product. It is **not** a live score, official record book, or betting product.
+**Truth mode by default:** without a licensed provider key, Home / Live Scores / Copilot do **not** invent match scores, win %, or AI briefings. Optional **DEMO playground** (`#demo`) is a quarantined, watermarked Lord’s sim — never the default homepage.
 
 ## Run
 
@@ -36,11 +36,11 @@ Copy `.env.example` → `.env.local`. Secrets stay **server-side only** (never `
 | `CRICKETOS_LLM_API_KEY` | — | Server-only LLM key (explain layer only) |
 | `CRICKETOS_LLM_MODEL` | — | Optional model id |
 
-With no live credentials, the app stays in **DEMO** and labels match status accordingly. See `docs/PROVIDERS.md` and `docs/PROVIDER_EVALUATION.md`.
+With no live credentials, the app stays in **truth mode** (`demoMode: true` on `/api/health`): product boards stay empty with setup steps. See `docs/PROVIDERS.md` and `docs/PROVIDER_EVALUATION.md`.
 
-### One-click live scores (CricAPI / CricketData.org)
+### Exact steps for true live details (CricAPI / CricketData.org)
 
-Real **LIVE** badges need a free API key (signup requires your email — cannot be completed by the agent without OTP):
+Real fixtures / LIVE scores need a free API key. Signup needs your email / OTP — **not automatable by the agent**.
 
 1. Open [https://cricketdata.org/](https://cricketdata.org/) → **Sign Up / Login** → copy your API key.
 2. **Local:** copy `.env.example` → `.env.local` and set:
@@ -50,9 +50,9 @@ Real **LIVE** badges need a free API key (signup requires your email — cannot 
    ```
    Restart `npm run dev -- --port 41731`. Confirm `GET /api/health` shows `demoMode: false`.
 3. **Vercel:** Project → Settings → Environment Variables → add the same two vars for **Production** + **Preview** → Redeploy.
-4. Home **Live Scores** and `#live` hub (Match Centre) use Live · Upcoming · Recent · All tabs. Poll `/api/fixtures` + `/api/matches` every ~15s **while the Live tab is active**. Cards show series, team abbreviations, score/overs, CRR when available, and a status line. Tap opens Match Centre with that `matchId`. **DEMO sim is never labelled LIVE.**
+4. Home **Live Scores** and `#live` then show **provider fixtures only** (series, venue, status, scores, timestamps). Briefings are derived from those rows (e.g. “3 matches live”, “Next: X vs Y at Z”) — never authored fiction. **DEMO sim is never labelled LIVE** and is only via **Try DEMO playground** (`#demo`).
 
-Without a key, the Live Scores board still lists many seeded HISTORICAL / UPCOMING fixtures (IPL, WI, women’s, Tests) plus the Lord’s DEMO option — with a clear **Add CricAPI key for live scores** CTA.
+Without a key: honest empty/setup state — **not** fake England–India 245/4, Root milestones, win models, or GOAT stories.
 
 ## Data layer (Stage 5)
 
@@ -65,7 +65,7 @@ Without a key, the Live Scores board still lists many seeded HISTORICAL / UPCOMI
 | `GET /api/ingestion/status` | Operator ingestion summary |
 | `POST /api/ingestion/run` | Token-gated ingest (refused without token) |
 
-**Wire a live provider:** see [One-click live scores](#one-click-live-scores-cricapi--cricketdataorg) above. Until then the app uses a diverse **seeded HISTORICAL / UPCOMING** slate plus the Lord’s DEMO board — never labelled LIVE.
+**Wire a live provider:** see [Exact steps for true live details](#exact-steps-for-true-live-details-cricapi--cricketdataorg) above. Seeds remain for API tests only — they do **not** populate the customer-facing home as truth.
 
 Freshness labels: **LIVE / STALE / UNAVAILABLE / DEMO / HISTORICAL / UPCOMING**.  
 Default persistence is **in-memory** and labelled ephemeral — not production durable storage.
@@ -76,8 +76,9 @@ Default persistence is **in-memory** and labelled ephemeral — not production d
 |---------|--------------|--------|
 | Intelligence Briefing | `#home` | Shipped |
 | Cricket Copilot | `#ask` | Grounded rule engine + deterministic calcs + evidence |
-| Match Room | `#match` | DEMO board · Match Graph · provenance |
-| Cricket Explorer | `#explorer` | Worm · Manhattan · Test phase rates (DEMO series) |
+| Match Room | `#match` / `#live` | Provider fixtures · setup empty without key |
+| DEMO playground | `#demo` | Quarantined Lord’s sim · Match Graph · watermarked |
+| Cricket Explorer | `#explorer` | Setup empty · DEMO charts only in playground |
 | Player Intelligence | `#players` | Filters + sample-size warnings |
 | My Cricket | `#feed` | Personalisation |
 | Labs (What-If) | `#labs` | Scenario builder + authored swings · Hypothetical |
@@ -108,14 +109,14 @@ Filters: match, innings, team, player (event highlight), phase. Clicking a linke
 
 ## Data honesty
 
-- **DEMO** — bundled illustrative match / authored DNA
+- **Truth mode** — no provider key → empty product boards + setup CTA; Copilot refuses invented stats
+- **DEMO playground** — optional `#demo` Lord’s sim only; always watermarked; never default home content
 - **LIVE / STALE / UNAVAILABLE** — only when a configured provider health check warrants it
-- **UPCOMING** — fixture with no ball in play
-- **HISTORICAL** — completed / archive normalised matches
-- **Model** — session win prior / projections
-- **Hypothetical** — what-if & ball simulations
+- **UPCOMING / HISTORICAL** — from licensed provider responses on product surfaces
+- **Illustrative DNA** — catalog stubs hide DNA %; core profiles label “Illustrative model, not official stats”
+- **Hypothetical** — what-if labs stay labelled
 
-Copilot pipeline (current): classify intent → retrieve from demo file → **calculate** (phase lead, Explorer Manhattan/phases, RRR, SR, milestones) → explain with citations. No connected LLM unless configured; never invent numbers beyond the dataset. Honest “can’t answer” when the series is missing.
+Copilot: retrieve from provider / normalised data → calculate → explain with citations, or say **“I don't have that in the dataset.”** No invented match scores.
 
 ## Docs
 
@@ -128,8 +129,8 @@ Copilot pipeline (current): classify intent → retrieve from demo file → **ca
 
 ## Known limitations
 
-- No provider key on Vercel by default — Live Scores board shows seeds + DEMO until you paste a CricAPI key
-- Match Room DEMO strip is a **scripted simulation**, labelled DEMO (never LIVE)
+- No provider key on Vercel by default — product Live Scores stay empty until you paste a CricAPI key
+- DEMO playground is a **scripted simulation**, labelled DEMO (never LIVE), opt-in only
 - Provider adapters are implemented and **unit-tested with mocks**; live keyed calls need credentials + license confirmation
 - Persistence defaults to **in-memory** until `DATABASE_URL` + migrations + a Postgres client are wired
 - LLM explain path is stubbed behind env (not implemented end-to-end)

@@ -115,6 +115,102 @@ function follow(list: string[]): string[] {
   return list;
 }
 
+function wantsDemoPlayground(query: string, options?: AnswerOptions): boolean {
+  if (options?.demoPlayground) return true;
+  return (
+    query.includes("demo playground") ||
+    query.includes("demo board") ||
+    query.includes("demo sim") ||
+    (query.includes("demo") &&
+      (query.includes("lord") || query.includes("england") || query.includes("script")))
+  );
+}
+
+function asksForInventedFacts(query: string): boolean {
+  return (
+    /\b245\b/.test(query) ||
+    /\b89\b/.test(query) ||
+    query.includes("win model") ||
+    query.includes("win %") ||
+    query.includes("win percent") ||
+    query.includes("win probability") ||
+    query.includes("live score") ||
+    query.includes("current score") ||
+    ((hasWord(query, "today") || hasWord(query, "now") || hasWord(query, "live")) &&
+      (hasWord(query, "score") ||
+        hasWord(query, "match") ||
+        hasWord(query, "winning") ||
+        hasWord(query, "england") ||
+        hasWord(query, "india"))) ||
+    query.includes("30 second") ||
+    query.includes("thirty second") ||
+    ((hasWord(query, "summarise") || hasWord(query, "summarize")) &&
+      (hasWord(query, "today") || hasWord(query, "week"))) ||
+    query.includes("everything important about england") ||
+    (hasWord(query, "england") &&
+      (hasWord(query, "winning") || hasWord(query, "week")) &&
+      !query.includes("demo"))
+  );
+}
+
+function noDatasetAnswer(followups?: string[]): Answer {
+  return {
+    headline: "I don't have that in the dataset",
+    paragraphs: [
+      "Live and historical numerical facts require a configured licensed provider (CRICKETOS_DATA_PROVIDER=cricapi + CRICKETOS_DATA_API_KEY).",
+      "CricketOS will not invent match scores, player stats, win probabilities, or AI briefings. Open the labelled DEMO playground only if you want the scripted Lord’s illustration — it is never treated as live truth.",
+    ],
+    followups: follow(
+      followups ?? [
+        "What fixtures are available?",
+        "What data do you have?",
+        "Tell me about the DEMO playground",
+      ],
+    ),
+    speaker: "Truth mode · Copilot",
+    method: "rule-engine",
+  };
+}
+
+function providerFixtureAnswer(options?: AnswerOptions): Answer | null {
+  const hist = (options?.historicalMatches ?? []).filter(
+    (m) => m.freshness !== "DEMO" && !m.id.startsWith("seed-") && !m.id.startsWith("demo-"),
+  );
+  if (!options?.providerReady) return null;
+  if (!hist.length) {
+    return {
+      headline: "Provider keyed — no fixtures in the current dataset pull",
+      paragraphs: [
+        "A licensed provider is configured, but I don't have fixture rows loaded yet. Refresh Live Scores or wait for the next poll of /api/fixtures.",
+      ],
+      followups: follow(["What fixtures are available?", "List historical matches"]),
+      speaker: "Provider · Copilot",
+      method: "rule-engine",
+    };
+  }
+  const live = hist.filter((m) => m.freshness === "LIVE");
+  const lines = hist.slice(0, 6).map(formatHistoricalLine);
+  return {
+    headline:
+      live.length > 0
+        ? `${live.length} match${live.length === 1 ? "" : "es"} live from the provider`
+        : `${hist.length} fixture${hist.length === 1 ? "" : "s"} from the provider`,
+    paragraphs: [
+      "Figures below come from the normalised provider feed — not authored fiction.",
+      ...lines,
+    ],
+    followups: follow(["What fixtures are available?", "List historical matches"]),
+    speaker: "Provider · Copilot",
+    method: "rule-engine",
+    evidence: hist.slice(0, 3).map((m) => ({
+      id: m.id,
+      label: m.title,
+      detail: `${m.venue} · ${m.freshness}${m.score ? ` · ${m.score.runs}/${m.score.wickets}` : ""}`,
+      kind: "fact" as const,
+    })),
+  };
+}
+
 export function answerQuestion(
   raw: string,
   mode: AskMode,
@@ -133,6 +229,109 @@ function answerQuestionInner(
   const query = raw.trim().toLowerCase();
   const named = findEntities(query);
   const twin = getPlayer(twinId) ?? players[0];
+  const demoOk = wantsDemoPlayground(query, options);
+  const providerReady = Boolean(options?.providerReady);
+
+  if (
+    query.includes("what data") ||
+    query.includes("what fixtures") ||
+    query.includes("do you have")
+  ) {
+    const fromProvider = providerFixtureAnswer(options);
+    if (fromProvider) return fromProvider;
+    return {
+      headline: "Truth mode — no licensed provider key",
+      paragraphs: [
+        "I do not have live or verified historical match scores in the product dataset.",
+        "Add CRICKETOS_DATA_PROVIDER=cricapi and CRICKETOS_DATA_API_KEY, then confirm GET /api/health shows demoMode: false.",
+        "Optional: open the labelled DEMO playground for a scripted Lord’s illustration — it is not live truth.",
+      ],
+      followups: follow(["Tell me about the DEMO playground", "Closest trajectory to Babar"]),
+      speaker: "Truth mode · Copilot",
+      method: "rule-engine",
+    };
+  }
+
+  if (query.includes("demo playground") || (query.includes("demo") && query.includes("lord"))) {
+    return {
+      headline: "DEMO playground is a quarantined illustration",
+      paragraphs: [
+        `The Lord's England vs India board (${matchMeta.score.runs}/${matchMeta.score.wickets} in the script) is labelled DEMO — not a live score or official record.`,
+        "Open it from Home → Try DEMO playground (#demo). Product Live Scores stay empty until a provider key is set.",
+      ],
+      figures: [
+        { label: "DEMO score", value: `${matchMeta.score.runs}/${matchMeta.score.wickets}` },
+        { label: "Label", value: "DEMO" },
+      ],
+      followups: follow(["What data do you have?", "What fixtures are available?"]),
+      speaker: "DEMO playground · labelled",
+      method: "rule-engine",
+      provenanceNote: "DEMO playground only — not provider truth.",
+    };
+  }
+
+  // Refuse invented current-match / win-model / DEMO-board facts outside provider or playground
+  if (!providerReady && !demoOk && asksForInventedFacts(query)) {
+    return noDatasetAnswer();
+  }
+
+  if (!providerReady && !demoOk && (mode === "predictions" || mode === "fantasy" || mode === "historical")) {
+    return noDatasetAnswer([
+      "What data do you have?",
+      "Tell me about the DEMO playground",
+      "Closest trajectory to Babar",
+    ]);
+  }
+
+  // Truth mode: player answers without verified stats — name / era / role / blurb only
+  if (!providerReady && !demoOk && named.length > 0) {
+    const player = named[0];
+    return {
+      headline: `${player.name} · catalog profile`,
+      paragraphs: [
+        `${player.name} — ${player.role}, ${player.span}. ${player.blurb}`,
+        player.catalogStub || !player.statsVerified
+          ? "I don't have verified official stats in the dataset for this profile. DNA percentages and form series are not shown as facts."
+          : "Ask with a provider key configured for fixture-linked facts.",
+      ],
+      followups: follow([
+        "What data do you have?",
+        "Tell me about the DEMO playground",
+        `Who is most similar to ${player.name.split(" ").slice(-1)[0]}?`,
+      ]),
+      speaker: "Catalog · truth mode",
+      method: "rule-engine",
+    };
+  }
+
+  if (!providerReady && !demoOk) {
+    return noDatasetAnswer();
+  }
+
+  if (providerReady && !demoOk) {
+    if (asksForInventedFacts(query) || query.includes("fixture") || query.includes("available")) {
+      const fromProvider = providerFixtureAnswer(options);
+      if (fromProvider) return fromProvider;
+    }
+    if (named.length > 0) {
+      const player = named[0];
+      return {
+        headline: `${player.name}`,
+        paragraphs: [
+          `${player.name} — ${player.role}, ${player.span}. ${player.blurb}`,
+          player.statsVerified
+            ? "Ask about a fixture from the provider feed for match-linked facts."
+            : "Illustrative model profile — not official stats. Fixture facts come only from the provider feed.",
+        ],
+        followups: follow(["What fixtures are available?", `Who is most similar to ${player.name.split(" ").slice(-1)[0]}?`]),
+        speaker: "Provider mode · Copilot",
+        method: "rule-engine",
+      };
+    }
+    return noDatasetAnswer(["What fixtures are available?", "What data do you have?"]);
+  }
+
+  // Remaining paths are DEMO playground–scoped (demoOk) and must stay labelled DEMO.
   const phaseLead = cumulativePhaseLead(phases);
   const phaseRows = analysePhases(phases);
   const surge = phaseRows.find((row) => row.label.includes("22–30"));

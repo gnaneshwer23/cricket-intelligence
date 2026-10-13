@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { FreshnessBadge, ProvenanceStrip, StatusBadge } from "@/components/status-badge";
+import { TruthSetupPanel } from "@/components/truth-setup-panel";
 import { Kicker } from "@/components/ui-bits";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,7 +13,6 @@ import {
   type FixtureRow,
 } from "@/hooks/use-data-layer";
 import type { FreshnessStatus, MatchLifecycle } from "@/lib/contracts";
-import { matchMeta } from "@/lib/data";
 import {
   computeCrr,
   defaultBoardTab,
@@ -24,6 +24,7 @@ import {
   type BoardRowInput,
   type LiveBoardTab,
 } from "@/lib/live-board";
+import { filterProductFixtures, isDemoMatchId, openDemoPlayground } from "@/lib/truth-mode";
 
 export type BoardRow = BoardRowInput;
 
@@ -81,7 +82,7 @@ function fromFixture(f: FixtureRow): BoardRow {
     awayShort: f.awayShort,
     statusLine: f.statusLine,
     provenance: f.provenance,
-    isDemo: status === "DEMO" || f.id === matchMeta.id || f.id.startsWith("demo-"),
+    isDemo: status === "DEMO" || isDemoMatchId(f.id),
   };
 }
 
@@ -105,26 +106,32 @@ function fromMatch(m: ApiMatchRow): BoardRow {
     provenance: m.provenance
       ? { source: m.provenance.source, asOf: m.provenance.asOf, note: m.provenance.note }
       : undefined,
-    isDemo: status === "DEMO" || m.id === matchMeta.id || m.id.startsWith("demo-"),
+    isDemo: status === "DEMO" || isDemoMatchId(m.id),
   };
 }
 
+/**
+ * Product Live Scores board: provider fixtures only.
+ * Seeds / DEMO never appear here — DEMO is only via Try DEMO playground.
+ */
 function mergeBoard(fixtures: FixtureRow[], matches: ApiMatchRow[]): BoardRow[] {
+  const productFixtures = filterProductFixtures(fixtures);
+  const productMatches = filterProductFixtures(matches);
   const map = new Map<string, BoardRow>();
-  for (const f of fixtures) map.set(f.id, fromFixture(f));
-  for (const m of matches) {
+  for (const f of productFixtures) map.set(f.id, fromFixture(f));
+  for (const m of productMatches) {
     const next = fromMatch(m);
     const prev = map.get(m.id);
     if (!prev) {
       map.set(m.id, next);
       continue;
     }
-    // Prefer row with score / richer provenance; never let DEMO become LIVE
     map.set(m.id, {
       ...prev,
       ...next,
-      status: prev.isDemo || next.isDemo ? "DEMO" : next.status,
-      freshness: prev.isDemo || next.isDemo ? "DEMO" : next.freshness,
+      status: next.status === "DEMO" || prev.status === "DEMO" ? "DEMO" : next.status,
+      freshness:
+        next.freshness === "DEMO" || prev.freshness === "DEMO" ? "DEMO" : next.freshness,
       score: next.score ?? prev.score,
       statusLine: next.statusLine ?? prev.statusLine,
       homeShort: next.homeShort ?? prev.homeShort,
@@ -132,36 +139,14 @@ function mergeBoard(fixtures: FixtureRow[], matches: ApiMatchRow[]): BoardRow[] 
       isDemo: prev.isDemo || next.isDemo,
     });
   }
-  // Ensure DEMO Lord's is always present as a labelled option
-  if (![...map.values()].some((r) => r.isDemo)) {
-    map.set(matchMeta.id, {
-      id: matchMeta.id,
-      title: `${matchMeta.title} (DEMO)`,
-      status: "DEMO",
-      freshness: "DEMO",
-      venue: matchMeta.venue,
-      format: "test",
-      series: matchMeta.series,
-      score: matchMeta.score,
-      homeName: "England",
-      awayName: "India",
-      homeShort: "ENG",
-      awayShort: "IND",
-      statusLine: matchMeta.dayLabel,
-      provenance: {
-        source: matchMeta.provenance.source,
-        asOf: matchMeta.provenance.asOf,
-        note: matchMeta.provenance.note,
-      },
-      isDemo: true,
+  return [...map.values()]
+    .filter((r) => !r.isDemo)
+    .sort((a, b) => {
+      const ra = STATUS_RANK[a.status] ?? 9;
+      const rb = STATUS_RANK[b.status] ?? 9;
+      if (ra !== rb) return ra - rb;
+      return a.title.localeCompare(b.title);
     });
-  }
-  return [...map.values()].sort((a, b) => {
-    const ra = STATUS_RANK[a.status] ?? 9;
-    const rb = STATUS_RANK[b.status] ?? 9;
-    if (ra !== rb) return ra - rb;
-    return a.title.localeCompare(b.title);
-  });
 }
 
 type Props = {
@@ -226,7 +211,7 @@ export function LiveFixturesBoard({
           <p className="mt-1.5 text-sm text-muted-foreground">
             {providerReady
               ? `Provider synced · ${liveCount} LIVE · polls every 15s on Live tab`
-              : "Seeds + DEMO · add CricAPI key for real LIVE scores"}
+              : "Truth mode · add CricAPI key for live scores (no invented fixtures)"}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
@@ -281,26 +266,28 @@ export function LiveFixturesBoard({
         <p className="border-t border-white/8 px-5 py-6 text-sm text-gold">
           Fixtures UNAVAILABLE — not claiming LIVE
         </p>
+      ) : !providerReady && rows.length === 0 ? (
+        <div className="border-t border-white/8 p-4 sm:p-5">
+          <TruthSetupPanel compact showDemoLink />
+        </div>
       ) : filtered.length === 0 ? (
         <div className="border-t border-white/8 px-5 py-6">
           <p className="text-sm text-muted-foreground">
             {tab === "live"
               ? providerReady
                 ? "No in-progress matches from the provider right now."
-                : "No LIVE matches — seeds stay on Upcoming / Recent. Add a CricAPI key for real LIVE."
+                : "No LIVE matches without a provider key."
               : "Nothing in this filter."}
           </p>
-          {tab === "live" && !providerReady ? (
+          {!providerReady ? (
             <Button
               type="button"
               size="sm"
-              variant="outline"
-              className="mt-3 border-white/12"
-              onClick={() => {
-                window.open("https://cricketdata.org/", "_blank", "noopener,noreferrer");
-              }}
+              variant="ghost"
+              className="mt-3 text-gold"
+              onClick={() => openDemoPlayground()}
             >
-              Add CricAPI key for live scores
+              Try DEMO playground
             </Button>
           ) : null}
         </div>
@@ -399,8 +386,8 @@ export function LiveFixturesBoard({
               }
               note={
                 providerReady
-                  ? "LIVE only when provider reports in-progress. DEMO sim is never labelled LIVE."
-                  : "No provider key — board shows seeded HISTORICAL / UPCOMING + Lord's DEMO."
+                  ? "LIVE only when provider reports in-progress. Seeds and DEMO never appear on this board."
+                  : "No provider key — product board stays empty. Open DEMO playground for the scripted sim."
               }
             />
           ) : null}
@@ -417,26 +404,17 @@ export function LiveFixturesBoard({
               >
                 Add CricAPI key for live scores
               </Button>
-              <span className="text-[11px] text-muted-foreground">
-                Set <code className="text-[10px]">CRICKETOS_DATA_PROVIDER=cricapi</code> + key — see{" "}
-                <code className="text-[10px]">docs/PROVIDERS.md</code>
-              </span>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="text-gold"
+                onClick={() => openDemoPlayground()}
+              >
+                Try DEMO playground
+              </Button>
             </div>
           ) : null}
-        </div>
-      ) : !providerReady ? (
-        <div className="border-t border-white/8 px-4 py-3 sm:px-6">
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="border-white/12"
-            onClick={() => {
-              window.open("https://cricketdata.org/", "_blank", "noopener,noreferrer");
-            }}
-          >
-            Add CricAPI key for live scores
-          </Button>
         </div>
       ) : null}
     </div>

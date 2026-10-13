@@ -18,6 +18,8 @@ import {
   defaultSeedAsk,
 } from "@/lib/curated-slate";
 import { answerQuestion } from "@/lib/engine";
+import { useDataHealth } from "@/hooks/use-data-layer";
+import { isDemoPlaygroundHash } from "@/lib/truth-mode";
 import type {
   AskMode,
   ChatMessage,
@@ -138,6 +140,8 @@ function hashScreen(): ScreenId {
   const raw = window.location.hash.replace(/^#/, "").split(/[/?]/)[0] ?? "";
   // Cricbuzz-style Live Scores hub — same Match Room surface
   if (raw === "live") return "match";
+  // Quarantined DEMO playground (Lord’s sim) — never the default home
+  if (raw === "demo" || raw === "demo-playground") return "match";
   const id = raw as ScreenId;
   return screens.includes(id) ? id : "home";
 }
@@ -198,6 +202,7 @@ const AppContext = createContext<AppValue | null>(null);
 export function AppStateProvider({ children }: { children: ReactNode }) {
   const screen = useSyncExternalStore(subscribeHash, hashScreen, () => "home" as ScreenId);
   const stored = useSyncExternalStore(subscribeStore, readStore, () => serverSnapshot);
+  const health = useDataHealth();
   /** Empty = Player Intelligence search-first empty state (not Joe Root by default). */
   const [playerId, setPlayerId] = useState("");
   const [teamId, setTeamId] = useState("india");
@@ -213,6 +218,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [explorerFocus, setExplorerFocus] = useState<ExplorerFocus | null>(null);
   const [historicalMatches, setHistoricalMatches] = useState<HistoricalMatchSummary[]>([]);
   const timer = useRef<number | null>(null);
+  const providerReady =
+    health.status === "ok" &&
+    Boolean(health.summary && !health.summary.demoMode && health.summary.dataApiKeyConfigured);
 
   useEffect(() => {
     return () => {
@@ -260,6 +268,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         try {
           const answer = answerQuestion(text, used, twinId, {
             historicalMatches,
+            providerReady,
+            demoPlayground: isDemoPlaygroundHash(),
           });
           setMessages((current) => [
             ...current,
@@ -292,7 +302,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         }
       }, 680);
     },
-    [askMode, asking, twinId, historicalMatches],
+    [askMode, asking, twinId, historicalMatches, providerReady],
   );
 
   const react = useCallback((side: "england" | "india", key: MoodKey) => {

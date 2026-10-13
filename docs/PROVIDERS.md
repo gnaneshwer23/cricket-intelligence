@@ -1,6 +1,6 @@
 # Cricket data & AI providers
 
-CricketOS is **provider-independent**. Credentials stay server-side via env vars. With no provider configured, the app runs in **DEMO mode** on the bundled Lord’s illustrative dataset.
+CricketOS is **provider-independent**. Credentials stay server-side via env vars. With no provider configured, the app runs in **truth mode**: product Home / Live / Copilot do not invent scores; optional **DEMO playground** (`#demo`) holds the Lord’s illustrative sim.
 
 Full evaluation with evidence links: **`docs/PROVIDER_EVALUATION.md`**.
 
@@ -37,7 +37,7 @@ Full evaluation with evidence links: **`docs/PROVIDER_EVALUATION.md`**.
 
 Copilot: `classify intent → retrieve facts → deterministic calculate → explain (LLM or rule) → cite evidence → validate numbers against calc outputs`
 
-Demo mode skips external retrieve and uses the local contract dataset with explicit DEMO provenance, plus a **seeded HISTORICAL archive** (same normalisation path as CricAPI). Scripted Match Room sim remains labelled DEMO — never LIVE without a verified provider health check.
+Truth mode (`demoMode`) skips external retrieve. Seeded archive rows stay in storage for API tests but do **not** populate customer-facing fixtures. Scripted Match Room sim is opt-in via DEMO playground — never LIVE, never the default homepage.
 
 ### Enable live / historical provider data
 

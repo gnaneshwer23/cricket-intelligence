@@ -46,19 +46,21 @@ describe("getDataService bootstrap", () => {
     assert.ok(matches.every((m) => m.freshness !== "LIVE"));
   });
 
-  it("exposes upcoming fixture without LIVE badge", async () => {
+  it("truth mode: product fixtures stay empty without a provider key", async () => {
     const service = getDataService();
     const fixtures = await service.listFixtures();
-    const upcoming = fixtures.find((f) => f.freshness === "UPCOMING");
-    assert.ok(upcoming);
-    assert.notEqual(upcoming.freshness, "LIVE");
+    assert.equal(fixtures.length, 0);
+    // Seeds remain available via listMatches for API tests — not as product truth
+    const matches = await service.listMatches({ limit: 50 });
+    assert.ok(matches.some((m) => m.freshness === "HISTORICAL"));
+    assert.ok(matches.every((m) => m.freshness !== "LIVE"));
   });
 
-  it("primaryFreshness stays DEMO in demoMode", () => {
+  it("primaryFreshness stays UNAVAILABLE in demoMode (never LIVE)", () => {
     const service = getDataService();
     assert.equal(
       service.primaryFreshness({ DEMO: 1, HISTORICAL: 4, LIVE: 1 }, true),
-      "DEMO",
+      "UNAVAILABLE",
     );
   });
 });

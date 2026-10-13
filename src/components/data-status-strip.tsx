@@ -29,7 +29,7 @@ export function DataStatusStrip() {
       <FreshnessBadge freshness={health.primaryFreshness} />
       <span>
         Provider {health.summary.dataProvider}
-        {health.summary.demoMode ? " · demo + seeded archive" : ""}
+        {health.summary.demoMode ? " · truth mode (no provider key)" : ""}
       </span>
       <span>· {health.summary.storageBackend}</span>
       <span className="max-w-xl truncate" title={health.summary.storageLabel}>

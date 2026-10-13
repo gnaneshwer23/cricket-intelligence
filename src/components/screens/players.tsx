@@ -272,7 +272,9 @@ export function PlayersScreen() {
               </p>
             </div>
             <div className="flex items-center gap-3">
-              <Spark values={player.form} label={player.formLabel} />
+              {!player.catalogStub ? (
+                <Spark values={player.form} label={player.formLabel} />
+              ) : null}
               <Button
                 type="button"
                 variant={followed ? "secondary" : "default"}
@@ -282,25 +284,56 @@ export function PlayersScreen() {
               </Button>
             </div>
           </div>
-          <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted-foreground">{player.formNote}</p>
+          <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+            {player.catalogStub
+              ? `${player.blurb} Catalog profile — name, era, and role only until verified stats are wired.`
+              : player.formNote}
+          </p>
 
-          <Tabs defaultValue="dna" className="mt-6">
+          {player.catalogStub ? (
+            <Panel className="mt-6 border-white/8 bg-card/40">
+              <Kicker>Verified stats unavailable</Kicker>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                This catalog stub has no licensed provider stats. DNA percentages, form sparklines,
+                and forecast chances are hidden so they cannot be mistaken for official figures.
+              </p>
+              <details className="mt-4">
+                <summary className="cursor-pointer text-sm text-gold">
+                  Show illustrative model (not official stats)
+                </summary>
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  {dnaLabels.map((item) => (
+                    <Meter key={item.key} label={item.label} value={player.dna[item.key]} />
+                  ))}
+                </div>
+                <p className="mt-3 text-xs text-muted-foreground">
+                  Illustrative model, not official stats.
+                </p>
+              </details>
+            </Panel>
+          ) : null}
+
+          <Tabs defaultValue={player.catalogStub ? "report" : "dna"} className="mt-6">
             <TabsList variant="line" className="h-auto! w-full justify-start overflow-x-auto">
-              <TabsTrigger value="dna">DNA</TabsTrigger>
-              <TabsTrigger value="traits">Traits</TabsTrigger>
-              <TabsTrigger value="projection">Forecast</TabsTrigger>
-              <TabsTrigger value="similar">Similar</TabsTrigger>
-              <TabsTrigger value="report">Strengths</TabsTrigger>
-              <TabsTrigger value="milestones">Milestones</TabsTrigger>
-              <TabsTrigger value="twin">Cricket Twin</TabsTrigger>
-              <TabsTrigger value="universe">Universe</TabsTrigger>
+              {!player.catalogStub ? <TabsTrigger value="dna">DNA</TabsTrigger> : null}
+              {!player.catalogStub ? <TabsTrigger value="traits">Traits</TabsTrigger> : null}
+              {!player.catalogStub ? <TabsTrigger value="projection">Forecast</TabsTrigger> : null}
+              {!player.catalogStub ? <TabsTrigger value="similar">Similar</TabsTrigger> : null}
+              <TabsTrigger value="report">Profile</TabsTrigger>
+              {!player.catalogStub ? <TabsTrigger value="milestones">Milestones</TabsTrigger> : null}
+              {!player.catalogStub ? <TabsTrigger value="twin">Cricket Twin</TabsTrigger> : null}
+              {!player.catalogStub ? <TabsTrigger value="universe">Universe</TabsTrigger> : null}
             </TabsList>
 
+            {!player.catalogStub ? (
             <TabsContent value="dna" className="mt-4">
               <Panel>
                 <Kicker>Career DNA</Kicker>
+                <p className="mt-2 text-sm leading-relaxed text-gold">
+                  Illustrative model, not official stats.
+                </p>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Continuously read against form notes and match context — not a static card.
+                  Authored DNA for product exploration — not a licensed statistical feed.
                 </p>
                 <div className="mt-5 grid gap-4 sm:grid-cols-2">
                   {dnaLabels.map((item) => (
@@ -309,12 +342,16 @@ export function PlayersScreen() {
                 </div>
               </Panel>
             </TabsContent>
+            ) : null}
 
+            {!player.catalogStub ? (
+            <>
             <TabsContent value="traits" className="mt-4">
               <Panel>
                 <Kicker>Living personality traits</Kicker>
+                <p className="mt-2 text-sm text-gold">Illustrative model, not official stats.</p>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Updated as the profile narrative moves — today&apos;s match still colours the read.
+                  Updated as the profile narrative moves — not a licensed feed.
                 </p>
                 <div className="mt-5 grid gap-4 sm:grid-cols-2">
                   {player.traits
@@ -339,6 +376,7 @@ export function PlayersScreen() {
             <TabsContent value="projection" className="mt-4">
               <Panel>
                 <Kicker>Career forecast</Kicker>
+                <p className="mt-2 text-sm text-gold">Illustrative model, not official stats.</p>
                 <h3 className="font-display mt-3 text-3xl">{player.projection.headline}</h3>
                 <div className="mt-6 grid gap-4 sm:grid-cols-2">
                   {[
@@ -401,32 +439,53 @@ export function PlayersScreen() {
                 })}
               </div>
             </TabsContent>
+            </>
+            ) : null}
 
             <TabsContent value="report" className="mt-4">
-              <div className="grid gap-4 lg:grid-cols-2">
+              {player.catalogStub ? (
                 <Panel>
-                  <Kicker>Strengths</Kicker>
-                  <ul className="mt-3 space-y-2 text-sm">
-                    {player.report.strengths.map((item) => (
-                      <li key={item}>· {item}</li>
-                    ))}
-                  </ul>
+                  <Kicker>
+                    {teamLabel(player.teamId)} · {player.role} · {player.span}
+                  </Kicker>
+                  <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{player.blurb}</p>
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    Name, era, and role only — no verified official stats in the dataset.
+                  </p>
                 </Panel>
-                <Panel>
-                  <Kicker>Weaknesses</Kicker>
-                  <ul className="mt-3 space-y-2 text-sm">
-                    {player.report.weaknesses.map((item) => (
-                      <li key={item}>· {item}</li>
-                    ))}
-                  </ul>
-                </Panel>
-              </div>
-              <Panel className="mt-4">
-                <Kicker>Projected development</Kicker>
-                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{player.report.development}</p>
-              </Panel>
+              ) : (
+                <>
+                  <p className="mb-3 text-sm text-gold">Illustrative profile notes — not official stats.</p>
+                  <div className="grid gap-4 lg:grid-cols-2">
+                    <Panel>
+                      <Kicker>Strengths</Kicker>
+                      <ul className="mt-3 space-y-2 text-sm">
+                        {player.report.strengths.map((item) => (
+                          <li key={item}>· {item}</li>
+                        ))}
+                      </ul>
+                    </Panel>
+                    <Panel>
+                      <Kicker>Weaknesses</Kicker>
+                      <ul className="mt-3 space-y-2 text-sm">
+                        {player.report.weaknesses.map((item) => (
+                          <li key={item}>· {item}</li>
+                        ))}
+                      </ul>
+                    </Panel>
+                  </div>
+                  <Panel className="mt-4">
+                    <Kicker>Projected development</Kicker>
+                    <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                      {player.report.development}
+                    </p>
+                  </Panel>
+                </>
+              )}
             </TabsContent>
 
+            {!player.catalogStub ? (
+            <>
             <TabsContent value="milestones" className="mt-4">
               <Panel>
                 <div className="space-y-5">
@@ -568,6 +627,8 @@ export function PlayersScreen() {
                 </Panel>
               </div>
             </TabsContent>
+            </>
+            ) : null}
           </Tabs>
             </>
           )}
