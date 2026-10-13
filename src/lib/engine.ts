@@ -257,7 +257,7 @@ function answerQuestionInner(
       headline: "DEMO playground is a quarantined illustration",
       paragraphs: [
         `The Lord's England vs India board (${matchMeta.score.runs}/${matchMeta.score.wickets} in the script) is labelled DEMO — not a live score or official record.`,
-        "Open it from Home → Try DEMO playground (#demo). Product Live Scores stay empty until a provider key is set.",
+        "Open it from Cricket Today → Try DEMO playground (#demo). Product fixtures stay empty until a provider key is set.",
       ],
       figures: [
         { label: "DEMO score", value: `${matchMeta.score.runs}/${matchMeta.score.wickets}` },
@@ -268,6 +268,69 @@ function answerQuestionInner(
       method: "rule-engine",
       provenanceNote: "DEMO playground only — not provider truth.",
     };
+  }
+
+  // Contextual Match Intelligence focus (DEMO only for numerical claims)
+  const focus = options?.matchFocus;
+  if (
+    focus?.isDemo &&
+    demoOk &&
+    (query.includes("situation") ||
+      query.includes("this demo") ||
+      query.includes("this match") ||
+      query.includes("what's happening") ||
+      query.includes("what is happening"))
+  ) {
+    return {
+      headline: `DEMO situation · ${focus.title}`,
+      paragraphs: [
+        `Focus: ${focus.title} at ${focus.venue ?? "Lord's"} — labelled DEMO, never LIVE.`,
+        focus.score
+          ? `Scripted scoreline ${focus.score.runs}/${focus.score.wickets}${
+              focus.score.overs ? ` (${focus.score.overs} ov)` : ""
+            }. Source: ${focus.provenance?.source ?? "bundled demo dataset"}.`
+          : "No scoreline on this DEMO focus row.",
+        "Figures are from the quarantined playground dataset — not a licensed feed. Open Timeline · Graph for event evidence, or What-If for transparent rate assumptions.",
+      ],
+      figures: focus.score
+        ? [
+            { label: "DEMO score", value: `${focus.score.runs}/${focus.score.wickets}` },
+            { label: "Freshness", value: focus.freshness },
+          ]
+        : [{ label: "Freshness", value: focus.freshness }],
+      followups: follow([
+        "What are the turning points?",
+        "Tell me about the DEMO playground",
+        "What data do you have?",
+      ]),
+      speaker: "Match focus · DEMO",
+      method: "rule-engine",
+      evidence: cite("ev-root-innings", "ev-phase-2230").slice(0, 2),
+      provenanceNote: "DEMO match focus — not provider truth.",
+    };
+  }
+
+  if (focus && focus.isSeed && !demoOk && !providerReady) {
+    if (
+      query.includes("situation") ||
+      query.includes("this match") ||
+      query.includes(focus.title.toLowerCase().slice(0, 12))
+    ) {
+      return {
+        headline: "Seed archive is not Copilot evidence",
+        paragraphs: [
+          `You have Match Intelligence focus on “${focus.title}” (${focus.freshness}).`,
+          "Seeded archive rows are browseable for titles, venues, and summary scores, but CricketOS does not treat them as verified Copilot evidence or live facts.",
+          "Configure a licensed provider for fixture-backed answers, or open the labelled DEMO playground for the scripted illustration.",
+        ],
+        followups: follow([
+          "What data do you have?",
+          "Tell me about the DEMO playground",
+        ]),
+        speaker: "Truth mode · seed quarantine",
+        method: "rule-engine",
+      };
+    }
   }
 
   // Refuse invented current-match / win-model / DEMO-board facts outside provider or playground

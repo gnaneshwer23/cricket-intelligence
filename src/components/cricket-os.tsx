@@ -14,6 +14,7 @@ import {
   Users,
 } from "lucide-react";
 import { AppStateProvider, useApp } from "@/components/app-state";
+import { MatchFocusStrip } from "@/components/match-focus-strip";
 import { Onboarding } from "@/components/onboarding";
 import { AskScreen } from "@/components/screens/ask";
 import { CommunityScreen } from "@/components/screens/community";
@@ -36,32 +37,32 @@ import {
 import type { ScreenId } from "@/lib/types";
 
 const primaryNav: { id: ScreenId; label: string; short: string; icon: typeof House }[] = [
-  { id: "home", label: "Briefing", short: "Home", icon: House },
-  { id: "ask", label: "Copilot", short: "Ask", icon: MessageCircle },
-  { id: "match", label: "Live Scores", short: "Live", icon: Activity },
-  { id: "explorer", label: "Explorer", short: "Explore", icon: ChartColumn },
-  { id: "players", label: "Players", short: "Players", icon: UserRound },
+  { id: "home", label: "Cricket Today", short: "Today", icon: House },
+  { id: "match", label: "Match Intelligence", short: "Match", icon: Activity },
+  { id: "ask", label: "Ask CricketOS", short: "Ask", icon: MessageCircle },
+  { id: "players", label: "Players & Teams", short: "Players", icon: UserRound },
 ];
 
 const laterNav: { id: ScreenId; label: string; icon: typeof House; note: string }[] = [
+  { id: "labs", label: "Labs", icon: FlaskConical, note: "What-If · transparent assumptions" },
+  { id: "explorer", label: "Explorer", icon: ChartColumn, note: "Charts · DEMO series" },
   { id: "feed", label: "My Cricket", icon: Newspaper, note: "Personal feed" },
-  { id: "labs", label: "Labs", icon: FlaskConical, note: "What-If · experimental" },
   { id: "teams", label: "Team Intel", icon: Users, note: "DNA & squad health" },
   { id: "community", label: "Community", icon: MessagesSquare, note: "Secondary" },
   { id: "fantasy", label: "Fantasy", icon: Target, note: "Experimental" },
 ];
 
 const titles: Record<ScreenId, string> = {
-  home: "Intelligence Briefing",
-  ask: "Cricket Copilot",
-  match: "Live Scores",
+  home: "Cricket Today",
+  ask: "Ask CricketOS",
+  match: "Match Intelligence",
   explorer: "Cricket Explorer",
-  players: "Player Intelligence",
+  players: "Players & Teams",
   feed: "My Cricket",
   teams: "Team Intelligence",
   community: "Community",
   fantasy: "Fantasy",
-  labs: "Labs",
+  labs: "Labs · What-If",
 };
 
 function Shell() {
@@ -107,7 +108,7 @@ function Shell() {
             CricketOS
           </p>
           <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-            Follow · understand · explore what next.
+            Intelligence layer for cricket — what happened, why, evidence, what next.
           </p>
         </div>
         <nav className="mt-8 flex flex-1 flex-col gap-0.5" aria-label="Primary">
@@ -123,13 +124,7 @@ function Shell() {
                   active ? "cos-cta shadow-[inset_2px_0_0_0_var(--color-lime)]" : ""
                 }`}
                 aria-current={active ? "page" : undefined}
-                onClick={() => {
-                  if (item.id === "match") {
-                    window.location.hash = "live";
-                  } else {
-                    go(item.id);
-                  }
-                }}
+                onClick={() => go(item.id)}
               >
                 <Icon />
                 {item.label}
@@ -137,7 +132,7 @@ function Shell() {
             );
           })}
           <p className="mt-6 px-3 text-[10px] tracking-[0.2em] text-muted-foreground/80 uppercase">
-            Later
+            Labs & more
           </p>
           {laterNav.map((item) => {
             const Icon = item.icon;
@@ -160,7 +155,7 @@ function Shell() {
           })}
         </nav>
         <p className="px-2 text-[11px] leading-relaxed text-muted-foreground">
-          Multi-team cricket intelligence
+          The match is the centre
           <span className="mt-1.5 block text-muted-foreground/80">
             Truth mode until a provider key is set. DEMO playground is opt-in only.
           </span>
@@ -172,12 +167,13 @@ function Shell() {
           <div>
             <p className="font-display text-xl font-semibold text-lime">CricketOS</p>
             <p className="text-[10px] tracking-[0.18em] text-muted-foreground uppercase">
-              Understand the game
+              Intelligence layer
             </p>
           </div>
-          <p className="text-[10px] tracking-[0.14em] text-gold uppercase">Multi-team · DEMO</p>
+          <p className="text-[10px] tracking-[0.14em] text-gold uppercase">Match centre</p>
         </header>
         <main id="content" className="px-4 pt-6 pb-28 lg:px-10 lg:pt-10 lg:pb-20">
+          <MatchFocusStrip />
           {screen === "home" ? <HomeScreen /> : null}
           {screen === "ask" ? <AskScreen /> : null}
           {screen === "match" ? <MatchScreen /> : null}
@@ -195,7 +191,7 @@ function Shell() {
         className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-white/8 bg-background/92 px-1.5 py-2 backdrop-blur-xl lg:hidden"
         aria-label="Primary"
       >
-        {primaryNav.slice(0, 4).map((item) => {
+        {primaryNav.map((item) => {
           const Icon = item.icon;
           const active = screen === item.id;
           return (
@@ -207,13 +203,7 @@ function Shell() {
                   ? "text-lime"
                   : "text-muted-foreground hover:text-foreground"
               }`}
-              onClick={() => {
-                if (item.id === "match") {
-                  window.location.hash = "live";
-                } else {
-                  go(item.id);
-                }
-              }}
+              onClick={() => go(item.id)}
             >
               <Icon className="size-4" />
               {item.short}
@@ -223,7 +213,7 @@ function Shell() {
         <button
           type="button"
           className={`flex flex-col items-center gap-1 rounded-lg px-1 py-1.5 text-[10px] transition ${
-            laterNav.some((item) => item.id === screen) || screen === "players"
+            laterNav.some((item) => item.id === screen)
               ? "text-lime"
               : "text-muted-foreground hover:text-foreground"
           }`}
@@ -239,29 +229,18 @@ function Shell() {
           <SheetHeader>
             <SheetTitle>More</SheetTitle>
             <SheetDescription>
-              Players, feed, labs, and secondary rooms. Explorer stays in the main bar.
+              Labs, Explorer, feed, and secondary rooms. Paths back to Match Intelligence stay
+              available via the match focus chip.
             </SheetDescription>
           </SheetHeader>
           <div className="grid gap-2 px-4 pb-6">
-            <Button
-              type="button"
-              variant={screen === "players" ? "default" : "secondary"}
-              className="h-11 justify-start"
-              onClick={() => {
-                setMore(false);
-                go("players");
-              }}
-            >
-              <UserRound />
-              Players
-            </Button>
             {laterNav.map((item) => {
               const Icon = item.icon;
               return (
                 <Button
                   key={item.id}
                   type="button"
-                  variant="secondary"
+                  variant={screen === item.id ? "default" : "secondary"}
                   className="h-11 justify-start"
                   onClick={() => {
                     setMore(false);

@@ -176,12 +176,36 @@ export type Answer = {
   provenanceNote?: string;
 };
 
+/**
+ * Shared match focus across Match Intelligence → Copilot → Labs → Players.
+ * Survives hash navigation; cleared explicitly or when leaving playground.
+ */
+export type MatchFocus = {
+  id: string;
+  title: string;
+  status: string;
+  freshness: string;
+  venue?: string;
+  format?: string;
+  series?: string;
+  score?: { runs: number; wickets: number; overs: string };
+  homeName?: string;
+  awayName?: string;
+  /** Quarantined DEMO playground (Lord's sim) — not a licensed feed. */
+  isDemo: boolean;
+  /** Seed archive row — browseable HISTORICAL, not Copilot live evidence. */
+  isSeed: boolean;
+  provenance?: { source: string; asOf?: string; note?: string };
+};
+
 export type AnswerOptions = {
   historicalMatches?: HistoricalMatchSummary[];
   /** True when a licensed provider key is configured and healthy. */
   providerReady?: boolean;
   /** True when the user is in the quarantined DEMO playground (or explicitly asks about it). */
   demoPlayground?: boolean;
+  /** Active Match Intelligence focus for contextual answers. */
+  matchFocus?: MatchFocus | null;
 };
 
 export type ChatMessage =

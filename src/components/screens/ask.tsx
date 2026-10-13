@@ -39,6 +39,7 @@ export function AskScreen() {
     go,
     setHistoricalMatches,
     historicalMatches,
+    matchFocus,
   } = useApp();
   const matchList = useMatchList(20);
   const [draft, setDraft] = useState("");
@@ -89,7 +90,7 @@ export function AskScreen() {
   return (
     <div className="mx-auto flex max-w-3xl flex-col">
       <PageTitle
-        kicker="Cricket Copilot"
+        kicker="Ask CricketOS"
         title="Ask Cricket Anything."
         lede="Intent → retrieve → calculate → explain. Figures come only from a licensed provider feed or the labelled DEMO playground — Copilot will not invent match scores or stats."
       />
@@ -97,6 +98,36 @@ export function AskScreen() {
       <div className="mb-4">
         <DataStatusStrip />
       </div>
+
+      {matchFocus ? (
+        <Panel className="mb-4 border-white/8 bg-card/40">
+          <Kicker className="text-cyan">Match context</Kicker>
+          <p className="mt-2 text-sm font-medium">{matchFocus.title}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {matchFocus.freshness}
+            {matchFocus.isDemo ? " · DEMO playground" : ""}
+            {matchFocus.isSeed ? " · seed archive (not Copilot evidence)" : ""}
+            {matchFocus.score
+              ? ` · ${matchFocus.score.runs}/${matchFocus.score.wickets}`
+              : ""}
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button type="button" size="sm" variant="secondary" onClick={() => go("match")}>
+              Return to Match Intelligence
+            </Button>
+            {matchFocus.isDemo ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => ask("What is the situation in this DEMO match?", "predictions")}
+              >
+                Ask about situation
+              </Button>
+            ) : null}
+          </div>
+        </Panel>
+      ) : null}
 
       {askMode === "historical" ? (
         <Panel className="mb-4 border-white/8 bg-card/40">

@@ -26,6 +26,7 @@ import type {
   ExplorerFocus,
   HistoricalMatchSummary,
   LabsSeed,
+  MatchFocus,
   MoodKey,
   Preferences,
   SavedChat,
@@ -154,6 +155,7 @@ type GoOpts = {
   graphNodeId?: string;
   labsSeed?: LabsSeed;
   explorerFocus?: ExplorerFocus;
+  matchFocus?: MatchFocus | null;
 };
 
 type AppValue = {
@@ -163,6 +165,10 @@ type AppValue = {
   setPlayerId: (id: string) => void;
   teamId: string;
   setTeamId: (id: string) => void;
+  /** Active Match Intelligence selection — preserved across nav. */
+  matchFocus: MatchFocus | null;
+  setMatchFocus: (focus: MatchFocus | null) => void;
+  clearMatchFocus: () => void;
   graphNodeId: string | null;
   clearGraphNodeId: () => void;
   labsSeed: LabsSeed | null;
@@ -213,6 +219,17 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [askError, setAskError] = useState<string | null>(null);
   const [mood, setMood] = useState(initialMood);
   const [pendingSeed, setPendingSeed] = useState<string | null>(null);
+  const [matchFocus, setMatchFocusState] = useState<MatchFocus | null>(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = sessionStorage.getItem("cricketos-match-focus");
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as MatchFocus;
+      return parsed?.id && parsed?.title ? parsed : null;
+    } catch {
+      return null;
+    }
+  });
   const [graphNodeId, setGraphNodeId] = useState<string | null>(null);
   const [labsSeed, setLabsSeed] = useState<LabsSeed | null>(null);
   const [explorerFocus, setExplorerFocus] = useState<ExplorerFocus | null>(null);
@@ -228,6 +245,20 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  const setMatchFocus = useCallback((focus: MatchFocus | null) => {
+    setMatchFocusState(focus);
+    try {
+      if (focus) {
+        sessionStorage.setItem("cricketos-match-focus", JSON.stringify(focus));
+        sessionStorage.setItem("cricketos-match-pick", focus.id);
+      } else {
+        sessionStorage.removeItem("cricketos-match-focus");
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   const go = useCallback((next: ScreenId, opts?: GoOpts) => {
     if (opts?.playerId) setPlayerId(opts.playerId);
     if (opts?.teamId) setTeamId(opts.teamId);
@@ -236,17 +267,35 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     if (opts?.graphNodeId) setGraphNodeId(opts.graphNodeId);
     if (opts?.labsSeed) setLabsSeed(opts.labsSeed);
     if (opts?.explorerFocus) setExplorerFocus(opts.explorerFocus);
+    if (opts && "matchFocus" in opts) setMatchFocus(opts.matchFocus ?? null);
     // Prefer location.hash (fires hashchange) over history.replaceState —
     // Next's patched history API can swallow hash-only replaceState updates.
-    const target = `#${next}`;
+    // Match Intelligence also accepts #live / #demo aliases.
+    let hash: string = next;
+    if (next === "match") {
+      const focus =
+        opts && "matchFocus" in opts
+          ? opts.matchFocus
+          : (() => {
+              try {
+                const raw = sessionStorage.getItem("cricketos-match-focus");
+                return raw ? (JSON.parse(raw) as MatchFocus) : null;
+              } catch {
+                return null;
+              }
+            })();
+      hash = focus?.isDemo ? "demo" : "live";
+    }
+    const target = `#${hash}`;
     if (window.location.hash === target) {
       window.dispatchEvent(new Event("hashchange"));
     } else {
-      window.location.hash = next;
+      window.location.hash = hash;
     }
-  }, []);
+  }, [setMatchFocus]);
 
   const clearPendingSeed = useCallback(() => setPendingSeed(null), []);
+  const clearMatchFocus = useCallback(() => setMatchFocus(null), [setMatchFocus]);
   const clearGraphNodeId = useCallback(() => setGraphNodeId(null), []);
   const clearLabsSeed = useCallback(() => setLabsSeed(null), []);
   const clearExplorerFocus = useCallback(() => setExplorerFocus(null), []);
@@ -264,12 +313,14 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       setMessages((current) => [...current, { id: crypto.randomUUID(), role: "user", text }]);
       setAsking(true);
       if (timer.current) window.clearTimeout(timer.current);
+      const focusSnapshot = matchFocus;
       timer.current = window.setTimeout(() => {
         try {
           const answer = answerQuestion(text, used, twinId, {
             historicalMatches,
             providerReady,
-            demoPlayground: isDemoPlaygroundHash(),
+            demoPlayground: isDemoPlaygroundHash() || Boolean(focusSnapshot?.isDemo),
+            matchFocus: focusSnapshot,
           });
           setMessages((current) => [
             ...current,
@@ -302,7 +353,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         }
       }, 680);
     },
-    [askMode, asking, twinId, historicalMatches, providerReady],
+    [askMode, asking, twinId, historicalMatches, providerReady, matchFocus],
   );
 
   const react = useCallback((side: "england" | "india", key: MoodKey) => {
@@ -365,6 +416,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       setPlayerId,
       teamId,
       setTeamId,
+      matchFocus,
+      setMatchFocus,
+      clearMatchFocus,
       graphNodeId,
       clearGraphNodeId,
       labsSeed,
@@ -403,6 +457,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       go,
       playerId,
       teamId,
+      matchFocus,
+      setMatchFocus,
+      clearMatchFocus,
       graphNodeId,
       clearGraphNodeId,
       labsSeed,

@@ -93,11 +93,11 @@ export function HomeScreen() {
               CricketOS
             </p>
             <h1 className="font-display mt-7 text-[clamp(1.65rem,4vw,2.75rem)] font-medium leading-[1.15] text-balance">
-              Follow the match. Understand the game.
+              The intelligence layer for cricket.
             </h1>
             <p className="mt-5 max-w-md text-[0.95rem] leading-relaxed text-muted-foreground sm:text-base">
-              {greeting}. Live and historical facts come from a licensed data provider — never
-              invented scores, win models, or AI briefings.
+              {greeting}. What happened, why, evidence, what might happen next — the match is the
+              centre. Facts need a licensed provider; DEMO playground is opt-in only.
             </p>
           </div>
 
@@ -135,11 +135,11 @@ export function HomeScreen() {
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <div>
             <Kicker className="text-cyan">
-              <span id="live-scores-heading">Live Scores</span>
+              <span id="live-scores-heading">Cricket Today</span>
             </Kicker>
             <p className="mt-1.5 text-sm text-muted-foreground">
               {providerReady
-                ? "Provider fixtures only · tap a card for Match Centre"
+                ? "Provider fixtures only · tap a card for Match Intelligence"
                 : "Requires CRICKETOS_DATA_API_KEY · no invented scores"}
             </p>
           </div>
@@ -150,7 +150,7 @@ export function HomeScreen() {
             className="cos-cta border-white/12"
             onClick={openLiveHub}
           >
-            Full Live Scores
+            Match Intelligence
           </Button>
         </div>
         <div className="mb-3">

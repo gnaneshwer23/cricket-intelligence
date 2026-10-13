@@ -3,9 +3,24 @@ import { describe, it } from "node:test";
 import { deriveFreshness, freshnessLabel } from "../contracts.ts";
 
 describe("freshness", () => {
-  it("forces DEMO freshness when demoMode (never LIVE)", () => {
+  it("maps unverified LIVE to UNAVAILABLE in truth mode (never LIVE, not DEMO)", () => {
     assert.equal(
       deriveFreshness({ lifecycle: "LIVE", demoMode: true, updatedAtIso: new Date().toISOString() }),
+      "UNAVAILABLE",
+    );
+  });
+
+  it("preserves HISTORICAL and UPCOMING under truth mode", () => {
+    assert.equal(
+      deriveFreshness({ lifecycle: "COMPLETED", demoMode: true }),
+      "HISTORICAL",
+    );
+    assert.equal(
+      deriveFreshness({ lifecycle: "UPCOMING", demoMode: true }),
+      "UPCOMING",
+    );
+    assert.equal(
+      deriveFreshness({ lifecycle: "DEMO", demoMode: true }),
       "DEMO",
     );
   });

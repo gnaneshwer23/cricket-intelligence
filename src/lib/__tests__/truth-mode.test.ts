@@ -100,4 +100,41 @@ describe("copilot truth mode", () => {
     assert.match(answer.headline, /live/i);
     assert.ok(answer.paragraphs.some((p) => /India vs England/i.test(p)));
   });
+
+  it("answers DEMO match-focus situation questions with evidence", () => {
+    const answer = answerQuestion("What is the situation in this DEMO match?", "predictions", "joe-root", {
+      providerReady: false,
+      demoPlayground: true,
+      matchFocus: {
+        id: "demo-eng-ind-lords-d2",
+        title: "England vs India (DEMO)",
+        status: "DEMO",
+        freshness: "DEMO",
+        venue: "Lord's",
+        score: { runs: 245, wickets: 4, overs: "48.2" },
+        isDemo: true,
+        isSeed: false,
+        provenance: { source: "Bundled CricketOS demo dataset" },
+      },
+    });
+    assert.match(answer.headline, /DEMO situation/i);
+    assert.ok(answer.evidence && answer.evidence.length > 0);
+  });
+
+  it("quarantines seed match-focus from Copilot evidence", () => {
+    const answer = answerQuestion("What is the situation in this match?", "general", "virat-kohli", {
+      providerReady: false,
+      demoPlayground: false,
+      matchFocus: {
+        id: "seed-headingley-2019",
+        title: "England vs Australia, 3rd Test",
+        status: "COMPLETED",
+        freshness: "HISTORICAL",
+        venue: "Headingley",
+        isDemo: false,
+        isSeed: true,
+      },
+    });
+    assert.match(answer.headline, /not Copilot evidence/i);
+  });
 });

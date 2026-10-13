@@ -100,7 +100,11 @@ export function kindLabel(kind: DataKind): string {
   }
 }
 
-/** Map lifecycle + age into a freshness badge for UI. */
+/**
+ * Map lifecycle + age into a freshness badge for UI.
+ * Truth mode (demoMode / no provider) must never claim LIVE, but must not
+ * relabel HISTORICAL / UPCOMING / DEMO rows as DEMO either.
+ */
 export function deriveFreshness(input: {
   lifecycle: MatchLifecycle;
   demoMode: boolean;
@@ -108,11 +112,12 @@ export function deriveFreshness(input: {
   staleAfterMs?: number;
   providerAvailable?: boolean;
 }): FreshnessStatus {
-  if (input.demoMode || input.lifecycle === "DEMO") return "DEMO";
-  if (input.providerAvailable === false) return "UNAVAILABLE";
+  if (input.lifecycle === "DEMO") return "DEMO";
   if (input.lifecycle === "UPCOMING") return "UPCOMING";
   if (input.lifecycle === "COMPLETED") return "HISTORICAL";
   if (input.lifecycle === "LIVE") {
+    // No licensed feed → LIVE is unavailable, not a DEMO dataset
+    if (input.demoMode || input.providerAvailable === false) return "UNAVAILABLE";
     if (!input.updatedAtIso) return "STALE";
     const age = Date.now() - Date.parse(input.updatedAtIso);
     const limit = input.staleAfterMs ?? 120_000;

@@ -74,19 +74,18 @@ Default persistence is **in-memory** and labelled ephemeral — not production d
 
 | Surface | Route (hash) | Status |
 |---------|--------------|--------|
-| Intelligence Briefing | `#home` | Shipped |
-| Cricket Copilot | `#ask` | Grounded rule engine + deterministic calcs + evidence |
-| Match Room | `#match` / `#live` | Provider fixtures · setup empty without key |
+| Cricket Today | `#home` | Truth-mode empty without key · provider briefing when keyed |
+| Match Intelligence | `#match` / `#live` | Primary journey · shared match focus · progressive disclosure |
+| Ask CricketOS | `#ask` | Grounded rule engine + deterministic calcs + evidence |
+| Players & Teams | `#players` (+ `#teams`) | Search-first · sample-size warnings |
 | DEMO playground | `#demo` | Quarantined Lord’s sim · Match Graph · watermarked |
-| Cricket Explorer | `#explorer` | Setup empty · DEMO charts only in playground |
-| Player Intelligence | `#players` | Filters + sample-size warnings |
+| Cricket Explorer | `#explorer` | Secondary · DEMO charts only in playground |
+| Labs (What-If) | `#labs` | Transparent rate assumptions · Hypothetical |
 | My Cricket | `#feed` | Personalisation |
-| Labs (What-If) | `#labs` | Scenario builder + authored swings · Hypothetical |
-| Team Intelligence | `#teams` | Secondary |
 | Community | `#community` | Secondary / light |
 | Fantasy | `#fantasy` | Experimental |
 
-Press `/` to jump to Copilot.
+Press `/` to jump to Ask CricketOS. See `docs/PRODUCT_RESET.md` for the product reset plan and inventory.
 
 ## Cricket Explorer
 

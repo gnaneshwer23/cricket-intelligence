@@ -22,9 +22,10 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useDataHealth } from "@/hooks/use-data-layer";
+import { useDataHealth, useMatchList } from "@/hooks/use-data-layer";
 import { useLiveMatch } from "@/hooks/use-live-match";
 import { analysePhases, applyWinSwing, strikeRate } from "@/lib/calc";
+import type { FreshnessStatus, MatchLifecycle } from "@/lib/contracts";
 import {
   batting,
   bowling,
@@ -44,10 +45,13 @@ import {
   type MatchGraphNode,
 } from "@/lib/match-graph";
 import { clamp, MOODS, moodBreakdown } from "@/lib/format";
+import type { MatchFocus } from "@/lib/types";
 import {
   DEMO_PLAYGROUND_ID,
   DEMO_PLAYGROUND_STORAGE_KEY,
+  isDemoMatchId,
   isDemoPlaygroundHash,
+  isSeedMatchId,
   openDemoPlayground,
 } from "@/lib/truth-mode";
 
@@ -68,6 +72,8 @@ function enterDemoPlaygroundSelection(): BoardRow {
     format: "test",
     series: matchMeta.series,
     score: matchMeta.score,
+    homeName: "England",
+    awayName: "India",
     isDemo: true,
     provenance: {
       source: matchMeta.provenance.source,
@@ -77,10 +83,52 @@ function enterDemoPlaygroundSelection(): BoardRow {
   };
 }
 
+function boardRowToFocus(row: BoardRow): MatchFocus {
+  return {
+    id: row.id,
+    title: row.title,
+    status: row.status,
+    freshness: row.freshness,
+    venue: row.venue,
+    format: row.format,
+    series: row.series,
+    score: row.score,
+    homeName: row.homeName,
+    awayName: row.awayName,
+    isDemo: Boolean(row.isDemo) || isDemoMatchId(row.id),
+    isSeed: isSeedMatchId(row.id),
+    provenance: row.provenance,
+  };
+}
+
+function focusToBoardRow(focus: MatchFocus): BoardRow {
+  return {
+    id: focus.id,
+    title: focus.title,
+    status: focus.status as MatchLifecycle,
+    freshness: focus.freshness as FreshnessStatus,
+    venue: focus.venue ?? "",
+    format: focus.format ?? "",
+    series: focus.series,
+    score: focus.score,
+    homeName: focus.homeName,
+    awayName: focus.awayName,
+    isDemo: focus.isDemo,
+    provenance: focus.provenance
+      ? {
+          source: focus.provenance.source,
+          asOf: focus.provenance.asOf ?? focus.freshness,
+          note: focus.provenance.note,
+        }
+      : undefined,
+  };
+}
+
 export function MatchScreen() {
-  const { mood, react, go, graphNodeId, clearGraphNodeId } = useApp();
+  const { mood, react, go, graphNodeId, clearGraphNodeId, matchFocus, setMatchFocus } = useApp();
   const live = useLiveMatch();
   const health = useDataHealth();
+  const archive = useMatchList(40);
   const providerReady =
     health.status === "ok" &&
     health.summary &&
@@ -105,9 +153,9 @@ export function MatchScreen() {
       if (isDemoPlaygroundHash() || sessionStorage.getItem(DEMO_PLAYGROUND_STORAGE_KEY) === "1") {
         return DEMO_PLAYGROUND_ID;
       }
+      if (matchFocus?.id) return matchFocus.id;
       const pick = sessionStorage.getItem("cricketos-match-pick");
-      if (pick) sessionStorage.removeItem("cricketos-match-pick");
-      // Never auto-open DEMO from product board picks that aren't playground
+      // Keep pick for return navigation — do not one-shot remove
       if (pick === DEMO_PLAYGROUND_ID || pick?.startsWith("demo-")) {
         sessionStorage.setItem(DEMO_PLAYGROUND_STORAGE_KEY, "1");
         return pick;
@@ -117,9 +165,11 @@ export function MatchScreen() {
       return null;
     }
   });
-  const [selectedRow, setSelectedRow] = useState<BoardRow | null>(() =>
-    playground ? enterDemoPlaygroundSelection() : null,
-  );
+  const [selectedRow, setSelectedRow] = useState<BoardRow | null>(() => {
+    if (playground) return enterDemoPlaygroundSelection();
+    if (matchFocus && !matchFocus.isDemo) return focusToBoardRow(matchFocus);
+    return null;
+  });
   const [planId, setPlanId] = useState(fieldPlans[0].id);
   const [side, setSide] = useState<"england" | "india">("england");
   const [noted, setNoted] = useState<string | null>(null);
@@ -127,8 +177,13 @@ export function MatchScreen() {
   const [running, setRunning] = useState(false);
   const [graphId, setGraphId] = useState(matchGraphNodes[0].id);
   const [evidenceId, setEvidenceId] = useState<string | null>(null);
-  const [tab, setTab] = useState("commentary");
+  const [tab, setTab] = useState("situation");
   const [appliedGraphNode, setAppliedGraphNode] = useState<string | null>(null);
+  const [detailMissing, setDetailMissing] = useState<{
+    ballByBall: boolean;
+    secondInnings: boolean;
+    battingRows: number;
+  } | null>(null);
 
   useEffect(() => {
     function syncHash() {
@@ -138,20 +193,76 @@ export function MatchScreen() {
       } catch {
         /* ignore */
       }
+      const row = enterDemoPlaygroundSelection();
       setPlayground(true);
       setSelectedMatchId(DEMO_PLAYGROUND_ID);
-      setSelectedRow(enterDemoPlaygroundSelection());
+      setSelectedRow(row);
+      setMatchFocus(boardRowToFocus(row));
     }
     syncHash();
     window.addEventListener("hashchange", syncHash);
     return () => window.removeEventListener("hashchange", syncHash);
-  }, []);
+  }, [setMatchFocus]);
+
+  // Sync from shared focus when returning from Ask / Labs / Players (adjust-on-render).
+  if (matchFocus && matchFocus.id !== selectedMatchId) {
+    if (matchFocus.isDemo) {
+      setPlayground(true);
+      setSelectedMatchId(matchFocus.id);
+      setSelectedRow(enterDemoPlaygroundSelection());
+    } else {
+      setPlayground(false);
+      setSelectedMatchId(matchFocus.id);
+      setSelectedRow(focusToBoardRow(matchFocus));
+    }
+  }
+
+  // Load honest missing fields for non-DEMO selections
+  useEffect(() => {
+    if (!selectedMatchId || playground) return;
+    let cancelled = false;
+    fetch(`/api/matches/${encodeURIComponent(selectedMatchId)}`)
+      .then((r) => r.json())
+      .then((body: {
+        ok?: boolean;
+        scorecard?: { batting?: Record<string, unknown[]> };
+        missing?: { ballByBall?: boolean; secondInnings?: boolean };
+      }) => {
+        if (cancelled || !body?.ok) return;
+        const battingMap = body.scorecard?.batting ?? {};
+        const battingRows = Object.values(battingMap).reduce(
+          (n, rows) => n + (Array.isArray(rows) ? rows.length : 0),
+          0,
+        );
+        setDetailMissing({
+          ballByBall: Boolean(body.missing?.ballByBall),
+          secondInnings: Boolean(body.missing?.secondInnings),
+          battingRows,
+        });
+      })
+      .catch(() => {
+        /* keep prior detailMissing */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedMatchId, playground]);
+
+  const shownDetailMissing =
+    selectedMatchId && !playground ? detailMissing : null;
 
   const showDemoIntel =
     playground &&
     (selectedMatchId === matchMeta.id ||
       selectedMatchId === "demo-eng-ind-lords-d2" ||
       (selectedRow?.isDemo ?? false));
+
+  const archiveRows = useMemo(() => {
+    if (archive.status !== "ok") return [];
+    return archive.matches
+      .filter((m) => isSeedMatchId(m.id) && m.freshness !== "DEMO")
+      .slice(0, 8);
+  }, [archive.status, archive.matches]);
 
   function pickMatch(row: BoardRow) {
     if (row.isDemo) {
@@ -162,10 +273,51 @@ export function MatchScreen() {
       }
       setPlayground(true);
     } else {
+      try {
+        sessionStorage.removeItem(DEMO_PLAYGROUND_STORAGE_KEY);
+      } catch {
+        /* ignore */
+      }
       setPlayground(false);
     }
     setSelectedMatchId(row.id);
     setSelectedRow(row);
+    setMatchFocus(boardRowToFocus(row));
+  }
+
+  function pickArchive(m: {
+    id: string;
+    title: string;
+    status: string;
+    freshness: string;
+    venue: string;
+    format: string;
+    series?: string;
+    score?: { runs: number; wickets: number; overs: string };
+    homeName?: string;
+    awayName?: string;
+    provenance?: { source: string; asOf?: string; note?: string };
+  }) {
+    pickMatch({
+      id: m.id,
+      title: m.title,
+      status: m.status as MatchLifecycle,
+      freshness: m.freshness as FreshnessStatus,
+      venue: m.venue,
+      format: m.format,
+      series: m.series,
+      score: m.score,
+      homeName: m.homeName,
+      awayName: m.awayName,
+      isDemo: false,
+      provenance: m.provenance
+        ? {
+            source: m.provenance.source,
+            asOf: m.provenance.asOf ?? m.freshness,
+            note: m.provenance.note,
+          }
+        : undefined,
+    });
   }
 
   // Apply deep-link from Explorer / Copilot when graphNodeId changes (React-recommended adjust-on-render).
@@ -198,24 +350,35 @@ export function MatchScreen() {
     return () => window.clearTimeout(id);
   }, [running, finished, step]);
 
+  const focusAsk =
+    showDemoIntel
+      ? "What is the situation in this DEMO match?"
+      : selectedRow
+        ? `What do we know about ${selectedRow.title}?`
+        : providerReady
+          ? "What fixtures are available?"
+          : "What data do you have?";
+
   return (
     <div className="mx-auto max-w-6xl">
       <header className="mb-7 flex flex-wrap items-end justify-between gap-4">
         <div className="max-w-2xl">
           <Kicker className="text-cyan">
-            {showDemoIntel ? "DEMO playground · Match Centre" : "Live Scores · Match Centre"}
+            {showDemoIntel
+              ? "DEMO playground · Match Intelligence"
+              : "Match Intelligence"}
           </Kicker>
           <h1 className="font-display mt-3 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
             {showDemoIntel
               ? `${matchMeta.title} (DEMO)`
-              : selectedRow?.title ?? "Live Scores"}
+              : selectedRow?.title ?? "Select a match"}
           </h1>
           <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground">
             {showDemoIntel
-              ? "Quarantined scripted session — watermarked DEMO, never labelled LIVE."
+              ? "Quarantined scripted session — watermarked DEMO, never labelled LIVE. Progressive: situation → timeline → evidence → Ask → What-If."
               : providerReady
-                ? "Provider fixtures only · series, venue, status, scores from the licensed feed."
-                : "Live and historical facts require a data provider. No invented scores on this surface."}
+                ? "Provider fixtures only · what happened, source, freshness — no invented filler."
+                : "Truth mode: pick the DEMO playground for a full E2E path, or browse the labelled historical archive. No invented live scores."}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -238,13 +401,12 @@ export function MatchScreen() {
             className="cos-cta"
             onClick={() =>
               go("ask", {
-                seedAsk: providerReady
-                  ? "What fixtures are available?"
-                  : "What data do you have?",
+                seedAsk: focusAsk,
+                mode: showDemoIntel ? "predictions" : "general",
               })
             }
           >
-            Ask Copilot
+            Ask CricketOS
           </Button>
         </div>
       </header>
@@ -262,6 +424,65 @@ export function MatchScreen() {
           <div className="mt-3">
             <DataStatusStrip />
           </div>
+
+          {!providerReady ? (
+            <Panel className="mt-4 border-white/8 bg-card/40">
+              <Kicker className="text-gold">Historical archive · labelled</Kicker>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Seeded completed / upcoming rows for Match Intelligence browsing. Not live truth —
+                quarantined from Copilot evidence. Prefer DEMO playground for event → evidence →
+                What-If.
+              </p>
+              {archive.status === "loading" ? (
+                <p className="mt-3 text-sm text-muted-foreground">Loading archive…</p>
+              ) : archiveRows.length === 0 ? (
+                <p className="mt-3 text-sm text-muted-foreground">
+                  No archive rows available in this session.
+                </p>
+              ) : (
+                <ul className="mt-4 divide-y divide-white/8">
+                  {archiveRows.map((m) => (
+                    <li key={m.id}>
+                      <button
+                        type="button"
+                        className={`flex w-full flex-wrap items-baseline justify-between gap-2 py-3 text-left transition hover:text-lime ${
+                          selectedMatchId === m.id ? "text-lime" : ""
+                        }`}
+                        onClick={() => pickArchive(m)}
+                      >
+                        <span className="min-w-0">
+                          <span className="block font-medium tracking-tight">{m.title}</span>
+                          <span className="mt-0.5 block text-xs text-muted-foreground">
+                            {m.venue}
+                            {m.series ? ` · ${m.series}` : ""}
+                          </span>
+                        </span>
+                        <span className="flex items-center gap-2">
+                          <FreshnessBadge freshness={m.freshness as FreshnessStatus} />
+                          {m.score ? (
+                            <span className="font-mono text-xs tabular-nums">
+                              {m.score.runs}/{m.score.wickets}
+                            </span>
+                          ) : null}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="mt-3 text-sm text-muted-foreground">
+                Or{" "}
+                <button
+                  type="button"
+                  className="text-gold underline-offset-2 hover:underline"
+                  onClick={() => openDemoPlayground()}
+                >
+                  open DEMO playground
+                </button>{" "}
+                for the full intelligence workspace.
+              </p>
+            </Panel>
+          ) : null}
         </>
       ) : null}
 
@@ -289,55 +510,174 @@ export function MatchScreen() {
       ) : null}
 
       {selectedMatchId && !showDemoIntel && selectedRow ? (
-        <Panel className="mt-6 border-white/8 bg-card/40">
-          <div className="flex flex-wrap items-center gap-2">
-            <StatusBadge status={selectedRow.status} />
-            <FreshnessBadge freshness={selectedRow.freshness} />
-          </div>
-          <h2 className="font-display mt-3 text-2xl tracking-tight">{selectedRow.title}</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {selectedRow.venue} · {selectedRow.format}
-            {selectedRow.series ? ` · ${selectedRow.series}` : ""}
-          </p>
-          {selectedRow.score ? (
-            <p className="font-display mt-4 text-5xl font-semibold tabular-nums">
-              {selectedRow.score.runs}
-              <span className="text-lime">/{selectedRow.score.wickets}</span>
-              {selectedRow.score.overs ? (
-                <span className="ml-3 font-mono text-base text-cyan">
-                  {selectedRow.score.overs} ov
+        <div className="mt-6 space-y-4">
+          <Panel className="border-white/8 bg-card/40">
+            <div className="flex flex-wrap items-center gap-2">
+              <StatusBadge status={selectedRow.status} />
+              <FreshnessBadge freshness={selectedRow.freshness} />
+              {selectedRow.isDemo ? null : isSeedMatchId(selectedRow.id) ? (
+                <span className="text-[10px] tracking-[0.14em] text-gold uppercase">
+                  Seed archive
                 </span>
-              ) : null}
-            </p>
-          ) : (
-            <p className="mt-4 text-sm text-muted-foreground">
-              {selectedRow.status === "UPCOMING"
-                ? "No ball in play yet — fixture prior only."
-                : "Scorecard detail not in this archive row."}
-            </p>
-          )}
-          {selectedRow.provenance ? (
-            <div className="mt-4">
-              <ProvenanceStrip
-                source={selectedRow.provenance.source}
-                asOf={selectedRow.provenance.asOf}
-                note={selectedRow.provenance.note}
-              />
+              ) : (
+                <span className="text-[10px] tracking-[0.14em] text-cyan uppercase">
+                  Provider
+                </span>
+              )}
             </div>
-          ) : null}
-          <p className="mt-4 text-xs text-muted-foreground">
-            Full ball-by-ball intelligence tabs stay on the Lord&apos;s DEMO board. Provider LIVE
-            rows update when `/api/fixtures` refreshes.
-          </p>
-        </Panel>
+            <h2 className="font-display mt-3 text-2xl tracking-tight">{selectedRow.title}</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {[selectedRow.homeName, selectedRow.awayName].filter(Boolean).join(" vs ") ||
+                selectedRow.title}
+              {selectedRow.series ? ` · ${selectedRow.series}` : ""}
+              {selectedRow.venue ? ` · ${selectedRow.venue}` : ""}
+              {selectedRow.format ? ` · ${selectedRow.format}` : ""}
+            </p>
+            {selectedRow.score ? (
+              <p className="font-display mt-4 text-5xl font-semibold tabular-nums">
+                {selectedRow.score.runs}
+                <span className="text-lime">/{selectedRow.score.wickets}</span>
+                {selectedRow.score.overs ? (
+                  <span className="ml-3 font-mono text-base text-cyan">
+                    {selectedRow.score.overs} ov
+                  </span>
+                ) : null}
+              </p>
+            ) : (
+              <p className="mt-4 text-sm text-muted-foreground">
+                {selectedRow.status === "UPCOMING"
+                  ? "No ball in play yet — fixture prior only."
+                  : "Scorecard detail not in this row."}
+              </p>
+            )}
+            {selectedRow.provenance ? (
+              <div className="mt-4">
+                <ProvenanceStrip
+                  source={selectedRow.provenance.source}
+                  asOf={selectedRow.provenance.asOf}
+                  note={selectedRow.provenance.note}
+                />
+              </div>
+            ) : null}
+          </Panel>
+
+          <Panel className="border-white/8 bg-card/30">
+            <Kicker>Situation</Kicker>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              {selectedRow.status === "UPCOMING"
+                ? "Upcoming fixture — no innings situation yet. Supported facts: teams, venue, series, scheduled status."
+                : selectedRow.score
+                  ? `Supported scoreline ${selectedRow.score.runs}/${selectedRow.score.wickets}${
+                      selectedRow.score.overs ? ` at ${selectedRow.score.overs}` : ""
+                    }. Freshness ${selectedRow.freshness}.`
+                  : "No supported scoreline in this row."}
+            </p>
+            {shownDetailMissing ? (
+              <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
+                <li>
+                  · Batting rows:{" "}
+                  {shownDetailMissing.battingRows > 0
+                    ? `${shownDetailMissing.battingRows} available`
+                    : "unavailable (empty scorecard detail)"}
+                </li>
+                <li>
+                  · Ball-by-ball:{" "}
+                  {shownDetailMissing.ballByBall ? "unavailable" : "present in storage"}
+                </li>
+                <li>
+                  · Second innings:{" "}
+                  {shownDetailMissing.secondInnings ? "not in dataset" : "present"}
+                </li>
+                <li>· Timeline / Match Graph: DEMO playground only in this build</li>
+              </ul>
+            ) : (
+              <p className="mt-3 text-xs text-muted-foreground">
+                Checking `/api/matches/:id` for supported fields…
+              </p>
+            )}
+          </Panel>
+
+          <Panel className="border-white/8 bg-card/30">
+            <Kicker>Continue</Kicker>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Ask with this match in focus, or open a transparent What-If with stated assumptions.
+              Seed rows are not used as Copilot live evidence.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button
+                type="button"
+                size="sm"
+                className="cos-cta"
+                onClick={() =>
+                  go("ask", {
+                    seedAsk: isSeedMatchId(selectedRow.id)
+                      ? "What data do you have?"
+                      : focusAsk,
+                  })
+                }
+              >
+                Ask about this match
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() =>
+                  go("labs", {
+                    labsSeed: {
+                      source: "manual",
+                      label: selectedRow.title,
+                      runsRequired: 105,
+                      ballsRemaining: 120,
+                      wicketsInHand: 7,
+                      currentRuns: selectedRow.score?.runs,
+                      assumedRpo: 4.5,
+                      observedNote: selectedRow.score
+                        ? `Observed (${selectedRow.freshness}): ${selectedRow.score.runs}/${selectedRow.score.wickets}. Scenario is hypothetical — not an AI prediction.`
+                        : `No observed scoreline. Scenario is hypothetical — assumptions only.`,
+                    },
+                  })
+                }
+              >
+                What-If (assumptions)
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => openDemoPlayground()}
+              >
+                Full DEMO workspace
+              </Button>
+              {selectedRow.homeName ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => go("players")}
+                >
+                  Related players
+                </Button>
+              ) : null}
+            </div>
+          </Panel>
+        </div>
       ) : null}
 
       {showDemoIntel ? (
         <>
           <div className="mt-6">
-            <Kicker className="text-gold">DEMO sim · scripted session</Kicker>
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <StatusBadge status="DEMO" />
+              <FreshnessBadge freshness="DEMO" />
+              <span className="text-sm text-muted-foreground">
+                England vs India · {matchMeta.series} · {matchMeta.venue}
+              </span>
+            </div>
+            <Kicker className="text-gold">Situation · DEMO sim</Kicker>
             <p className="mt-1 mb-3 text-sm text-muted-foreground">
-              Not a broadcast feed — labelled DEMO, never LIVE.
+              Not a broadcast feed — labelled DEMO, never LIVE. Score{" "}
+              {matchMeta.score.runs}/{matchMeta.score.wickets} ({matchMeta.score.overs}).
             </p>
             <LiveScoreStrip />
             <div className="mt-3">
@@ -351,17 +691,98 @@ export function MatchScreen() {
 
       <Tabs value={tab} onValueChange={setTab} className="mt-6">
         <TabsList variant="line" className="h-auto! w-full justify-start overflow-x-auto">
-          <TabsTrigger value="commentary">Demo Commentary</TabsTrigger>
-          <TabsTrigger value="graph">Match Graph</TabsTrigger>
+          <TabsTrigger value="situation">Situation</TabsTrigger>
+          <TabsTrigger value="graph">Timeline · Graph</TabsTrigger>
+          <TabsTrigger value="scorecard">Evidence · Scorecard</TabsTrigger>
           <TabsTrigger value="intel">Intelligence</TabsTrigger>
+          <TabsTrigger value="commentary">Commentary</TabsTrigger>
           <TabsTrigger value="report">Session Report</TabsTrigger>
-          <TabsTrigger value="predictions">Predictions</TabsTrigger>
-          <TabsTrigger value="scorecard">Scorecard</TabsTrigger>
+          <TabsTrigger value="predictions">Model notes</TabsTrigger>
           <TabsTrigger value="emotions">Mood</TabsTrigger>
           <TabsTrigger value="matchups">Matchups</TabsTrigger>
           <TabsTrigger value="tactical">Tactical</TabsTrigger>
           <TabsTrigger value="sim">Simulations</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="situation" className="mt-4">
+          <div className="grid gap-4 lg:grid-cols-5">
+            <Panel className="lg:col-span-3">
+              <Kicker>What happened (DEMO facts)</Kicker>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                England {matchMeta.score.runs}/{matchMeta.score.wickets} after{" "}
+                {matchMeta.score.overs} overs at {matchMeta.venue}. Session snapshot only —
+                not a live feed. Select an event in Timeline · Graph for evidence, then Ask or
+                What-If without losing this match focus.
+              </p>
+              <div className="mt-5 flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  className="cos-cta"
+                  onClick={() =>
+                    go("ask", {
+                      mode: "predictions",
+                      seedAsk: "What is the situation in this DEMO match?",
+                    })
+                  }
+                >
+                  Ask CricketOS (contextual)
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    setTab("graph");
+                    setGraphId(matchGraphNodes[0].id);
+                    setEvidenceId(matchGraphNodes[0].evidenceIds?.[0] ?? null);
+                  }}
+                >
+                  Open timeline
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={() =>
+                    go("labs", {
+                      labsSeed: {
+                        source: "match-graph",
+                        label: "DEMO situation · rate scenario",
+                        runsRequired: 105,
+                        ballsRemaining: 120,
+                        wicketsInHand: 7,
+                        currentRuns: matchMeta.score.runs,
+                        ballsFaced: 290,
+                        assumedRpo: 4.5,
+                        observedNote: `Observed (DEMO): ${matchMeta.score.runs}/${matchMeta.score.wickets} at ${matchMeta.score.overs}. Hypothetical rates — not AI predictions.`,
+                      },
+                    })
+                  }
+                >
+                  What-If (assumptions)
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => go("players", { playerId: "joe-root" })}
+                >
+                  Related · Root
+                </Button>
+              </div>
+            </Panel>
+            <Panel className="lg:col-span-2">
+              <Kicker>Limitations</Kicker>
+              <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+                <li>· Label: DEMO — never LIVE</li>
+                <li>· Source: bundled CricketOS demo dataset</li>
+                <li>· Win model figures are illustrative model, not official</li>
+                <li>· Persistence: in-memory unless Postgres is configured</li>
+              </ul>
+            </Panel>
+          </div>
+        </TabsContent>
 
         <TabsContent value="commentary" className="mt-4">
           <LiveCommentary />
