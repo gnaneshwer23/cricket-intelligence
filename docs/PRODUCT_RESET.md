@@ -127,6 +127,7 @@ See **`docs/DESIGN.md`** for IA, tokens, and motion rules.
 | Hero copy + Ask CricketOS prominence; honest empty live | IMPLEMENTED |
 | Shared matchFocus + Match/Ask return path | PRESERVED (prior reset) |
 | Architecture / adapters / truth mode / contracts | PRESERVED — no rewrite |
+| Production deploy `aa16108` on cricket-intelligence-delta | VERIFIED READY (`/api/health` truth mode + memory) |
 
 ## Acceptance criteria (reset)
 
