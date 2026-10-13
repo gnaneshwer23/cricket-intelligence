@@ -15,7 +15,7 @@ export function LiveScoreStrip({ compact = false, onOpenMatch }: Props) {
 
   if (live.status === "loading") {
     return (
-      <div className="cos-scoreboard rounded-[1.75rem] border border-white/8 p-6 sm:p-8">
+      <div className="cos-scoreboard rounded-[1.75rem] border border-border p-6 sm:p-8">
         <Kicker className="text-cyan">DEMO · simulated innings</Kicker>
         <p className="mt-3 text-sm text-muted-foreground">Warming up the demo stream…</p>
         <div className="mt-5 h-1.5 animate-pulse rounded-full bg-white/10" />
@@ -39,7 +39,7 @@ export function LiveScoreStrip({ compact = false, onOpenMatch }: Props) {
     live.status === "ended" ? "Demo complete" : live.paused ? "Paused" : "Sim live";
 
   return (
-    <div className="cos-scoreboard rounded-[1.75rem] border border-white/8">
+    <div className="cos-scoreboard rounded-[1.75rem] border border-border">
       <div className={`relative z-[1] ${compact ? "p-5 sm:p-7" : "p-6 sm:p-9"}`}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2.5">
@@ -144,7 +144,7 @@ export function LiveScoreStrip({ compact = false, onOpenMatch }: Props) {
                   ? "border-destructive/45 text-destructive"
                   : ball === "4" || ball === "6"
                     ? "border-lime/40 bg-lime/8 text-lime"
-                    : "border-white/12 bg-black/15"
+                    : "border-border bg-navy/10"
               }`}
             >
               {ball}
@@ -177,7 +177,7 @@ export function LiveScoreStrip({ compact = false, onOpenMatch }: Props) {
       </div>
 
       {!compact ? (
-        <div className="relative z-[1] grid border-t border-white/8 sm:grid-cols-3">
+        <div className="relative z-[1] grid border-t border-border sm:grid-cols-3">
           {[
             ["Momentum", live.engWin >= 50 ? "England" : "India"],
             ["Fall of wickets", live.fow[live.fow.length - 1] ?? "—"],
@@ -185,7 +185,7 @@ export function LiveScoreStrip({ compact = false, onOpenMatch }: Props) {
           ].map(([label, value]) => (
             <div
               key={label}
-              className="border-b border-white/8 px-6 py-4 sm:border-r sm:border-b-0 last:border-r-0"
+              className="border-b border-border px-6 py-4 sm:border-r sm:border-b-0 last:border-r-0"
             >
               <Kicker>{label}</Kicker>
               <p className="mt-1.5 text-sm font-medium tracking-tight">{value}</p>

@@ -204,7 +204,7 @@ export function LiveFixturesBoard({
     fixtures.status === "unavailable" && matches.status === "unavailable";
 
   return (
-    <div id="live" className="rounded-[1.75rem] border border-white/8 bg-card/40 scroll-mt-24">
+    <div id="live" className="rounded-[1.75rem] border border-border bg-card/40 scroll-mt-24">
       <div className={`flex flex-wrap items-end justify-between gap-3 ${compact ? "p-4" : "p-5 sm:p-6"}`}>
         <div>
           <Kicker className="text-cyan">Live Scores</Kicker>
@@ -229,7 +229,7 @@ export function LiveFixturesBoard({
       </div>
 
       <div
-        className="flex gap-1 overflow-x-auto border-t border-white/8 px-3 py-2 sm:px-5"
+        className="flex gap-1 overflow-x-auto border-t border-border px-3 py-2 sm:px-5"
         role="tablist"
         aria-label="Fixture filters"
       >
@@ -259,19 +259,19 @@ export function LiveFixturesBoard({
       </div>
 
       {loading ? (
-        <p className="border-t border-white/8 px-5 py-6 text-sm text-muted-foreground">
+        <p className="border-t border-border px-5 py-6 text-sm text-muted-foreground">
           Loading fixtures board…
         </p>
       ) : unavailable ? (
-        <p className="border-t border-white/8 px-5 py-6 text-sm text-gold">
+        <p className="border-t border-border px-5 py-6 text-sm text-gold">
           Fixtures UNAVAILABLE — not claiming LIVE
         </p>
       ) : !providerReady && rows.length === 0 ? (
-        <div className="border-t border-white/8 p-4 sm:p-5">
+        <div className="border-t border-border p-4 sm:p-5">
           <TruthSetupPanel compact showDemoLink />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="border-t border-white/8 px-5 py-6">
+        <div className="border-t border-border px-5 py-6">
           <p className="text-sm text-muted-foreground">
             {tab === "live"
               ? providerReady
@@ -292,7 +292,7 @@ export function LiveFixturesBoard({
           ) : null}
         </div>
       ) : (
-        <ul className="divide-y divide-white/8 border-t border-white/8">
+        <ul className="divide-y divide-border border-t border-border">
           {filtered.map((row) => {
             const selected = selectedId === row.id;
             const home = rowHomeShort(row);
@@ -307,7 +307,7 @@ export function LiveFixturesBoard({
                   type="button"
                   onClick={() => onSelect?.(row)}
                   className={`flex w-full flex-col gap-2 px-4 py-3.5 text-left transition sm:px-6 ${
-                    selected ? "bg-lime/10" : "hover:bg-white/4"
+                    selected ? "bg-lime/10" : "hover:bg-navy/4"
                   }`}
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
@@ -373,7 +373,7 @@ export function LiveFixturesBoard({
       )}
 
       {!compact ? (
-        <div className="border-t border-white/8 px-5 py-3 sm:px-6">
+        <div className="border-t border-border px-5 py-3 sm:px-6">
           {rows[0]?.provenance ? (
             <ProvenanceStrip
               source={
@@ -397,7 +397,7 @@ export function LiveFixturesBoard({
                 type="button"
                 size="sm"
                 variant="outline"
-                className="border-white/12"
+                className="border-border"
                 onClick={() => {
                   window.open("https://cricketdata.org/", "_blank", "noopener,noreferrer");
                 }}

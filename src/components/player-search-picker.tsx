@@ -140,7 +140,7 @@ export function PlayerSearchPicker({
               <button
                 key={example}
                 type="button"
-                className="rounded-full border border-border bg-muted/40 px-3 py-1 text-xs hover:border-lime/40 hover:text-lime"
+                className="rounded-full border border-border bg-muted/40 px-3 py-1 text-xs hover:border-action/50 hover:text-action"
                 onClick={() => setQuery(example)}
               >
                 {example}

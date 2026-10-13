@@ -144,7 +144,7 @@ export function FeedScreen() {
                 <li key={chat.id} className="flex items-start justify-between gap-3">
                   <button
                     type="button"
-                    className="text-left text-sm hover:text-lime"
+                    className="text-left text-sm hover:text-action"
                     onClick={() => {
                       go("ask", { mode: "general", seedAsk: chat.question });
                     }}
@@ -175,7 +175,7 @@ export function FeedScreen() {
                 <li key={chat.id}>
                   <button
                     type="button"
-                    className="text-left text-sm hover:text-lime"
+                    className="text-left text-sm hover:text-action"
                     onClick={() => {
                       go("ask", { mode: "general", seedAsk: chat.question });
                     }}
@@ -244,7 +244,7 @@ export function FeedScreen() {
                   <div className="min-w-0 flex-1">
                     <button
                       type="button"
-                      className="block truncate font-medium hover:text-lime"
+                      className="block truncate font-medium hover:text-action"
                       onClick={() => go("players", { playerId: player.id })}
                     >
                       {player.name}
@@ -291,7 +291,7 @@ export function FeedScreen() {
             <li key={item.id}>
               <button
                 type="button"
-                className="flex w-full gap-3 py-3 text-left hover:text-lime"
+                className="flex w-full gap-3 py-3 text-left hover:text-action"
                 onClick={() =>
                   go(item.screen, item.playerId ? { playerId: item.playerId } : undefined)
                 }

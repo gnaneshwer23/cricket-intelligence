@@ -40,18 +40,22 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  /* CricketOS accents — lime kept; navy / mist / warm from design audit */
-  --color-lime: oklch(0.9 0.2 122);
-  --color-cyan: oklch(0.72 0.08 215);
-  --color-eng: oklch(0.78 0.1 250);
-  --color-ind: oklch(0.76 0.15 50);
-  --color-gold: oklch(0.86 0.14 95);
+  /* CricketOS — pitch green semantic; action orange for CTAs */
+  --color-lime: var(--cos-pitch);
+  --color-pitch: var(--cos-pitch);
+  --color-action: var(--cos-action);
+  --color-cyan: var(--cos-blue);
+  --color-eng: oklch(0.55 0.1 250);
+  --color-ind: oklch(0.62 0.14 50);
+  --color-gold: oklch(0.72 0.14 85);
   --color-navy: var(--cos-navy);
   --color-deep: var(--cos-deep);
   --color-blue: var(--cos-blue);
   --color-slate: var(--cos-slate);
   --color-mist: var(--cos-mist);
+  --color-ink: var(--cos-ink);
   --color-warm: var(--cos-warm);
+  --color-canvas: var(--cos-canvas);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -62,53 +66,61 @@
 }
 
 :root {
+  --cos-canvas: #f6f5f2;
   --cos-navy: #03314c;
   --cos-deep: #084e6e;
   --cos-blue: #236686;
-  --cos-slate: #768794;
-  --cos-mist: #b1b7c0;
+  --cos-ink: #12171c;
+  --cos-slate: #5c6b76;
+  --cos-mist: #9aa3ad;
+  --cos-action: #e85d04;
+  --cos-pitch: #2f9e44;
   --cos-warm: #d83c16;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --background: var(--cos-canvas);
+  --foreground: var(--cos-ink);
+  --card: #fffcf8;
+  --card-foreground: var(--cos-ink);
+  --popover: #fffcf8;
+  --popover-foreground: var(--cos-ink);
+  --primary: var(--cos-action);
+  --primary-foreground: #fffaf5;
+  --secondary: color-mix(in oklab, var(--cos-navy) 6%, white);
+  --secondary-foreground: var(--cos-navy);
+  --muted: color-mix(in oklab, var(--cos-navy) 4.5%, white);
+  --muted-foreground: var(--cos-slate);
+  --accent: color-mix(in oklab, var(--cos-blue) 10%, white);
+  --accent-foreground: var(--cos-navy);
+  --destructive: var(--cos-warm);
+  --border: color-mix(in oklab, var(--cos-navy) 12%, transparent);
+  --input: color-mix(in oklab, var(--cos-navy) 14%, transparent);
+  --ring: var(--cos-action);
+  --chart-1: var(--cos-navy);
+  --chart-2: var(--cos-blue);
+  --chart-3: var(--cos-action);
+  --chart-4: var(--cos-pitch);
+  --chart-5: var(--cos-slate);
   --radius: 0.75rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: color-mix(in oklab, var(--cos-navy) 96%, black);
+  --sidebar-foreground: color-mix(in oklab, white 92%, var(--cos-mist));
+  --sidebar-primary: var(--cos-action);
+  --sidebar-primary-foreground: #fffaf5;
+  --sidebar-accent: color-mix(in oklab, var(--cos-deep) 70%, black);
+  --sidebar-accent-foreground: color-mix(in oklab, white 90%, var(--cos-mist));
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: var(--cos-action);
 }
 
 .dark {
-  /* Navy-led stadium night — #03314C family + lime spark; warm reserved for LIVE. */
+  /* Optional night mode — product default is light canvas. */
+  --cos-canvas: #071820;
   --cos-navy: #03314c;
   --cos-deep: #084e6e;
   --cos-blue: #236686;
+  --cos-ink: #f2f4f6;
   --cos-slate: #768794;
   --cos-mist: #b1b7c0;
+  --cos-action: #f07828;
+  --cos-pitch: #5ecf6e;
   --cos-warm: #d83c16;
   --background: color-mix(in oklab, var(--cos-navy) 88%, black);
   --foreground: color-mix(in oklab, var(--cos-mist) 55%, white);
@@ -116,8 +128,8 @@
   --card-foreground: color-mix(in oklab, var(--cos-mist) 55%, white);
   --popover: color-mix(in oklab, var(--cos-deep) 60%, var(--cos-navy));
   --popover-foreground: color-mix(in oklab, var(--cos-mist) 55%, white);
-  --primary: oklch(0.9 0.2 122);
-  --primary-foreground: oklch(0.2 0.04 130);
+  --primary: var(--cos-action);
+  --primary-foreground: #1a0c04;
   --secondary: color-mix(in oklab, var(--cos-deep) 70%, black);
   --secondary-foreground: color-mix(in oklab, var(--cos-mist) 55%, white);
   --muted: color-mix(in oklab, var(--cos-navy) 70%, black);
@@ -127,20 +139,20 @@
   --destructive: var(--cos-warm);
   --border: oklch(1 0 0 / 9%);
   --input: oklch(1 0 0 / 12%);
-  --ring: oklch(0.9 0.2 122);
-  --chart-1: oklch(0.9 0.2 122);
+  --ring: var(--cos-action);
+  --chart-1: var(--cos-pitch);
   --chart-2: var(--cos-blue);
-  --chart-3: oklch(0.76 0.15 50);
+  --chart-3: var(--cos-action);
   --chart-4: oklch(0.86 0.14 95);
   --chart-5: var(--cos-slate);
   --sidebar: color-mix(in oklab, var(--cos-navy) 92%, black);
   --sidebar-foreground: color-mix(in oklab, var(--cos-mist) 55%, white);
-  --sidebar-primary: oklch(0.9 0.2 122);
-  --sidebar-primary-foreground: oklch(0.2 0.04 130);
+  --sidebar-primary: var(--cos-action);
+  --sidebar-primary-foreground: #1a0c04;
   --sidebar-accent: color-mix(in oklab, var(--cos-deep) 65%, black);
   --sidebar-accent-foreground: color-mix(in oklab, var(--cos-mist) 55%, white);
   --sidebar-border: oklch(1 0 0 / 8%);
-  --sidebar-ring: oklch(0.9 0.2 122);
+  --sidebar-ring: var(--cos-action);
 }
 
 @layer base {
@@ -149,20 +161,20 @@
   }
   html {
     @apply font-sans;
-    color-scheme: dark;
+    color-scheme: light;
   }
   body {
     @apply text-foreground;
     background-color: var(--background);
-    /* Navy atmosphere — lime spark + deep blue wash (not flat single colour) */
+    /* Soft off-white atmosphere — navy wash + blue mist (not flat white) */
     background-image:
-      radial-gradient(980px 480px at 85% -12%, oklch(0.48 0.16 122 / 0.16), transparent 58%),
-      radial-gradient(720px 440px at -8% 108%, color-mix(in oklab, var(--cos-blue) 35%, transparent), transparent 55%),
+      radial-gradient(920px 420px at 92% -8%, color-mix(in oklab, var(--cos-blue) 14%, transparent), transparent 58%),
+      radial-gradient(680px 380px at -6% 100%, color-mix(in oklab, var(--cos-action) 8%, transparent), transparent 55%),
       linear-gradient(
         180deg,
-        color-mix(in oklab, var(--cos-navy) 80%, black),
-        color-mix(in oklab, var(--cos-navy) 92%, black) 45%,
-        color-mix(in oklab, var(--cos-navy) 96%, black)
+        #faf9f6 0%,
+        var(--cos-canvas) 42%,
+        color-mix(in oklab, var(--cos-navy) 3.5%, var(--cos-canvas)) 100%
       );
     background-attachment: fixed;
     min-height: 100%;
@@ -295,7 +307,7 @@
 }
 
 .cos-ask-focus:focus-within {
-  outline: 2px solid color-mix(in oklab, var(--color-lime) 55%, transparent);
+  outline: 2px solid color-mix(in oklab, var(--cos-action) 55%, transparent);
   outline-offset: 3px;
   border-radius: 0.85rem;
   transition: outline-color 0.25s ease;
@@ -311,19 +323,19 @@
     stroke-width 0.35s ease;
 }
 
-/* Full-bleed hero plane — navy brand field + lime spark */
+/* Full-bleed hero — soft canvas plane with navy brand field */
 .cos-hero {
   position: relative;
   isolation: isolate;
   overflow: hidden;
   background:
-    radial-gradient(ellipse 90% 70% at 12% 0%, oklch(0.5 0.18 122 / 0.32), transparent 55%),
-    radial-gradient(ellipse 60% 50% at 100% 90%, color-mix(in oklab, var(--cos-blue) 40%, transparent), transparent 50%),
+    radial-gradient(ellipse 85% 70% at 8% 0%, color-mix(in oklab, var(--cos-blue) 18%, transparent), transparent 55%),
+    radial-gradient(ellipse 55% 45% at 100% 85%, color-mix(in oklab, var(--cos-action) 12%, transparent), transparent 50%),
     linear-gradient(
-      160deg,
-      color-mix(in oklab, var(--cos-deep) 75%, var(--cos-navy)) 0%,
-      var(--cos-navy) 55%,
-      color-mix(in oklab, var(--cos-navy) 85%, black) 100%
+      155deg,
+      #fffdf9 0%,
+      color-mix(in oklab, var(--cos-navy) 4%, white) 48%,
+      color-mix(in oklab, var(--cos-blue) 6%, var(--cos-canvas)) 100%
     );
 }
 
@@ -333,9 +345,9 @@
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(115deg, transparent 42%, oklch(1 0 0 / 0.04) 50%, transparent 58%),
-    radial-gradient(circle at 70% 40%, oklch(0.55 0.12 122 / 0.08), transparent 40%);
-  opacity: 0.9;
+    linear-gradient(115deg, transparent 42%, oklch(0.2 0.02 230 / 0.03) 50%, transparent 58%),
+    radial-gradient(circle at 72% 38%, color-mix(in oklab, var(--cos-navy) 6%, transparent), transparent 42%);
+  opacity: 0.95;
 }
 
 .cos-scoreboard {
@@ -343,12 +355,13 @@
   isolation: isolate;
   overflow: hidden;
   background:
-    radial-gradient(ellipse 70% 55% at 50% -10%, oklch(0.42 0.12 122 / 0.2), transparent 55%),
+    radial-gradient(ellipse 70% 55% at 50% -10%, color-mix(in oklab, var(--cos-blue) 22%, transparent), transparent 55%),
     linear-gradient(
       180deg,
-      color-mix(in oklab, var(--cos-deep) 70%, var(--cos-navy)),
-      color-mix(in oklab, var(--cos-navy) 90%, black)
+      color-mix(in oklab, var(--cos-deep) 85%, var(--cos-navy)),
+      var(--cos-navy)
     );
+  color: color-mix(in oklab, white 92%, var(--cos-mist));
 }
 
 .cos-scoreboard::after {
@@ -359,12 +372,11 @@
   background-image: linear-gradient(
     105deg,
     transparent 45%,
-    oklch(1 0 0 / 0.025) 52%,
+    oklch(1 0 0 / 0.04) 52%,
     transparent 58%
   );
 }
 
-/* Product-grid rhythm adapted to sports briefing tiles */
 .cos-brief-grid {
   display: grid;
   gap: 1.25rem;
@@ -390,7 +402,7 @@
   display: flex;
   min-height: 11.5rem;
   flex-direction: column;
-  border-top: 1px solid oklch(1 0 0 / 12%);
+  border-top: 1px solid color-mix(in oklab, var(--cos-navy) 14%, transparent);
   padding: 1.25rem 0.15rem 0.25rem;
   text-align: left;
   transition:
@@ -400,13 +412,22 @@
 }
 
 .cos-brief-tile:hover {
-  border-top-color: oklch(0.9 0.2 122 / 0.65);
+  border-top-color: color-mix(in oklab, var(--cos-action) 70%, transparent);
   transform: translateY(-2px);
 }
 
 .cos-cta {
   font-weight: 600;
   letter-spacing: -0.01em;
+}
+
+.cos-surface {
+  border: 1px solid color-mix(in oklab, var(--cos-navy) 10%, transparent);
+  background: color-mix(in oklab, white 78%, var(--cos-canvas));
+}
+
+.cos-divider {
+  border-color: color-mix(in oklab, var(--cos-navy) 10%, transparent);
 }
 
 @media (prefers-reduced-motion: reduce) {

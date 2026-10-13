@@ -16,7 +16,7 @@ import { DataStatusStrip } from "@/components/data-status-strip";
 import { LiveFixturesBoard, type BoardRow } from "@/components/live-fixtures-board";
 import { TruthSetupPanel } from "@/components/truth-setup-panel";
 import { FreshnessBadge, StatusBadge } from "@/components/status-badge";
-import { Kicker, Panel, Spark, useGreeting } from "@/components/ui-bits";
+import { EmptyState, Kicker, Panel, Spark, useGreeting } from "@/components/ui-bits";
 import { useDataHealth, useFixtures, useMatchList } from "@/hooks/use-data-layer";
 import { useVoiceAsk } from "@/hooks/use-voice-ask";
 import { ARCHIVE_POLICY } from "@/lib/coverage";
@@ -63,6 +63,14 @@ export function HomeScreen() {
     .filter((player) => player !== undefined)
     .slice(0, 4);
   const myTeams = teams.filter((team) => followedTeams.includes(team.id));
+
+  const historicalRows = useMemo(
+    () =>
+      archive.matches
+        .filter((m) => m.freshness === "HISTORICAL" || m.status === "COMPLETED")
+        .slice(0, 5),
+    [archive.matches],
+  );
 
   const coverageLine = useMemo(() => {
     const counts = health.summary?.freshnessCounts;
@@ -126,18 +134,21 @@ export function HomeScreen() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <section className="cos-hero rounded-[2rem] border border-white/8">
+      <section className="cos-hero rounded-[2rem] border border-border">
         <div className="relative z-[1] px-6 py-12 sm:px-12 sm:py-16 lg:px-16 lg:py-20">
           <div className="cos-hero-in max-w-2xl">
-            <p className="font-display text-[clamp(3rem,8vw,4.75rem)] font-semibold leading-none text-lime">
+            <p className="font-display text-[clamp(3rem,8vw,4.75rem)] font-semibold leading-none text-navy">
               CricketOS
             </p>
-            <h1 className="font-display mt-7 text-[clamp(1.65rem,4vw,2.75rem)] font-medium leading-[1.15] text-balance">
+            <h1 className="font-display mt-7 text-[clamp(1.65rem,4vw,2.75rem)] font-medium leading-[1.15] text-ink text-balance">
               Every match has a story. Find the evidence.
             </h1>
-            <p className="mt-5 max-w-md text-[0.95rem] leading-relaxed text-muted-foreground sm:text-base">
-              {greeting}. Ask grounded questions, browse the historical archive, and open Match
-              Intelligence — facts need a licensed provider; DEMO is opt-in only.
+            <p className="mt-5 max-w-lg text-[0.95rem] leading-relaxed text-muted-foreground sm:text-base">
+              Explore cricket history, understand match situations and investigate the numbers
+              behind every result.
+            </p>
+            <p className="mt-3 text-sm text-slate">
+              {greeting}. Ask CricketOS — facts need a licensed provider; DEMO is opt-in only.
             </p>
           </div>
 
@@ -149,7 +160,7 @@ export function HomeScreen() {
             }}
           >
             <label className="sr-only" htmlFor="home-ask">
-              Ask Cricket Anything
+              Ask CricketOS
             </label>
             <Input
               id="home-ask"
@@ -160,13 +171,13 @@ export function HomeScreen() {
               }}
               placeholder="What happened at Headingley in 2019?"
               aria-invalid={error ? true : undefined}
-              className="h-12! flex-1 border-white/12 bg-black/25 px-4 text-base cos-ask-focus"
+              className="h-12! flex-1 border-border bg-white/80 px-4 text-base cos-ask-focus"
             />
             {voice.supported ? (
               <Button
                 type="button"
                 variant="outline"
-                className="h-12 border-white/12 px-4"
+                className="h-12 border-border px-4"
                 aria-pressed={voice.listening}
                 aria-label={voice.listening ? "Stop listening" : "Dictate question"}
                 onClick={() => {
@@ -182,11 +193,11 @@ export function HomeScreen() {
             ) : null}
             <Button type="submit" className="cos-cta h-12 px-7 text-base" size="lg">
               <ArrowUp />
-              Ask
+              Ask CricketOS
             </Button>
           </form>
           {voice.listening || voice.interim ? (
-            <p className="mt-2 text-sm text-cyan" role="status">
+            <p className="mt-2 text-sm text-blue" role="status">
               Listening… {voice.interim || voice.transcript || "speak now"}
             </p>
           ) : null}
@@ -198,7 +209,7 @@ export function HomeScreen() {
               <button
                 key={q}
                 type="button"
-                className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5 text-left text-xs text-mist transition hover:border-lime/40 hover:text-lime"
+                className="rounded-full border border-border bg-white/70 px-3 py-1.5 text-left text-xs text-navy transition hover:border-action/50 hover:text-action"
                 onClick={() =>
                   submit(
                     q,
@@ -224,11 +235,17 @@ export function HomeScreen() {
             >
               Browse historical archive
             </Button>
-            <Button type="button" variant="outline" className="border-white/12" onClick={openLiveHub}>
+            <Button type="button" variant="outline" className="border-border" onClick={openLiveHub}>
               Match Intelligence
             </Button>
+            <Button type="button" variant="ghost" onClick={() => go("players")}>
+              Players
+            </Button>
+            <Button type="button" variant="ghost" onClick={() => go("teams")}>
+              Teams
+            </Button>
           </div>
-          <p className="cos-hero-in-stagger mt-4 max-w-xl text-xs leading-relaxed text-mist">
+          <p className="cos-hero-in-stagger mt-4 max-w-xl text-xs leading-relaxed text-slate">
             {coverageLine}
           </p>
         </div>
@@ -237,7 +254,7 @@ export function HomeScreen() {
       <section className="mt-10 cos-stagger" aria-labelledby="live-scores-heading">
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <Kicker className="text-cyan">
+            <Kicker className="text-blue">
               <span id="live-scores-heading">Cricket Today</span>
             </Kicker>
             <p className="mt-1.5 text-sm text-muted-foreground">
@@ -250,7 +267,7 @@ export function HomeScreen() {
             type="button"
             variant="outline"
             size="sm"
-            className="cos-cta border-white/12"
+            className="cos-cta border-border"
             onClick={openLiveHub}
           >
             Match Intelligence
@@ -260,7 +277,16 @@ export function HomeScreen() {
           <DataStatusStrip />
         </div>
         {providerReady ? (
-          <LiveFixturesBoard compact limit={8} onSelect={openMatchFromBoard} />
+          fixtures.fixtures.length === 0 ? (
+            <EmptyState
+              title="No live fixtures right now"
+              detail="The provider returned no product rows. Check back when the feed has matches, or browse the historical archive."
+              actionLabel="Open archive"
+              onAction={() => go("archive")}
+            />
+          ) : (
+            <LiveFixturesBoard compact limit={8} onSelect={openMatchFromBoard} />
+          )
         ) : (
           <TruthSetupPanel compact showDemoLink />
         )}
@@ -281,46 +307,54 @@ export function HomeScreen() {
           </Button>
         </div>
         {archive.status === "loading" ? (
-          <p className="text-sm text-muted-foreground">Loading `/api/matches`…</p>
+          <EmptyState title="Loading archive…" detail="Fetching verified `/api/matches` rows." />
         ) : archive.status === "unavailable" ? (
-          <p className="text-sm text-gold">Archive UNAVAILABLE</p>
+          <EmptyState
+            title="Archive unavailable"
+            detail="Could not load historical matches. Try again shortly."
+            tone="warn"
+          />
+        ) : historicalRows.length === 0 ? (
+          <EmptyState
+            title="No historical rows yet"
+            detail="Filters may be empty in this store. Open the full archive to adjust coverage."
+            actionLabel="Full archive"
+            onAction={() => go("archive")}
+          />
         ) : (
-          <ul className="divide-y divide-white/8">
-            {archive.matches
-              .filter((m) => m.freshness === "HISTORICAL" || m.status === "COMPLETED")
-              .slice(0, 5)
-              .map((m) => (
-                <li key={m.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
-                  <button
-                    type="button"
-                    className="text-left font-medium transition hover:text-lime"
-                    onClick={() => {
-                      setMatchFocus({
-                        id: m.id,
-                        title: m.title,
-                        status: String(m.status),
-                        freshness: String(m.freshness),
-                        venue: m.venue,
-                        format: m.format,
-                        series: m.series,
-                        score: m.score,
-                        homeName: m.homeName ?? m.teams?.home,
-                        awayName: m.awayName ?? m.teams?.away,
-                        isDemo: false,
-                        isSeed: m.id.startsWith("seed-"),
-                        provenance: m.provenance,
-                      });
-                      go("match");
-                    }}
-                  >
-                    {m.title}
-                  </button>
-                  <span className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <FreshnessBadge freshness={m.freshness as FreshnessStatus} />
-                    {m.venue}
-                  </span>
-                </li>
-              ))}
+          <ul className="divide-y divide-border">
+            {historicalRows.map((m) => (
+              <li key={m.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
+                <button
+                  type="button"
+                  className="text-left font-medium text-ink transition hover:text-action"
+                  onClick={() => {
+                    setMatchFocus({
+                      id: m.id,
+                      title: m.title,
+                      status: String(m.status),
+                      freshness: String(m.freshness),
+                      venue: m.venue,
+                      format: m.format,
+                      series: m.series,
+                      score: m.score,
+                      homeName: m.homeName ?? m.teams?.home,
+                      awayName: m.awayName ?? m.teams?.away,
+                      isDemo: false,
+                      isSeed: m.id.startsWith("seed-"),
+                      provenance: m.provenance,
+                    });
+                    go("match");
+                  }}
+                >
+                  {m.title}
+                </button>
+                <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <FreshnessBadge freshness={m.freshness as FreshnessStatus} />
+                  {m.venue}
+                </span>
+              </li>
+            ))}
           </ul>
         )}
       </section>
@@ -330,7 +364,7 @@ export function HomeScreen() {
           Optional:{" "}
           <button
             type="button"
-            className="text-gold underline-offset-2 hover:underline"
+            className="text-action underline-offset-2 hover:underline"
             onClick={() => openDemoPlayground()}
           >
             Try DEMO playground
@@ -342,12 +376,12 @@ export function HomeScreen() {
       {recentChats.length > 0 ? (
         <section className="mt-10 cos-stagger">
           <Kicker>Continue investigating</Kicker>
-          <ul className="mt-3 divide-y divide-white/8">
+          <ul className="mt-3 divide-y divide-border">
             {recentChats.slice(0, 4).map((chat) => (
               <li key={chat.id}>
                 <button
                   type="button"
-                  className="w-full py-3 text-left transition hover:text-lime"
+                  className="w-full py-3 text-left transition hover:text-action"
                   onClick={() => go("ask", { seedAsk: chat.question })}
                 >
                   <span className="block text-sm font-medium">{chat.question}</span>
@@ -369,12 +403,12 @@ export function HomeScreen() {
                   No fixture-derived briefing yet — waiting on provider rows.
                 </p>
               ) : (
-                <ul className="mt-5 space-y-0 divide-y divide-white/8">
+                <ul className="mt-5 space-y-0 divide-y divide-border">
                   {briefing.slice(0, 3).map((item) => (
                     <li key={item.id}>
                       <button
                         type="button"
-                        className="w-full py-4 text-left transition hover:text-lime"
+                        className="w-full py-4 text-left transition hover:text-action"
                         onClick={() => go(item.screen)}
                       >
                         <span className="block text-base font-medium tracking-tight">
@@ -390,19 +424,19 @@ export function HomeScreen() {
               )}
             </div>
 
-            <div className="flex flex-col gap-8 border-t border-white/10 pt-8 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-10">
+            <div className="flex flex-col gap-8 border-t border-border pt-8 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-10">
               {fixtureHighlight ? (
                 <button
                   type="button"
                   onClick={() => setShowFixture(true)}
-                  className="text-left transition hover:text-lime"
+                  className="text-left transition hover:text-action"
                 >
                   <div className="flex flex-wrap items-center gap-2">
                     <StatusBadge status={fixtureStatus} />
                     <FreshnessBadge freshness={fixtureFreshness} />
-                    <Kicker>Fixture</Kicker>
+                    <Kicker>Featured fixture</Kicker>
                   </div>
-                  <p className="font-display mt-3 text-xl tracking-tight">
+                  <p className="font-display mt-3 text-xl tracking-tight text-navy">
                     {fixtureHighlight.title}
                   </p>
                   <p className="mt-1 text-sm text-muted-foreground">
@@ -411,12 +445,15 @@ export function HomeScreen() {
                   </p>
                 </button>
               ) : (
-                <p className="text-sm text-muted-foreground">No provider fixtures yet.</p>
+                <EmptyState
+                  title="No featured match"
+                  detail="Featured fixtures appear when the provider returns product rows."
+                />
               )}
             </div>
           </div>
 
-          <Panel className="mt-12 border-white/8 bg-card/40">
+          <Panel className="mt-12">
             <Kicker>Your intelligence briefing</Kicker>
             <p className="mt-2 max-w-lg text-sm leading-relaxed text-muted-foreground">
               Derived from provider fixtures only — series, venue, status, timestamps.
@@ -426,12 +463,12 @@ export function HomeScreen() {
                 I don&apos;t have fixture-derived items in the dataset yet.
               </p>
             ) : (
-              <ul className="mt-5 divide-y divide-white/8">
+              <ul className="mt-5 divide-y divide-border">
                 {briefing.map((item) => (
                   <li key={item.id}>
                     <button
                       type="button"
-                      className="flex w-full gap-3 py-4 text-left transition hover:text-lime"
+                      className="flex w-full gap-3 py-4 text-left transition hover:text-action"
                       onClick={() => go(item.screen)}
                     >
                       <span aria-hidden className="mt-0.5 text-muted-foreground">
@@ -458,13 +495,13 @@ export function HomeScreen() {
           {myTeams.length === 0 ? (
             <p className="mt-3 text-sm text-muted-foreground">Pick sides in onboarding or Feed.</p>
           ) : (
-            <ul className="mt-4 divide-y divide-white/8">
+            <ul className="mt-4 divide-y divide-border">
               {myTeams.map((team) => (
                 <li key={team.id}>
                   <button
                     type="button"
                     onClick={() => go("teams", { teamId: team.id })}
-                    className="flex w-full items-baseline justify-between gap-3 py-3.5 text-left transition hover:text-lime"
+                    className="flex w-full items-baseline justify-between gap-3 py-3.5 text-left transition hover:text-action"
                   >
                     <span className="font-medium tracking-tight">{team.name}</span>
                     <span className="text-[11px] tracking-[0.16em] text-muted-foreground uppercase">
@@ -481,16 +518,16 @@ export function HomeScreen() {
           {mine.length === 0 ? (
             <p className="mt-3 text-sm text-muted-foreground">Follow players for profile updates.</p>
           ) : (
-            <ul className="mt-4 divide-y divide-white/8">
+            <ul className="mt-4 divide-y divide-border">
               {mine.map((player) => (
                 <li key={player.id}>
                   <button
                     type="button"
                     onClick={() => go("players", { playerId: player.id })}
-                    className="flex w-full items-center gap-4 py-3.5 text-left transition hover:text-lime"
+                    className="flex w-full items-center gap-4 py-3.5 text-left transition hover:text-action"
                   >
                     {player.catalogStub || !player.statsVerified ? (
-                      <span className="flex size-10 items-center justify-center rounded-full border border-white/10 text-[10px] tracking-wide text-muted-foreground uppercase">
+                      <span className="flex size-10 items-center justify-center rounded-full border border-border text-[10px] tracking-wide text-muted-foreground uppercase">
                         {player.role.slice(0, 3)}
                       </span>
                     ) : (

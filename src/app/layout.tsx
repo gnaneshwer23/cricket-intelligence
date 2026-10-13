@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
 });
 
-/* Geometric display — retail-sports clarity (Voltace cue), not editorial serif. */
+/* Geometric display — bold editorial CricketOS identity. */
 const syne = Syne({
   subsets: ["latin"],
   variable: "--font-syne",
@@ -22,14 +22,14 @@ const syne = Syne({
 export const metadata: Metadata = {
   title: "CricketOS · Cricket Intelligence",
   description:
-    "Follow the match. Understand the game. Explore what happens next — grounded cricket intelligence with honest DEMO labels.",
+    "Understand every match. Explore the evidence. Ask cricket anything — grounded cricket intelligence with honest DEMO labels.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${syne.variable} dark h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${syne.variable} h-full antialiased`}
     >
       <body className="min-h-full">
         <TooltipProvider>{children}</TooltipProvider>

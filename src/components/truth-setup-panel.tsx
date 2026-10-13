@@ -18,10 +18,10 @@ export function TruthSetupPanel({
 }: Props) {
   return (
     <div
-      className={`rounded-[1.75rem] border border-white/8 bg-card/40 ${compact ? "p-5 sm:p-6" : "p-6 sm:p-8"} ${className}`}
+      className={`rounded-[1.75rem] border border-border bg-card/80 ${compact ? "p-5 sm:p-6" : "p-6 sm:p-8"} ${className}`}
     >
-      <Kicker className="text-gold">Truth mode · no provider key</Kicker>
-      <h2 className="font-display mt-3 text-2xl font-semibold tracking-tight text-balance sm:text-3xl">
+      <Kicker className="text-action">Truth mode · no provider key</Kicker>
+      <h2 className="font-display mt-3 text-2xl font-semibold tracking-tight text-navy text-balance sm:text-3xl">
         {SETUP_HEADLINE}
       </h2>
       <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">
@@ -49,7 +49,7 @@ export function TruthSetupPanel({
             type="button"
             size="sm"
             variant="ghost"
-            className="text-gold"
+            className="text-action"
             onClick={() => openDemoPlayground()}
           >
             Try DEMO playground

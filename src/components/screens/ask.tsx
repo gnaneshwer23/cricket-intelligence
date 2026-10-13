@@ -96,7 +96,7 @@ export function AskScreen() {
     <div className="mx-auto flex max-w-3xl flex-col">
       <PageTitle
         kicker="Ask CricketOS"
-        title="Ask Cricket Anything."
+        title="Ask cricket anything."
         lede="Intent → retrieve → calculate → explain. Figures come only from a licensed provider feed or the labelled DEMO playground — Copilot will not invent match scores or stats. Voice uses the same path when your browser supports it."
       />
 
@@ -105,8 +105,8 @@ export function AskScreen() {
       </div>
 
       {matchFocus ? (
-        <Panel className="mb-4 border-white/8 bg-card/40">
-          <Kicker className="text-cyan">Match context</Kicker>
+        <Panel className="mb-4 cos-match-enter">
+          <Kicker className="text-blue">Match context</Kicker>
           <p className="mt-2 text-sm font-medium">{matchFocus.title}</p>
           <p className="mt-1 text-xs text-muted-foreground">
             {matchFocus.freshness}
@@ -135,7 +135,7 @@ export function AskScreen() {
       ) : null}
 
       {askMode === "historical" ? (
-        <Panel className="mb-4 border-white/8 bg-card/40">
+        <Panel className="mb-4 border-border bg-card/40">
           <Kicker>Historical archive · normalised</Kicker>
           {matchList.status === "unavailable" ? (
             <p className="mt-2 text-sm text-gold">Archive UNAVAILABLE — not claiming LIVE</p>
@@ -149,7 +149,7 @@ export function AskScreen() {
                   <li key={m.id} className="flex flex-wrap items-center justify-between gap-2">
                     <button
                       type="button"
-                      className="text-left font-medium transition hover:text-lime"
+                      className="text-left font-medium transition hover:text-action"
                       onClick={() => submit(m.title)}
                     >
                       {m.title}

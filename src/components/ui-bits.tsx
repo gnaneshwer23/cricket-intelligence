@@ -31,12 +31,57 @@ export function Panel({
   return (
     <section
       className={cn(
-        "rounded-[1.5rem] border border-white/8 bg-card/50 p-5 sm:p-7",
+        "rounded-[1.5rem] border border-border bg-card/80 p-5 sm:p-7",
         className,
       )}
     >
       {children}
     </section>
+  );
+}
+
+export function EmptyState({
+  title,
+  detail,
+  actionLabel,
+  onAction,
+  tone = "neutral",
+}: {
+  title: string;
+  detail?: string;
+  actionLabel?: string;
+  onAction?: () => void;
+  tone?: "neutral" | "warn" | "error";
+}) {
+  const toneClass =
+    tone === "warn"
+      ? "text-gold"
+      : tone === "error"
+        ? "text-destructive"
+        : "text-navy";
+  return (
+    <div
+      className="rounded-[1.25rem] border border-dashed border-border bg-card/60 px-5 py-8 text-center"
+      role="status"
+    >
+      <p className={cn("font-display text-lg font-semibold tracking-tight", toneClass)}>
+        {title}
+      </p>
+      {detail ? (
+        <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
+          {detail}
+        </p>
+      ) : null}
+      {actionLabel && onAction ? (
+        <button
+          type="button"
+          className="mt-4 text-sm font-medium text-action underline-offset-2 hover:underline"
+          onClick={onAction}
+        >
+          {actionLabel}
+        </button>
+      ) : null}
+    </div>
   );
 }
 
@@ -71,7 +116,7 @@ export function PageTitle({
   return (
     <header className="mb-8 max-w-3xl">
       <Kicker>{kicker}</Kicker>
-      <h1 className="font-display mt-3 text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
+      <h1 className="font-display mt-3 text-3xl font-semibold tracking-tight text-navy text-balance sm:text-4xl">
         {title}
       </h1>
       {lede ? (
@@ -109,7 +154,7 @@ export function WinSplit({
         {draw ? <span className="text-gold">Draw {draw}%</span> : null}
         <span className="text-ind">India {ind}%</span>
       </div>
-      <div className="flex h-2.5 overflow-hidden rounded-full bg-white/10" aria-hidden>
+      <div className="flex h-2.5 overflow-hidden rounded-full bg-navy/10" aria-hidden>
         <div className="bg-eng" style={{ width: `${eng}%` }} />
         {draw ? <div className="bg-gold" style={{ width: `${draw}%` }} /> : null}
         <div className="bg-ind" style={{ width: `${ind}%` }} />
@@ -131,7 +176,7 @@ export function Spark({ values, label }: { values: number[]; label: string }) {
     })
     .join(" ");
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="h-9 w-28 text-lime" role="img" aria-label={label}>
+    <svg viewBox={`0 0 ${width} ${height}`} className="h-9 w-28 text-blue" role="img" aria-label={label}>
       <polyline fill="none" stroke="currentColor" strokeWidth="2" points={points} />
     </svg>
   );

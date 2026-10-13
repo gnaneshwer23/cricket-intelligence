@@ -592,7 +592,7 @@ function WormChart({
             <button
               key={`chip-${p.ballIndex}`}
               type="button"
-              className="rounded-lg border border-border px-2 py-1 text-[11px] hover:border-lime/40 focus-visible:ring-2 focus-visible:ring-lime"
+              className="rounded-lg border border-border px-2 py-1 text-[11px] hover:border-action/50 focus-visible:ring-2 focus-visible:ring-lime"
               onClick={() => onSelect(p.ballIndex, p.graphEventId)}
             >
               {p.overs}

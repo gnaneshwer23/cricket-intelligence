@@ -181,7 +181,7 @@ export function PlayersScreen() {
                     <button
                       key={example}
                       type="button"
-                      className="rounded-full border border-border bg-muted/40 px-2.5 py-1 text-xs hover:border-lime/40 hover:text-lime"
+                      className="rounded-full border border-border bg-muted/40 px-2.5 py-1 text-xs hover:border-action/50 hover:text-action"
                       onClick={() => setQuery(example)}
                     >
                       {example}
@@ -225,7 +225,7 @@ export function PlayersScreen() {
 
         <div>
           {!player ? (
-            <Panel className="border-white/8 bg-card/40">
+            <Panel className="border-border bg-card/40">
               <Kicker>Search first</Kicker>
               <h2 className="font-display mt-3 text-3xl tracking-tight sm:text-4xl">
                 Find any player
@@ -239,7 +239,7 @@ export function PlayersScreen() {
                   <button
                     key={example}
                     type="button"
-                    className="rounded-full border border-border bg-muted/40 px-3 py-1.5 text-sm hover:border-lime/40 hover:text-lime"
+                    className="rounded-full border border-border bg-muted/40 px-3 py-1.5 text-sm hover:border-action/50 hover:text-action"
                     onClick={() => setQuery(example)}
                   >
                     {example}
@@ -291,7 +291,7 @@ export function PlayersScreen() {
           </p>
 
           {player.catalogStub ? (
-            <Panel className="mt-6 border-white/8 bg-card/40">
+            <Panel className="mt-6 border-border bg-card/40">
               <Kicker>Verified stats unavailable</Kicker>
               <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
                 This catalog stub has no licensed provider stats. DNA percentages, form sparklines,

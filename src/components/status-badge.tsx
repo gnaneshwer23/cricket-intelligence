@@ -9,25 +9,25 @@ import {
 import { cn } from "cn";
 
 const statusTone: Record<MatchLifecycle, string> = {
-  LIVE: "border-lime/50 bg-lime/15 text-lime",
-  COMPLETED: "border-border bg-muted/60 text-muted-foreground",
-  UPCOMING: "border-eng/40 bg-eng/10 text-eng",
+  LIVE: "border-pitch/40 bg-pitch/10 text-pitch",
+  COMPLETED: "border-border bg-muted/70 text-muted-foreground",
+  UPCOMING: "border-blue/35 bg-blue/8 text-blue",
   DEMO: "border-gold/50 bg-gold/10 text-gold",
 };
 
 const freshnessTone: Record<FreshnessStatus, string> = {
-  LIVE: "border-lime/50 bg-lime/15 text-lime",
+  LIVE: "border-pitch/40 bg-pitch/10 text-pitch",
   STALE: "border-gold/40 bg-gold/10 text-gold",
-  UNAVAILABLE: "border-border bg-muted/60 text-muted-foreground",
+  UNAVAILABLE: "border-border bg-muted/70 text-muted-foreground",
   DEMO: "border-gold/50 bg-gold/10 text-gold",
   HISTORICAL: "border-border text-muted-foreground",
-  UPCOMING: "border-eng/40 bg-eng/10 text-eng",
+  UPCOMING: "border-blue/35 bg-blue/8 text-blue",
 };
 
 const kindTone: Record<DataKind, string> = {
-  fact: "border-lime/40 text-lime",
+  fact: "border-pitch/35 text-pitch",
   historical: "border-border text-muted-foreground",
-  model: "border-eng/40 text-eng",
+  model: "border-blue/35 text-blue",
   hypothetical: "border-gold/40 text-gold",
   demo: "border-gold/50 text-gold",
 };
@@ -97,7 +97,7 @@ export function ProvenanceStrip({
 }) {
   return (
     <p className="text-[11px] leading-relaxed text-muted-foreground" role="note">
-      <span className="text-gold tracking-[0.12em] uppercase">Provenance · </span>
+      <span className="text-action tracking-[0.12em] uppercase">Provenance · </span>
       {source} · as of {asOf}
       {note ? ` · ${note}` : null}
     </p>

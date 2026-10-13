@@ -387,7 +387,7 @@ export function MatchScreen() {
               type="button"
               size="sm"
               variant="outline"
-              className="cos-cta border-white/12"
+              className="cos-cta border-border"
               onClick={() =>
                 go("explorer", { explorerFocus: { chart: "worm", from: "DEMO playground" } })
               }
@@ -399,7 +399,7 @@ export function MatchScreen() {
             type="button"
             size="sm"
             variant="outline"
-            className="border-white/12"
+            className="border-border"
             onClick={() => go("archive")}
           >
             Historical Archive
@@ -435,7 +435,7 @@ export function MatchScreen() {
           </div>
 
           {!providerReady ? (
-            <Panel className="mt-4 border-white/8 bg-card/40">
+            <Panel className="mt-4 border-border bg-card/40">
               <div className="flex flex-wrap items-end justify-between gap-2">
                 <Kicker className="text-gold">Historical archive · labelled</Kicker>
                 <Button type="button" size="sm" variant="secondary" onClick={() => go("archive")}>
@@ -454,13 +454,13 @@ export function MatchScreen() {
                   No archive rows available in this session.
                 </p>
               ) : (
-                <ul className="mt-4 divide-y divide-white/8">
+                <ul className="mt-4 divide-y divide-border">
                   {archiveRows.map((m) => (
                     <li key={m.id}>
                       <button
                         type="button"
-                        className={`flex w-full flex-wrap items-baseline justify-between gap-2 py-3 text-left transition hover:text-lime ${
-                          selectedMatchId === m.id ? "text-lime" : ""
+                        className={`flex w-full flex-wrap items-baseline justify-between gap-2 py-3 text-left transition hover:text-action ${
+                          selectedMatchId === m.id ? "text-action" : ""
                         }`}
                         onClick={() => pickArchive(m)}
                       >
@@ -507,7 +507,7 @@ export function MatchScreen() {
       ) : null}
 
       {providerReady && !selectedMatchId && !showDemoIntel ? (
-        <Panel className="mt-6 border-white/8 bg-card/40">
+        <Panel className="mt-6 border-border bg-card/40">
           <Kicker>Select a fixture</Kicker>
           <p className="mt-2 text-sm text-muted-foreground">
             Choose a provider row above for scores and provenance. Optional:{" "}
@@ -525,7 +525,7 @@ export function MatchScreen() {
 
       {selectedMatchId && !showDemoIntel && selectedRow ? (
         <div className="mt-6 space-y-4">
-          <Panel className="border-white/8 bg-card/40">
+          <Panel className="border-border bg-card/40">
             <div className="flex flex-wrap items-center gap-2">
               <StatusBadge status={selectedRow.status} />
               <FreshnessBadge freshness={selectedRow.freshness} />
@@ -534,7 +534,7 @@ export function MatchScreen() {
                   Seed archive
                 </span>
               ) : (
-                <span className="text-[10px] tracking-[0.14em] text-cyan uppercase">
+                <span className="text-[10px] tracking-[0.14em] text-blue uppercase">
                   Provider
                 </span>
               )}
@@ -552,7 +552,7 @@ export function MatchScreen() {
                 {selectedRow.score.runs}
                 <span className="text-lime">/{selectedRow.score.wickets}</span>
                 {selectedRow.score.overs ? (
-                  <span className="ml-3 font-mono text-base text-cyan">
+                  <span className="ml-3 font-mono text-base text-blue">
                     {selectedRow.score.overs} ov
                   </span>
                 ) : null}
@@ -575,7 +575,7 @@ export function MatchScreen() {
             ) : null}
           </Panel>
 
-          <Panel className="border-white/8 bg-card/30">
+          <Panel className="border-border bg-card/30">
             <Kicker>Situation</Kicker>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
               {selectedRow.status === "UPCOMING"
@@ -611,7 +611,7 @@ export function MatchScreen() {
             )}
           </Panel>
 
-          <Panel className="border-white/8 bg-card/30">
+          <Panel className="border-border bg-card/30">
             <Kicker>Continue</Kicker>
             <p className="mt-2 text-sm text-muted-foreground">
               Ask with this match in focus, or open a transparent What-If with stated assumptions.

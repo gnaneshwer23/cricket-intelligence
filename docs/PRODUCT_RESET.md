@@ -105,7 +105,7 @@ Header (teams, competition, score, innings, status, source/freshness) → situat
 
 ## Motion + Historical Intelligence extension (2026-10-13)
 
-See **`docs/DESIGN.md`** for IA, tokens (navy `#03314C` family + lime), and motion rules.
+See **`docs/DESIGN.md`** for IA, tokens, and motion rules.
 
 | Addition | Status |
 |----------|--------|
@@ -117,6 +117,16 @@ See **`docs/DESIGN.md`** for IA, tokens (navy `#03314C` family + lime), and moti
 | Voice mic only when Web Speech exists; TTS stop/replay; type fallback | IMPLEMENTED |
 | `prefers-reduced-motion` disables hero/match/filter/score/live animations | IMPLEMENTED |
 | Licensed LIVE / full archive / durable Postgres / LLM | UNAVAILABLE OR BLOCKED |
+
+## Visual redesign + product experience reset (2026-10-13)
+
+| Change | Status |
+|--------|--------|
+| Soft off-white canvas · navy · cricket blue · near-black type · orange CTA | IMPLEMENTED |
+| Pitch green semantic-only (not default CTA) | IMPLEMENTED |
+| Hero copy + Ask CricketOS prominence; honest empty live | IMPLEMENTED |
+| Shared matchFocus + Match/Ask return path | PRESERVED (prior reset) |
+| Architecture / adapters / truth mode / contracts | PRESERVED — no rewrite |
 
 ## Acceptance criteria (reset)
 

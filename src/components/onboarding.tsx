@@ -79,7 +79,7 @@ export function Onboarding() {
             </button>
           </div>
           <Progress value={progress} className="mt-3 h-1.5" />
-          <p className="font-display mt-4 text-4xl tracking-tight text-lime sm:text-5xl">CricketOS</p>
+          <p className="font-display mt-4 text-4xl tracking-tight text-navy sm:text-5xl">CricketOS</p>
           <h2 id="onboarding-title" className="font-display mt-2 text-2xl tracking-tight sm:text-3xl">
             {step === 0 && "Pick your cricket world"}
             {step === 1 && "Which nations do you follow?"}
@@ -108,7 +108,7 @@ export function Onboarding() {
                   [String(players.length), "Player profiles"],
                 ].map(([value, label]) => (
                   <div key={label} className="rounded-2xl border border-border bg-muted/40 px-4 py-3">
-                    <p className="font-display text-3xl text-lime">{value}</p>
+                    <p className="font-display text-3xl text-navy">{value}</p>
                     <p className="mt-1 text-xs tracking-[0.14em] text-muted-foreground uppercase">
                       {label}
                     </p>

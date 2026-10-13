@@ -24,7 +24,7 @@ export function MatchFocusStrip() {
 
   return (
     <div
-      className="mb-5 flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-card/50 px-3 py-2.5"
+      className="mb-5 flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-card/90 px-3 py-2.5 shadow-[0_1px_0_color-mix(in_oklab,var(--cos-navy)_4%,transparent)]"
       role="status"
       aria-label="Active match context"
     >
@@ -33,9 +33,11 @@ export function MatchFocusStrip() {
       </span>
       <StatusBadge status={status === "COMPLETED" ? "COMPLETED" : status} />
       <FreshnessBadge freshness={freshness} />
-      <span className="min-w-0 flex-1 truncate text-sm font-medium">{matchFocus.title}</span>
+      <span className="min-w-0 flex-1 truncate text-sm font-medium text-navy">
+        {matchFocus.title}
+      </span>
       {score ? (
-        <span className="font-mono text-xs text-cyan tabular-nums">{score}</span>
+        <span className="font-mono text-xs text-blue tabular-nums">{score}</span>
       ) : null}
       <Button
         type="button"

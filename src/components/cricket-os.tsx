@@ -106,13 +106,13 @@ function Shell() {
         inert={!onboarded ? true : undefined}
         aria-hidden={!onboarded ? true : undefined}
       >
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-white/8 bg-sidebar/90 px-3 py-6 backdrop-blur-xl lg:flex">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-sidebar-border bg-sidebar px-3 py-6 lg:flex">
         <div className="px-2">
-          <p className="font-display text-[1.65rem] font-semibold leading-none text-lime">
+          <p className="font-display text-[1.65rem] font-semibold leading-none text-white">
             CricketOS
           </p>
-          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-            Intelligence layer for cricket — what happened, why, evidence, what next.
+          <p className="mt-2 text-xs leading-relaxed text-sidebar-foreground/70">
+            Understand every match. Explore the evidence. Ask cricket anything.
           </p>
         </div>
         <nav className="mt-8 flex flex-1 flex-col gap-0.5" aria-label="Primary">
@@ -125,7 +125,9 @@ function Shell() {
                 type="button"
                 variant={active ? "default" : "ghost"}
                 className={`h-10 justify-start px-3 ${
-                  active ? "cos-cta shadow-[inset_2px_0_0_0_var(--color-lime)]" : ""
+                  active
+                    ? "cos-cta bg-action text-primary-foreground shadow-[inset_2px_0_0_0_var(--cos-action)] hover:bg-action/90"
+                    : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground"
                 }`}
                 aria-current={active ? "page" : undefined}
                 onClick={() => go(item.id)}
@@ -135,7 +137,7 @@ function Shell() {
               </Button>
             );
           })}
-          <p className="mt-6 px-3 text-[10px] tracking-[0.2em] text-muted-foreground/80 uppercase">
+          <p className="mt-6 px-3 text-[10px] tracking-[0.2em] text-sidebar-foreground/50 uppercase">
             Labs & more
           </p>
           {laterNav.map((item) => {
@@ -145,9 +147,11 @@ function Shell() {
               <Button
                 key={item.id}
                 type="button"
-                variant={active ? "secondary" : "ghost"}
-                className={`h-9 justify-start px-3 text-muted-foreground ${
-                  active ? "text-foreground shadow-[inset_2px_0_0_0_var(--color-cyan)]" : ""
+                variant="ghost"
+                className={`h-9 justify-start px-3 ${
+                  active
+                    ? "bg-sidebar-accent text-sidebar-foreground shadow-[inset_2px_0_0_0_var(--cos-blue)]"
+                    : "text-sidebar-foreground/65 hover:bg-sidebar-accent hover:text-sidebar-foreground"
                 }`}
                 aria-current={active ? "page" : undefined}
                 onClick={() => go(item.id)}
@@ -158,23 +162,23 @@ function Shell() {
             );
           })}
         </nav>
-        <p className="px-2 text-[11px] leading-relaxed text-muted-foreground">
+        <p className="px-2 text-[11px] leading-relaxed text-sidebar-foreground/55">
           The match is the centre
-          <span className="mt-1.5 block text-muted-foreground/80">
+          <span className="mt-1.5 block text-sidebar-foreground/40">
             Truth mode until a provider key is set. DEMO playground is opt-in only.
           </span>
         </p>
       </aside>
 
       <div className="lg:pl-60">
-        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-white/8 bg-background/80 px-4 py-3.5 backdrop-blur-xl lg:hidden">
+        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-canvas/85 px-4 py-3.5 backdrop-blur-xl lg:hidden">
           <div>
-            <p className="font-display text-xl font-semibold text-lime">CricketOS</p>
+            <p className="font-display text-xl font-semibold text-navy">CricketOS</p>
             <p className="text-[10px] tracking-[0.18em] text-muted-foreground uppercase">
               Intelligence layer
             </p>
           </div>
-          <p className="text-[10px] tracking-[0.14em] text-gold uppercase">Match centre</p>
+          <p className="text-[10px] tracking-[0.14em] text-action uppercase">Match centre</p>
         </header>
         <main id="content" className="px-4 pt-6 pb-28 lg:px-10 lg:pt-10 lg:pb-20">
           <MatchFocusStrip />
@@ -193,7 +197,7 @@ function Shell() {
       </div>
 
       <nav
-        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-white/8 bg-background/92 px-1.5 py-2 backdrop-blur-xl lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-border bg-canvas/92 px-1.5 py-2 backdrop-blur-xl lg:hidden"
         aria-label="Primary"
       >
         {primaryNav.map((item) => {
@@ -205,7 +209,7 @@ function Shell() {
               type="button"
               className={`flex flex-col items-center gap-1 rounded-lg px-1 py-1.5 text-[10px] transition ${
                 active
-                  ? "text-lime"
+                  ? "text-action"
                   : "text-muted-foreground hover:text-foreground"
               }`}
               onClick={() => go(item.id)}
@@ -219,7 +223,7 @@ function Shell() {
           type="button"
           className={`flex flex-col items-center gap-1 rounded-lg px-1 py-1.5 text-[10px] transition ${
             laterNav.some((item) => item.id === screen)
-              ? "text-lime"
+              ? "text-action"
               : "text-muted-foreground hover:text-foreground"
           }`}
           onClick={() => setMore(true)}

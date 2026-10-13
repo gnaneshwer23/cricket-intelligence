@@ -108,7 +108,7 @@ export function TeamsScreen() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     {row.playerId && getPlayer(row.playerId) ? (
-                      <button type="button" className="text-left font-medium hover:text-lime" onClick={() => go("players", { playerId: row.playerId })}>
+                      <button type="button" className="text-left font-medium hover:text-action" onClick={() => go("players", { playerId: row.playerId })}>
                         {row.name}
                       </button>
                     ) : (

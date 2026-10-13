@@ -130,8 +130,8 @@ export function ArchiveScreen() {
         <DataStatusStrip />
       </div>
 
-      <Panel className="border-white/8 bg-card/40 cos-panel-in">
-        <Kicker className="text-cyan">Coverage honesty</Kicker>
+      <Panel className="border-border bg-card/40 cos-panel-in">
+        <Kicker className="text-blue">Coverage honesty</Kicker>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           {archive.archive?.claim ?? ARCHIVE_POLICY.claim}
         </p>
@@ -319,7 +319,7 @@ export function ArchiveScreen() {
           </p>
         ) : null}
         {archive.status === "ok" && archive.matches.length === 0 ? (
-          <Panel className="border-white/8">
+          <Panel className="border-border">
             <p className="text-sm text-muted-foreground">
               No matches for these filters. That is an empty state — not missing invented data.
               Try widening year range or clearing player filter (seed scorecards often lack
@@ -328,7 +328,7 @@ export function ArchiveScreen() {
           </Panel>
         ) : null}
 
-        <ul className="divide-y divide-white/8">
+        <ul className="divide-y divide-border">
           {archive.matches.map((row, index) => (
             <li
               key={row.id}
@@ -341,7 +341,7 @@ export function ArchiveScreen() {
                     <StatusBadge status={row.status as MatchLifecycle} />
                     <FreshnessBadge freshness={row.freshness as FreshnessStatus} />
                     {row.coverage ? (
-                      <span className="rounded-md border border-white/10 px-2 py-0.5 text-[10px] tracking-wide text-mist uppercase">
+                      <span className="rounded-md border border-border px-2 py-0.5 text-[10px] tracking-wide text-slate uppercase">
                         {coverageLabel(row.coverage.level)}
                         {row.coverage.gender === "women" ? " · women’s" : ""}
                       </span>
@@ -349,7 +349,7 @@ export function ArchiveScreen() {
                   </div>
                   <button
                     type="button"
-                    className="font-display mt-2 text-left text-xl tracking-tight transition hover:text-lime"
+                    className="font-display mt-2 text-left text-xl tracking-tight transition hover:text-action"
                     onClick={() => openMatch(row)}
                   >
                     {row.title}
