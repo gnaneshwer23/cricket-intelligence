@@ -38,19 +38,27 @@ export function mapLifecycle(
   opts?: { demo?: boolean; liveFlag?: boolean },
 ): MatchLifecycle {
   if (opts?.demo) return "DEMO";
-  const s = (statusRaw ?? "").toLowerCase();
+  const s = (statusRaw ?? "").toLowerCase().trim();
   if (opts?.liveFlag || s.includes("live") || s.includes("in progress")) return "LIVE";
-  if (s.includes("upcoming") || s.includes("ns") || s.includes("not started") || s.includes("scheduled")) {
-    return "UPCOMING";
-  }
+  // Completed checks BEFORE short tokens — "finished" contains "ns" as a substring.
   if (
     s.includes("complete") ||
     s.includes("finished") ||
     s.includes("result") ||
-    s.includes("won") ||
+    /\bwon\b/.test(s) ||
     s.includes("draw")
   ) {
     return "COMPLETED";
+  }
+  // Sportmonks uses status code "NS" (not started) — match as a word, not substring.
+  if (
+    s.includes("upcoming") ||
+    s.includes("not started") ||
+    s.includes("scheduled") ||
+    /\bns\b/.test(s) ||
+    s === "ns"
+  ) {
+    return "UPCOMING";
   }
   return "UPCOMING";
 }

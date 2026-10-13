@@ -87,7 +87,8 @@ export function normaliseSeedMatch(row: Record<string, unknown>): DomainMatch {
   // Hard guard: seed path never emits LIVE
   const safeLifecycle = lifecycle === "LIVE" ? "COMPLETED" : lifecycle;
   const freshness = lifecycleToFreshness(safeLifecycle);
-  const idRaw = String(row.id);
+  // Rows already use seed-* ids — avoid seed-seed-* doubling from slugId("seed", ...).
+  const idRaw = String(row.id).replace(/^seed-/, "");
   const teams = Array.isArray(row.teams) ? row.teams.map(String) : [];
   const homeName = teams[0] ?? base.teams.home.name;
   const awayName = teams[1] ?? base.teams.away.name;

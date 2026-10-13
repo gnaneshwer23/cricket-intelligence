@@ -20,8 +20,10 @@ describe("seed historical normalisation", () => {
   it("builds quality-passing seed bundle with HISTORICAL + UPCOMING", () => {
     const bundle = buildSeedBundle();
     assert.ok(bundle.matches.length >= 4);
-    assert.ok(bundle.matches.some((m) => m.freshness === "HISTORICAL"));
-    assert.ok(bundle.matches.some((m) => m.freshness === "UPCOMING"));
+    const historical = bundle.matches.filter((m) => m.freshness === "HISTORICAL");
+    const upcoming = bundle.matches.filter((m) => m.freshness === "UPCOMING");
+    assert.ok(historical.length >= 4, `expected ≥4 HISTORICAL, got ${historical.length}`);
+    assert.equal(upcoming.length, 1);
     assert.ok(bundle.matches.every((m) => m.freshness !== "LIVE"));
   });
 });
