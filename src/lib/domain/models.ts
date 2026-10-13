@@ -3,9 +3,11 @@
  * UI and calc layers consume these — never raw provider payloads.
  */
 
+import type { CoverageLevel, CoverageMeta, GenderFilter } from "@/lib/coverage";
 import type { DataKind, FreshnessStatus, MatchLifecycle, Provenance } from "@/lib/contracts";
 
 export type CricketFormat = "test" | "odi" | "t20" | "other";
+export type { CoverageLevel, CoverageMeta, GenderFilter };
 
 export type DomainTeam = {
   id: string;
@@ -111,6 +113,10 @@ export type DomainMatch = {
   note?: string;
   provenance: Provenance;
   updatedAt: string;
+  /** Measured coverage depth — never invent deeper layers. */
+  coverage?: CoverageMeta;
+  /** Free-text result line when known (e.g. statusLine from provider/seed). */
+  resultText?: string;
 };
 
 export type DomainFixtureListItem = Pick<
@@ -169,13 +175,42 @@ export type OperatorHealthSummary = {
 
 export type HistoricalMatchFilter = {
   teamId?: string;
+  /** Free-text team name / short match (home or away). */
+  teamContains?: string;
   format?: CricketFormat;
   venueContains?: string;
   seriesContains?: string;
+  /** Player name fragment — matched against scorecard batting/bowling when present. */
+  playerContains?: string;
+  /** Competition / series fragment (alias of seriesContains). */
+  competitionContains?: string;
+  /** Result text fragment (won by / draw / etc.). */
+  resultContains?: string;
+  gender?: GenderFilter;
+  /** Inclusive calendar year bounds (from startTimeIso). */
+  yearFrom?: number;
+  yearTo?: number;
+  coverageLevel?: CoverageLevel;
+  /** Minimum coverage depth (result < scorecard < innings < ball_by_ball). */
+  coverageAtLeast?: CoverageLevel;
   fromIso?: string;
   toIso?: string;
   freshness?: FreshnessStatus[];
+  /** 0-based page for pagination. */
+  page?: number;
   limit?: number;
+};
+
+export type HistoricalSearchResult = {
+  matches: DomainMatch[];
+  total: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+  /** Honest archive window for UI. */
+  archiveClaim: string;
+  measuredYearMin?: number;
+  measuredYearMax?: number;
 };
 
 export type PlayerTrendPoint = {

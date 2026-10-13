@@ -103,6 +103,21 @@ Header (teams, competition, score, innings, status, source/freshness) → situat
 7. Multi-match Explorer series from normalised balls
 8. Optional LLM explain that may only restate calc + evidence
 
+## Motion + Historical Intelligence extension (2026-10-13)
+
+See **`docs/DESIGN.md`** for IA, tokens (navy `#03314C` family + lime), and motion rules.
+
+| Addition | Status |
+|----------|--------|
+| Home hero “Every match has a story…” + suggested asks + archive CTA | IMPLEMENTED |
+| Primary nav **Historical Archive** (`#archive`) with filters + coverage badges | IMPLEMENTED |
+| `/api/matches` year/gender/coverage/pagination + honest archive claim | IMPLEMENTED |
+| Coverage metadata (`result` / `scorecard` / `innings` / `ball_by_ball`) | IMPLEMENTED |
+| Seed sample extended to 1975+ (measured — **not** full 1973–present) | IMPLEMENTED |
+| Voice mic only when Web Speech exists; TTS stop/replay; type fallback | IMPLEMENTED |
+| `prefers-reduced-motion` disables hero/match/filter/score/live animations | IMPLEMENTED |
+| Licensed LIVE / full archive / durable Postgres / LLM | UNAVAILABLE OR BLOCKED |
+
 ## Acceptance criteria (reset)
 
 - [x] `docs/PRODUCT_RESET.md` present with inventory statuses
@@ -110,8 +125,10 @@ Header (teams, competition, score, innings, status, source/freshness) → situat
 - [x] DEMO playground E2E path wired: situation → timeline/graph → evidence → Ask/What-If → return with shared `matchFocus`
 - [x] Truth mode: home does not invent scores; freshness preserves HISTORICAL/UPCOMING under demoMode
 - [x] Seeds not used as Copilot live evidence (quarantine answer + filter)
-- [x] `npm test` (74 pass) / `lint` / `typecheck` / `build` — verified locally 2026-10-13
-- [x] Deploy production `2865a54` READY; `/api/health` truth mode; seed freshness HISTORICAL on deploy — no LIVE claim without key
+- [x] Historical Archive filters + coverage provenance + honest 1973 claim
+- [x] Motion language + reduced-motion; voice graceful fallback
+- [x] `npm test` / `lint` / `typecheck` / `build` — re-verify on ship
+- [ ] Deploy production redeploy after this branch — verify `/api/health` + `#archive`
 
 ## Risks / deferred
 

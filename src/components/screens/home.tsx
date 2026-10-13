@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowUp } from "lucide-react";
+import { ArrowUp, Mic, MicOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,17 +17,28 @@ import { LiveFixturesBoard, type BoardRow } from "@/components/live-fixtures-boa
 import { TruthSetupPanel } from "@/components/truth-setup-panel";
 import { FreshnessBadge, StatusBadge } from "@/components/status-badge";
 import { Kicker, Panel, Spark, useGreeting } from "@/components/ui-bits";
-import { useDataHealth, useFixtures } from "@/hooks/use-data-layer";
+import { useDataHealth, useFixtures, useMatchList } from "@/hooks/use-data-layer";
+import { useVoiceAsk } from "@/hooks/use-voice-ask";
+import { ARCHIVE_POLICY } from "@/lib/coverage";
 import type { FreshnessStatus, MatchLifecycle } from "@/lib/contracts";
 import { getPlayer, teamLabel, teams } from "@/lib/data";
 import { buildProviderBriefing } from "@/lib/provider-briefing";
 import { openDemoPlayground } from "@/lib/truth-mode";
 
+const SUGGESTED = [
+  "What fixtures are available right now?",
+  "Compare Headingley 2019 and 1981",
+  "What coverage do we have for World Cup finals?",
+  "Open the DEMO playground situation",
+];
+
 export function HomeScreen() {
-  const { go, followedPlayers, followedTeams } = useApp();
+  const { go, followedPlayers, followedTeams, recentChats, setMatchFocus } = useApp();
   const { greeting } = useGreeting();
   const health = useDataHealth();
   const fixtures = useFixtures(15_000);
+  const archive = useMatchList(8);
+  const voice = useVoiceAsk();
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [showFixture, setShowFixture] = useState(false);
@@ -53,12 +64,35 @@ export function HomeScreen() {
     .slice(0, 4);
   const myTeams = teams.filter((team) => followedTeams.includes(team.id));
 
+  const coverageLine = useMemo(() => {
+    const counts = health.summary?.freshnessCounts;
+    if (!counts) return ARCHIVE_POLICY.claim;
+    const hist = counts.HISTORICAL ?? 0;
+    const up = counts.UPCOMING ?? 0;
+    return `Verified in store: ${hist} historical · ${up} upcoming · measured seed sample ${ARCHIVE_POLICY.measuredSeedEarliest}–${ARCHIVE_POLICY.measuredSeedLatest} (not full 1973–present).`;
+  }, [health.summary]);
+
   function openMatchFromBoard(row: BoardRow) {
     try {
       sessionStorage.setItem("cricketos-match-pick", row.id);
     } catch {
       /* ignore */
     }
+    setMatchFocus({
+      id: row.id,
+      title: row.title,
+      status: String(row.status),
+      freshness: String(row.freshness),
+      venue: row.venue,
+      format: row.format,
+      series: row.series,
+      score: row.score,
+      homeName: row.homeName,
+      awayName: row.awayName,
+      isDemo: Boolean(row.isDemo),
+      isSeed: row.id.startsWith("seed-"),
+      provenance: row.provenance,
+    });
     if (typeof window !== "undefined") {
       window.location.hash = "live";
     } else {
@@ -84,6 +118,12 @@ export function HomeScreen() {
     go("ask", { mode, seedAsk: text });
   }
 
+  function applyVoiceTranscript() {
+    const text = `${voice.transcript} ${voice.interim}`.trim();
+    if (text) setDraft(text);
+    voice.stopListening();
+  }
+
   return (
     <div className="mx-auto max-w-6xl">
       <section className="cos-hero rounded-[2rem] border border-white/8">
@@ -93,11 +133,11 @@ export function HomeScreen() {
               CricketOS
             </p>
             <h1 className="font-display mt-7 text-[clamp(1.65rem,4vw,2.75rem)] font-medium leading-[1.15] text-balance">
-              The intelligence layer for cricket.
+              Every match has a story. Find the evidence.
             </h1>
             <p className="mt-5 max-w-md text-[0.95rem] leading-relaxed text-muted-foreground sm:text-base">
-              {greeting}. What happened, why, evidence, what might happen next — the match is the
-              centre. Facts need a licensed provider; DEMO playground is opt-in only.
+              {greeting}. Ask grounded questions, browse the historical archive, and open Match
+              Intelligence — facts need a licensed provider; DEMO is opt-in only.
             </p>
           </div>
 
@@ -118,20 +158,83 @@ export function HomeScreen() {
                 setDraft(event.target.value);
                 if (error) setError(null);
               }}
-              placeholder="What fixtures are available?"
+              placeholder="What happened at Headingley in 2019?"
               aria-invalid={error ? true : undefined}
-              className="h-12! flex-1 border-white/12 bg-black/25 px-4 text-base"
+              className="h-12! flex-1 border-white/12 bg-black/25 px-4 text-base cos-ask-focus"
             />
+            {voice.supported ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="h-12 border-white/12 px-4"
+                aria-pressed={voice.listening}
+                aria-label={voice.listening ? "Stop listening" : "Dictate question"}
+                onClick={() => {
+                  if (voice.listening) applyVoiceTranscript();
+                  else {
+                    voice.clearTranscript();
+                    voice.startListening();
+                  }
+                }}
+              >
+                {voice.listening ? <MicOff /> : <Mic />}
+              </Button>
+            ) : null}
             <Button type="submit" className="cos-cta h-12 px-7 text-base" size="lg">
               <ArrowUp />
               Ask
             </Button>
           </form>
+          {voice.listening || voice.interim ? (
+            <p className="mt-2 text-sm text-cyan" role="status">
+              Listening… {voice.interim || voice.transcript || "speak now"}
+            </p>
+          ) : null}
+          {voice.error ? <p className="mt-2 text-sm text-gold">{voice.error}</p> : null}
           {error ? <p className="mt-2 text-sm text-destructive">{error}</p> : null}
+
+          <div className="cos-hero-in-stagger mt-8 flex flex-wrap gap-2">
+            {SUGGESTED.map((q) => (
+              <button
+                key={q}
+                type="button"
+                className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5 text-left text-xs text-mist transition hover:border-lime/40 hover:text-lime"
+                onClick={() =>
+                  submit(
+                    q,
+                    q.toLowerCase().includes("headingley") || q.toLowerCase().includes("world cup")
+                      ? "historical"
+                      : q.toLowerCase().includes("demo")
+                        ? "predictions"
+                        : "general",
+                  )
+                }
+              >
+                {q}
+              </button>
+            ))}
+          </div>
+
+          <div className="cos-hero-in-stagger mt-8 flex flex-wrap gap-3">
+            <Button
+              type="button"
+              variant="secondary"
+              className="cos-cta"
+              onClick={() => go("archive")}
+            >
+              Browse historical archive
+            </Button>
+            <Button type="button" variant="outline" className="border-white/12" onClick={openLiveHub}>
+              Match Intelligence
+            </Button>
+          </div>
+          <p className="cos-hero-in-stagger mt-4 max-w-xl text-xs leading-relaxed text-mist">
+            {coverageLine}
+          </p>
         </div>
       </section>
 
-      <section className="mt-10" aria-labelledby="live-scores-heading">
+      <section className="mt-10 cos-stagger" aria-labelledby="live-scores-heading">
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <div>
             <Kicker className="text-cyan">
@@ -163,6 +266,65 @@ export function HomeScreen() {
         )}
       </section>
 
+      <section className="mt-10 cos-stagger" aria-labelledby="archive-entry-heading">
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <Kicker>
+              <span id="archive-entry-heading">Historical search</span>
+            </Kicker>
+            <p className="mt-1.5 text-sm text-muted-foreground">
+              Seed + provider archive · open a match or ask with context
+            </p>
+          </div>
+          <Button type="button" size="sm" variant="secondary" onClick={() => go("archive")}>
+            Full archive filters
+          </Button>
+        </div>
+        {archive.status === "loading" ? (
+          <p className="text-sm text-muted-foreground">Loading `/api/matches`…</p>
+        ) : archive.status === "unavailable" ? (
+          <p className="text-sm text-gold">Archive UNAVAILABLE</p>
+        ) : (
+          <ul className="divide-y divide-white/8">
+            {archive.matches
+              .filter((m) => m.freshness === "HISTORICAL" || m.status === "COMPLETED")
+              .slice(0, 5)
+              .map((m) => (
+                <li key={m.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
+                  <button
+                    type="button"
+                    className="text-left font-medium transition hover:text-lime"
+                    onClick={() => {
+                      setMatchFocus({
+                        id: m.id,
+                        title: m.title,
+                        status: String(m.status),
+                        freshness: String(m.freshness),
+                        venue: m.venue,
+                        format: m.format,
+                        series: m.series,
+                        score: m.score,
+                        homeName: m.homeName ?? m.teams?.home,
+                        awayName: m.awayName ?? m.teams?.away,
+                        isDemo: false,
+                        isSeed: m.id.startsWith("seed-"),
+                        provenance: m.provenance,
+                      });
+                      go("match");
+                    }}
+                  >
+                    {m.title}
+                  </button>
+                  <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <FreshnessBadge freshness={m.freshness as FreshnessStatus} />
+                    {m.venue}
+                  </span>
+                </li>
+              ))}
+          </ul>
+        )}
+      </section>
+
       {!providerReady ? (
         <p className="mt-4 text-center text-sm text-muted-foreground">
           Optional:{" "}
@@ -175,6 +337,26 @@ export function HomeScreen() {
           </button>{" "}
           — scripted Lord&apos;s sim, always watermarked DEMO, never the default homepage.
         </p>
+      ) : null}
+
+      {recentChats.length > 0 ? (
+        <section className="mt-10 cos-stagger">
+          <Kicker>Continue investigating</Kicker>
+          <ul className="mt-3 divide-y divide-white/8">
+            {recentChats.slice(0, 4).map((chat) => (
+              <li key={chat.id}>
+                <button
+                  type="button"
+                  className="w-full py-3 text-left transition hover:text-lime"
+                  onClick={() => go("ask", { seedAsk: chat.question })}
+                >
+                  <span className="block text-sm font-medium">{chat.question}</span>
+                  <span className="mt-1 block text-xs text-muted-foreground">{chat.headline}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
       ) : null}
 
       {providerReady ? (

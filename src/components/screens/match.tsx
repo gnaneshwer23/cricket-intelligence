@@ -360,7 +360,7 @@ export function MatchScreen() {
           : "What data do you have?";
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-6xl cos-match-enter">
       <header className="mb-7 flex flex-wrap items-end justify-between gap-4">
         <div className="max-w-2xl">
           <Kicker className="text-cyan">
@@ -398,6 +398,15 @@ export function MatchScreen() {
           <Button
             type="button"
             size="sm"
+            variant="outline"
+            className="border-white/12"
+            onClick={() => go("archive")}
+          >
+            Historical Archive
+          </Button>
+          <Button
+            type="button"
+            size="sm"
             className="cos-cta"
             onClick={() =>
               go("ask", {
@@ -427,7 +436,12 @@ export function MatchScreen() {
 
           {!providerReady ? (
             <Panel className="mt-4 border-white/8 bg-card/40">
-              <Kicker className="text-gold">Historical archive · labelled</Kicker>
+              <div className="flex flex-wrap items-end justify-between gap-2">
+                <Kicker className="text-gold">Historical archive · labelled</Kicker>
+                <Button type="button" size="sm" variant="secondary" onClick={() => go("archive")}>
+                  Full filters
+                </Button>
+              </div>
               <p className="mt-2 text-sm text-muted-foreground">
                 Seeded completed / upcoming rows for Match Intelligence browsing. Not live truth —
                 quarantined from Copilot evidence. Prefer DEMO playground for event → evidence →

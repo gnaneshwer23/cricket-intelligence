@@ -4,13 +4,28 @@
  */
 
 import { sampleSizeWarning } from "@/lib/calc";
+import {
+  ARCHIVE_POLICY,
+  deriveCoverage,
+  type CoverageLevel,
+  type CoverageMeta,
+} from "@/lib/coverage";
 import type {
   DomainMatch,
+  DomainScorecard,
   HistoricalMatchFilter,
+  HistoricalSearchResult,
   PlayerTrend,
 } from "@/lib/domain/models";
 import { getDemoMatch, getDemoScorecard } from "@/lib/provider/demo-adapter";
 import { getStorage } from "@/lib/storage";
+
+const COVERAGE_RANK: Record<CoverageLevel, number> = {
+  result: 1,
+  scorecard: 2,
+  innings: 3,
+  ball_by_ball: 4,
+};
 
 async function allMatches(): Promise<DomainMatch[]> {
   const stored = await getStorage().listMatches();
@@ -20,19 +35,90 @@ async function allMatches(): Promise<DomainMatch[]> {
   return stored;
 }
 
-export async function searchHistoricalMatches(
-  filter: HistoricalMatchFilter = {},
-): Promise<DomainMatch[]> {
-  let list = await allMatches();
+async function scorecardFor(matchId: string): Promise<DomainScorecard | null> {
+  const storage = getStorage();
+  let card = await storage.getScorecard(matchId);
+  if (!card && matchId === getDemoMatch().id) card = getDemoScorecard();
+  return card;
+}
 
-  if (filter.teamId) {
-    const t = filter.teamId.toLowerCase();
+function countCardRows(card: DomainScorecard | null): {
+  battingRowCount: number;
+  bowlingRowCount: number;
+} {
+  if (!card) return { battingRowCount: 0, bowlingRowCount: 0 };
+  const battingRowCount = Object.values(card.batting).reduce(
+    (n, rows) => n + (Array.isArray(rows) ? rows.length : 0),
+    0,
+  );
+  const bowlingRowCount = Object.values(card.bowling).reduce(
+    (n, rows) => n + (Array.isArray(rows) ? rows.length : 0),
+    0,
+  );
+  return { battingRowCount, bowlingRowCount };
+}
+
+export async function attachCoverage(match: DomainMatch): Promise<DomainMatch> {
+  if (match.coverage) return match;
+  const card = await scorecardFor(match.id);
+  const { battingRowCount, bowlingRowCount } = countCardRows(card);
+  const isDemo = match.freshness === "DEMO" || match.status === "DEMO";
+  const coverage = deriveCoverage({
+    status: match.status,
+    note: match.note ?? match.resultText,
+    score: match.score,
+    startTimeIso: match.startTimeIso,
+    title: match.title,
+    series: match.series,
+    homeName: match.teams.home.name,
+    awayName: match.teams.away.name,
+    battingRowCount,
+    bowlingRowCount,
+    ballCount: isDemo ? 1 : 0,
+    isDemo,
+  });
+  return {
+    ...match,
+    coverage,
+    resultText: match.resultText ?? match.note,
+  };
+}
+
+function yearOf(match: DomainMatch, coverage?: CoverageMeta): number | undefined {
+  return coverage?.year ?? (match.startTimeIso ? Number.parseInt(match.startTimeIso.slice(0, 4), 10) : undefined);
+}
+
+async function cardMentionsPlayer(matchId: string, needle: string): Promise<boolean> {
+  const card = await scorecardFor(matchId);
+  if (!card) return false;
+  const n = needle.toLowerCase();
+  for (const rows of Object.values(card.batting)) {
+    if (rows?.some((r) => r.playerName.toLowerCase().includes(n))) return true;
+  }
+  for (const rows of Object.values(card.bowling)) {
+    if (rows?.some((r) => r.playerName.toLowerCase().includes(n))) return true;
+  }
+  return false;
+}
+
+/**
+ * Filter + paginate historical matches with honest coverage metadata.
+ */
+export async function searchHistoricalMatchesPaged(
+  filter: HistoricalMatchFilter = {},
+): Promise<HistoricalSearchResult> {
+  let list = await Promise.all((await allMatches()).map((m) => attachCoverage(m)));
+
+  const teamNeedle = (filter.teamContains ?? filter.teamId ?? "").toLowerCase();
+  if (teamNeedle) {
     list = list.filter(
       (m) =>
-        m.teams.home.id.includes(t) ||
-        m.teams.away.id.includes(t) ||
-        m.teams.home.name.toLowerCase().includes(t) ||
-        m.teams.away.name.toLowerCase().includes(t),
+        m.teams.home.id.includes(teamNeedle) ||
+        m.teams.away.id.includes(teamNeedle) ||
+        m.teams.home.name.toLowerCase().includes(teamNeedle) ||
+        m.teams.away.name.toLowerCase().includes(teamNeedle) ||
+        m.teams.home.shortName.toLowerCase().includes(teamNeedle) ||
+        m.teams.away.shortName.toLowerCase().includes(teamNeedle),
     );
   }
   if (filter.format) list = list.filter((m) => m.format === filter.format);
@@ -40,9 +126,30 @@ export async function searchHistoricalMatches(
     const v = filter.venueContains.toLowerCase();
     list = list.filter((m) => m.venue.toLowerCase().includes(v));
   }
-  if (filter.seriesContains) {
-    const s = filter.seriesContains.toLowerCase();
-    list = list.filter((m) => (m.series ?? "").toLowerCase().includes(s));
+  const seriesNeedle = (filter.competitionContains ?? filter.seriesContains ?? "").toLowerCase();
+  if (seriesNeedle) {
+    list = list.filter((m) => (m.series ?? "").toLowerCase().includes(seriesNeedle));
+  }
+  if (filter.resultContains) {
+    const r = filter.resultContains.toLowerCase();
+    list = list.filter((m) =>
+      `${m.note ?? ""} ${m.resultText ?? ""}`.toLowerCase().includes(r),
+    );
+  }
+  if (filter.gender && filter.gender !== "unknown") {
+    list = list.filter((m) => m.coverage?.gender === filter.gender);
+  }
+  if (filter.yearFrom != null) {
+    list = list.filter((m) => {
+      const y = yearOf(m, m.coverage);
+      return y != null && y >= filter.yearFrom!;
+    });
+  }
+  if (filter.yearTo != null) {
+    list = list.filter((m) => {
+      const y = yearOf(m, m.coverage);
+      return y != null && y <= filter.yearTo!;
+    });
   }
   if (filter.fromIso) {
     list = list.filter((m) => (m.startTimeIso ?? "") >= filter.fromIso!);
@@ -53,9 +160,55 @@ export async function searchHistoricalMatches(
   if (filter.freshness?.length) {
     list = list.filter((m) => filter.freshness!.includes(m.freshness));
   }
+  if (filter.coverageLevel) {
+    list = list.filter((m) => m.coverage?.level === filter.coverageLevel);
+  }
+  if (filter.coverageAtLeast) {
+    const min = COVERAGE_RANK[filter.coverageAtLeast];
+    list = list.filter((m) => COVERAGE_RANK[m.coverage?.level ?? "result"] >= min);
+  }
+  if (filter.playerContains?.trim()) {
+    const needle = filter.playerContains.trim();
+    const kept: DomainMatch[] = [];
+    for (const m of list) {
+      // Title/series mention is not player evidence — only scorecard rows.
+      if (await cardMentionsPlayer(m.id, needle)) kept.push(m);
+    }
+    list = kept;
+  }
 
-  const limit = filter.limit ?? 50;
-  return list.slice(0, limit);
+  // Sort newest first when dates exist
+  list = [...list].sort((a, b) => (b.startTimeIso ?? "").localeCompare(a.startTimeIso ?? ""));
+
+  const years = list
+    .map((m) => yearOf(m, m.coverage))
+    .filter((y): y is number => typeof y === "number");
+  const measuredYearMin = years.length ? Math.min(...years) : undefined;
+  const measuredYearMax = years.length ? Math.max(...years) : undefined;
+
+  const pageSize = Math.min(Math.max(filter.limit ?? 20, 1), 100);
+  const page = Math.max(filter.page ?? 0, 0);
+  const total = list.length;
+  const start = page * pageSize;
+  const matches = list.slice(start, start + pageSize);
+
+  return {
+    matches,
+    total,
+    page,
+    pageSize,
+    hasMore: start + pageSize < total,
+    archiveClaim: ARCHIVE_POLICY.claim,
+    measuredYearMin,
+    measuredYearMax,
+  };
+}
+
+export async function searchHistoricalMatches(
+  filter: HistoricalMatchFilter = {},
+): Promise<DomainMatch[]> {
+  const page = await searchHistoricalMatchesPaged(filter);
+  return page.matches;
 }
 
 export type MatchComparison = {

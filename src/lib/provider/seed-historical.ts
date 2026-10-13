@@ -7,6 +7,7 @@
  * Explorer / Copilot when no provider key is configured.
  */
 
+import { deriveCoverage } from "@/lib/coverage";
 import type { DomainMatch, DomainScorecard } from "@/lib/domain/models";
 import {
   lifecycleToFreshness,
@@ -23,8 +24,45 @@ import type { DomainFixtureListItem } from "@/lib/domain/models";
 export const SEED_PROVIDER = "seed";
 export const SEED_SOURCE = "CricketOS seeded historical archive";
 
-/** CricAPI-shaped raw match rows (completed / upcoming only). */
+/**
+ * CricAPI-shaped raw match rows (completed / upcoming only).
+ * Well-known public results — result/scorecard depth only; empty batting rows.
+ * Measured sample spans 1975–2024; not a full 1973–present archive claim.
+ */
 export const SEED_CRICAPI_ROWS: Record<string, unknown>[] = [
+  {
+    id: "seed-wc-final-1975",
+    name: "West Indies vs Australia, Final",
+    series: "Prudential World Cup 1975",
+    status: "Match finished · West Indies won by 17 runs",
+    venue: "Lord's, London",
+    matchType: "odi",
+    dateTimeGMT: "1975-06-21T10:00:00.000Z",
+    teams: ["West Indies", "Australia"],
+    score: [{ r: 291, w: 8, o: "60.0", inning: "West Indies" }],
+  },
+  {
+    id: "seed-headingley-1981",
+    name: "England vs Australia, 3rd Test",
+    series: "The Ashes 1981",
+    status: "Match finished · England won by 18 runs",
+    venue: "Headingley, Leeds",
+    matchType: "test",
+    dateTimeGMT: "1981-07-16T10:00:00.000Z",
+    teams: ["England", "Australia"],
+    score: [{ r: 151, w: 10, o: "55.4", inning: "Australia 2nd" }],
+  },
+  {
+    id: "seed-wc-final-1983",
+    name: "India vs West Indies, Final",
+    series: "Prudential World Cup 1983",
+    status: "Match finished · India won by 43 runs",
+    venue: "Lord's, London",
+    matchType: "odi",
+    dateTimeGMT: "1983-06-25T10:00:00.000Z",
+    teams: ["India", "West Indies"],
+    score: [{ r: 183, w: 10, o: "54.4", inning: "India" }],
+  },
   {
     id: "seed-headingley-2019",
     name: "England vs Australia, 3rd Test",
@@ -164,25 +202,43 @@ export function normaliseSeedMatch(row: Record<string, unknown>): DomainMatch {
   const homeName = teams[0] ?? base.teams.home.name;
   const awayName = teams[1] ?? base.teams.away.name;
 
-  return {
+  const note = typeof row.status === "string" ? row.status : base.note;
+  const withMeta: DomainMatch = {
     ...base,
     id: slugId("seed", idRaw),
     providerIds: { [SEED_PROVIDER]: idRaw, cricapi: idRaw },
     status: safeLifecycle,
     freshness: freshness === "LIVE" ? "HISTORICAL" : freshness,
     teams: teamFromNames(homeName, awayName, SEED_PROVIDER),
+    note,
+    resultText: note,
     provenance: {
       ...provenanceFor(
         SEED_PROVIDER,
         safeLifecycle === "COMPLETED" ? "historical" : safeLifecycle === "UPCOMING" ? "fact" : "historical",
         idRaw,
-        "Seeded archive via normalisation path — not a live feed. Add CRICKETOS_DATA_API_KEY for provider data.",
+        "Seeded archive via normalisation path — not a live feed. Add CRICKETOS_DATA_API_KEY for provider data. Measured sample — not full 1973–present.",
       ),
       source: SEED_SOURCE,
       asOf:
         typeof row.dateTimeGMT === "string" ? row.dateTimeGMT : base.provenance.asOf,
     },
   };
+  withMeta.coverage = deriveCoverage({
+    status: withMeta.status,
+    note: withMeta.note,
+    score: withMeta.score,
+    startTimeIso: withMeta.startTimeIso,
+    title: withMeta.title,
+    series: withMeta.series,
+    homeName: withMeta.teams.home.name,
+    awayName: withMeta.teams.away.name,
+    battingRowCount: 0,
+    bowlingRowCount: 0,
+    ballCount: 0,
+    isDemo: false,
+  });
+  return withMeta;
 }
 
 /**

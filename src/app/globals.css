@@ -40,12 +40,18 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  /* Volt-leaning electric lime — restrained accent energy */
+  /* CricketOS accents — lime kept; navy / mist / warm from design audit */
   --color-lime: oklch(0.9 0.2 122);
-  --color-cyan: oklch(0.8 0.08 215);
+  --color-cyan: oklch(0.72 0.08 215);
   --color-eng: oklch(0.78 0.1 250);
   --color-ind: oklch(0.76 0.15 50);
   --color-gold: oklch(0.86 0.14 95);
+  --color-navy: var(--cos-navy);
+  --color-deep: var(--cos-deep);
+  --color-blue: var(--cos-blue);
+  --color-slate: var(--cos-slate);
+  --color-mist: var(--cos-mist);
+  --color-warm: var(--cos-warm);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -56,6 +62,12 @@
 }
 
 :root {
+  --cos-navy: #03314c;
+  --cos-deep: #084e6e;
+  --cos-blue: #236686;
+  --cos-slate: #768794;
+  --cos-mist: #b1b7c0;
+  --cos-warm: #d83c16;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -91,36 +103,42 @@
 }
 
 .dark {
-  /* Night stadium: charcoal-navy base; volt lime used sparingly (retail-sports). */
-  --background: oklch(0.14 0.016 242);
-  --foreground: oklch(0.97 0.01 100);
-  --card: oklch(0.185 0.018 242);
-  --card-foreground: oklch(0.97 0.01 100);
-  --popover: oklch(0.19 0.018 242);
-  --popover-foreground: oklch(0.97 0.01 100);
+  /* Navy-led stadium night — #03314C family + lime spark; warm reserved for LIVE. */
+  --cos-navy: #03314c;
+  --cos-deep: #084e6e;
+  --cos-blue: #236686;
+  --cos-slate: #768794;
+  --cos-mist: #b1b7c0;
+  --cos-warm: #d83c16;
+  --background: color-mix(in oklab, var(--cos-navy) 88%, black);
+  --foreground: color-mix(in oklab, var(--cos-mist) 55%, white);
+  --card: color-mix(in oklab, var(--cos-deep) 55%, var(--cos-navy));
+  --card-foreground: color-mix(in oklab, var(--cos-mist) 55%, white);
+  --popover: color-mix(in oklab, var(--cos-deep) 60%, var(--cos-navy));
+  --popover-foreground: color-mix(in oklab, var(--cos-mist) 55%, white);
   --primary: oklch(0.9 0.2 122);
   --primary-foreground: oklch(0.2 0.04 130);
-  --secondary: oklch(0.24 0.016 242);
-  --secondary-foreground: oklch(0.97 0.01 100);
-  --muted: oklch(0.24 0.014 242);
-  --muted-foreground: oklch(0.7 0.018 220);
-  --accent: oklch(0.28 0.04 140);
-  --accent-foreground: oklch(0.97 0.01 100);
-  --destructive: oklch(0.7 0.18 25);
+  --secondary: color-mix(in oklab, var(--cos-deep) 70%, black);
+  --secondary-foreground: color-mix(in oklab, var(--cos-mist) 55%, white);
+  --muted: color-mix(in oklab, var(--cos-navy) 70%, black);
+  --muted-foreground: var(--cos-mist);
+  --accent: color-mix(in oklab, var(--cos-blue) 45%, var(--cos-navy));
+  --accent-foreground: color-mix(in oklab, var(--cos-mist) 40%, white);
+  --destructive: var(--cos-warm);
   --border: oklch(1 0 0 / 9%);
   --input: oklch(1 0 0 / 12%);
   --ring: oklch(0.9 0.2 122);
   --chart-1: oklch(0.9 0.2 122);
-  --chart-2: oklch(0.8 0.08 215);
+  --chart-2: var(--cos-blue);
   --chart-3: oklch(0.76 0.15 50);
   --chart-4: oklch(0.86 0.14 95);
-  --chart-5: oklch(0.68 0.02 220);
-  --sidebar: oklch(0.15 0.018 242);
-  --sidebar-foreground: oklch(0.97 0.01 100);
+  --chart-5: var(--cos-slate);
+  --sidebar: color-mix(in oklab, var(--cos-navy) 92%, black);
+  --sidebar-foreground: color-mix(in oklab, var(--cos-mist) 55%, white);
   --sidebar-primary: oklch(0.9 0.2 122);
   --sidebar-primary-foreground: oklch(0.2 0.04 130);
-  --sidebar-accent: oklch(0.24 0.016 242);
-  --sidebar-accent-foreground: oklch(0.97 0.01 100);
+  --sidebar-accent: color-mix(in oklab, var(--cos-deep) 65%, black);
+  --sidebar-accent-foreground: color-mix(in oklab, var(--cos-mist) 55%, white);
   --sidebar-border: oklch(1 0 0 / 8%);
   --sidebar-ring: oklch(0.9 0.2 122);
 }
@@ -136,11 +154,16 @@
   body {
     @apply text-foreground;
     background-color: var(--background);
-    /* Soft atmosphere — photography plane cue without busy pattern noise */
+    /* Navy atmosphere — lime spark + deep blue wash (not flat single colour) */
     background-image:
-      radial-gradient(980px 480px at 85% -12%, oklch(0.48 0.16 122 / 0.18), transparent 58%),
-      radial-gradient(680px 420px at -10% 110%, oklch(0.36 0.06 215 / 0.14), transparent 55%),
-      linear-gradient(180deg, oklch(0.155 0.02 242), oklch(0.14 0.016 242) 40%, oklch(0.135 0.014 242));
+      radial-gradient(980px 480px at 85% -12%, oklch(0.48 0.16 122 / 0.16), transparent 58%),
+      radial-gradient(720px 440px at -8% 108%, color-mix(in oklab, var(--cos-blue) 35%, transparent), transparent 55%),
+      linear-gradient(
+        180deg,
+        color-mix(in oklab, var(--cos-navy) 80%, black),
+        color-mix(in oklab, var(--cos-navy) 92%, black) 45%,
+        color-mix(in oklab, var(--cos-navy) 96%, black)
+      );
     background-attachment: fixed;
     min-height: 100%;
   }
@@ -157,7 +180,7 @@
   max-width: min(42rem, calc(100vw - 2rem)) !important;
 }
 
-/* Intentional motion — hero reveal, score tick, live pulse (2–3 places). */
+/* Intentional motion — hero, stagger, match enter, score tick, filter fade. */
 @keyframes cos-score-tick {
   from {
     opacity: 0.5;
@@ -180,15 +203,49 @@
   }
 }
 
+@keyframes cos-match-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.992);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes cos-filter-fade {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cos-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* LIVE pulse only when a real LIVE provider row is present — never on demo home. */
 @keyframes cos-live-pulse {
   0%,
   100% {
     opacity: 1;
-    box-shadow: 0 0 0 0 oklch(0.86 0.14 95 / 0.4);
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--cos-warm) 45%, transparent);
   }
   50% {
-    opacity: 0.7;
-    box-shadow: 0 0 0 6px oklch(0.86 0.14 95 / 0);
+    opacity: 0.75;
+    box-shadow: 0 0 0 6px transparent;
   }
 }
 
@@ -204,19 +261,70 @@
   animation: cos-hero-in 0.75s cubic-bezier(0.22, 1, 0.36, 1) 0.14s both;
 }
 
+.cos-hero-in-stagger {
+  animation: cos-hero-in 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.28s both;
+}
+
+.cos-match-enter {
+  animation: cos-match-enter 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.cos-filter-fade {
+  animation: cos-filter-fade 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.cos-panel-in {
+  animation: cos-panel-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.cos-stagger > * {
+  animation: cos-panel-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.cos-stagger > *:nth-child(1) {
+  animation-delay: 0.04s;
+}
+.cos-stagger > *:nth-child(2) {
+  animation-delay: 0.1s;
+}
+.cos-stagger > *:nth-child(3) {
+  animation-delay: 0.16s;
+}
+.cos-stagger > *:nth-child(4) {
+  animation-delay: 0.22s;
+}
+
+.cos-ask-focus:focus-within {
+  outline: 2px solid color-mix(in oklab, var(--color-lime) 55%, transparent);
+  outline-offset: 3px;
+  border-radius: 0.85rem;
+  transition: outline-color 0.25s ease;
+}
+
 .cos-live-dot {
   animation: cos-live-pulse 1.9s ease-in-out infinite;
 }
 
-/* Full-bleed hero plane — retail composition, not inset card media */
+.cos-graph-edge {
+  transition:
+    stroke-opacity 0.35s ease,
+    stroke-width 0.35s ease;
+}
+
+/* Full-bleed hero plane — navy brand field + lime spark */
 .cos-hero {
   position: relative;
   isolation: isolate;
   overflow: hidden;
   background:
-    radial-gradient(ellipse 90% 70% at 12% 0%, oklch(0.5 0.18 122 / 0.35), transparent 55%),
-    radial-gradient(ellipse 60% 50% at 100% 90%, oklch(0.38 0.07 215 / 0.28), transparent 50%),
-    linear-gradient(160deg, oklch(0.2 0.028 242) 0%, oklch(0.145 0.02 242) 55%, oklch(0.13 0.018 242) 100%);
+    radial-gradient(ellipse 90% 70% at 12% 0%, oklch(0.5 0.18 122 / 0.32), transparent 55%),
+    radial-gradient(ellipse 60% 50% at 100% 90%, color-mix(in oklab, var(--cos-blue) 40%, transparent), transparent 50%),
+    linear-gradient(
+      160deg,
+      color-mix(in oklab, var(--cos-deep) 75%, var(--cos-navy)) 0%,
+      var(--cos-navy) 55%,
+      color-mix(in oklab, var(--cos-navy) 85%, black) 100%
+    );
 }
 
 .cos-hero::before {
@@ -235,8 +343,12 @@
   isolation: isolate;
   overflow: hidden;
   background:
-    radial-gradient(ellipse 70% 55% at 50% -10%, oklch(0.42 0.12 122 / 0.22), transparent 55%),
-    linear-gradient(180deg, oklch(0.2 0.022 242), oklch(0.16 0.018 242));
+    radial-gradient(ellipse 70% 55% at 50% -10%, oklch(0.42 0.12 122 / 0.2), transparent 55%),
+    linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--cos-deep) 70%, var(--cos-navy)),
+      color-mix(in oklab, var(--cos-navy) 90%, black)
+    );
 }
 
 .cos-scoreboard::after {
@@ -309,6 +421,11 @@
   .cos-score-tick,
   .cos-hero-in,
   .cos-hero-in-delay,
+  .cos-hero-in-stagger,
+  .cos-match-enter,
+  .cos-filter-fade,
+  .cos-panel-in,
+  .cos-stagger > *,
   .cos-live-dot {
     animation: none !important;
   }

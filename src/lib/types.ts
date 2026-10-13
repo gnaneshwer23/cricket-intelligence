@@ -2,6 +2,7 @@ export type ScreenId =
   | "home"
   | "ask"
   | "match"
+  | "archive"
   | "explorer"
   | "players"
   | "feed"

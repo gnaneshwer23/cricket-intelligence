@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowUp } from "lucide-react";
+import { ArrowUp, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
 import { useApp } from "@/components/app-state";
 import { DataStatusStrip } from "@/components/data-status-strip";
 import { PlayerSearchPicker } from "@/components/player-search-picker";
@@ -10,6 +10,7 @@ import { Kicker, PageTitle, Panel } from "@/components/ui-bits";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useMatchList } from "@/hooks/use-data-layer";
+import { useVoiceAsk } from "@/hooks/use-voice-ask";
 import { askPrompts, getPlayer, players, teamLabel } from "@/lib/data";
 import type { FreshnessStatus } from "@/lib/contracts";
 import type { AskMode, HistoricalMatchSummary } from "@/lib/types";
@@ -44,6 +45,10 @@ export function AskScreen() {
   const matchList = useMatchList(20);
   const [draft, setDraft] = useState("");
   const [twinQuery, setTwinQuery] = useState("");
+  const [lastSpokenId, setLastSpokenId] = useState<string | null>(null);
+  const voice = useVoiceAsk({
+    onTranscript: (text) => setDraft(text),
+  });
   const scroller = useRef<HTMLDivElement>(null);
   const prompts = askPrompts[askMode] ?? askPrompts.general;
   const twinPlayer = getPlayer(twinId) ?? players[0];
@@ -92,7 +97,7 @@ export function AskScreen() {
       <PageTitle
         kicker="Ask CricketOS"
         title="Ask Cricket Anything."
-        lede="Intent → retrieve → calculate → explain. Figures come only from a licensed provider feed or the labelled DEMO playground — Copilot will not invent match scores or stats."
+        lede="Intent → retrieve → calculate → explain. Figures come only from a licensed provider feed or the labelled DEMO playground — Copilot will not invent match scores or stats. Voice uses the same path when your browser supports it."
       />
 
       <div className="mb-4">
@@ -338,6 +343,36 @@ export function AskScreen() {
                       {follow}
                     </Button>
                   ))}
+                  {voice.ttsSupported ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="h-auto px-2 py-1 text-xs"
+                      onClick={() => {
+                        const spoken = [
+                          message.answer.headline,
+                          ...message.answer.paragraphs,
+                        ].join(". ");
+                        if (voice.speaking && lastSpokenId === message.id) {
+                          voice.stopSpeaking();
+                          setLastSpokenId(null);
+                        } else {
+                          voice.speak(spoken);
+                          setLastSpokenId(message.id);
+                        }
+                      }}
+                    >
+                      {voice.speaking && lastSpokenId === message.id ? (
+                        <>
+                          <VolumeX className="size-3.5" /> Stop
+                        </>
+                      ) : (
+                        <>
+                          <Volume2 className="size-3.5" /> Replay
+                        </>
+                      )}
+                    </Button>
+                  ) : null}
                   <Button
                     type="button"
                     variant="ghost"
@@ -366,9 +401,10 @@ export function AskScreen() {
         </div>
 
         <form
-          className="mt-4 flex gap-2"
+          className="mt-4 flex gap-2 cos-ask-focus"
           onSubmit={(event) => {
             event.preventDefault();
+            if (voice.listening) voice.stopListening();
             submit(draft);
           }}
         >
@@ -384,18 +420,46 @@ export function AskScreen() {
             className="h-12! px-4"
             disabled={asking}
           />
+          {voice.supported ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="h-12 px-3"
+              aria-pressed={voice.listening}
+              aria-label={voice.listening ? "Stop dictation" : "Dictate question"}
+              disabled={asking}
+              onClick={() => {
+                if (voice.listening) voice.stopListening();
+                else {
+                  voice.clearTranscript();
+                  voice.startListening();
+                }
+              }}
+            >
+              {voice.listening ? <MicOff /> : <Mic />}
+            </Button>
+          ) : null}
           <Button type="submit" className="h-12 px-4" disabled={asking}>
             <ArrowUp />
             <span className="sr-only">Send</span>
           </Button>
         </form>
+        {voice.error ? (
+          <p className="mt-2 text-sm text-gold" role="status">
+            {voice.error}
+          </p>
+        ) : null}
         {askError ? (
           <p className="mt-2 text-sm text-destructive" role="alert">
             {askError}
           </p>
         ) : null}
         <p className="mt-3 text-xs text-muted-foreground">
-          Press / from anywhere to jump here. Optional LLM explain is off unless{" "}
+          Press / from anywhere to jump here.
+          {voice.supported
+            ? " Mic appears only because speech recognition is available — edit the transcript before send."
+            : " Voice mic hidden: speech recognition unsupported in this browser."}{" "}
+          Optional LLM explain is off unless{" "}
           <code className="text-[10px]">CRICKETOS_LLM_*</code> is configured server-side.
         </p>
       </Panel>

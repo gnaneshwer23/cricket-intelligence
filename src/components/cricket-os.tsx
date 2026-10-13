@@ -6,6 +6,7 @@ import {
   ChartColumn,
   FlaskConical,
   House,
+  Library,
   MessageCircle,
   MessagesSquare,
   Newspaper,
@@ -16,6 +17,7 @@ import {
 import { AppStateProvider, useApp } from "@/components/app-state";
 import { MatchFocusStrip } from "@/components/match-focus-strip";
 import { Onboarding } from "@/components/onboarding";
+import { ArchiveScreen } from "@/components/screens/archive";
 import { AskScreen } from "@/components/screens/ask";
 import { CommunityScreen } from "@/components/screens/community";
 import { ExplorerScreen } from "@/components/screens/explorer";
@@ -39,11 +41,12 @@ import type { ScreenId } from "@/lib/types";
 const primaryNav: { id: ScreenId; label: string; short: string; icon: typeof House }[] = [
   { id: "home", label: "Cricket Today", short: "Today", icon: House },
   { id: "match", label: "Match Intelligence", short: "Match", icon: Activity },
+  { id: "archive", label: "Historical Archive", short: "Archive", icon: Library },
   { id: "ask", label: "Ask CricketOS", short: "Ask", icon: MessageCircle },
-  { id: "players", label: "Players & Teams", short: "Players", icon: UserRound },
 ];
 
 const laterNav: { id: ScreenId; label: string; icon: typeof House; note: string }[] = [
+  { id: "players", label: "Players & Teams", icon: UserRound, note: "Search-first profiles" },
   { id: "labs", label: "Labs", icon: FlaskConical, note: "What-If · transparent assumptions" },
   { id: "explorer", label: "Explorer", icon: ChartColumn, note: "Charts · DEMO series" },
   { id: "feed", label: "My Cricket", icon: Newspaper, note: "Personal feed" },
@@ -56,6 +59,7 @@ const titles: Record<ScreenId, string> = {
   home: "Cricket Today",
   ask: "Ask CricketOS",
   match: "Match Intelligence",
+  archive: "Historical Archive",
   explorer: "Cricket Explorer",
   players: "Players & Teams",
   feed: "My Cricket",
@@ -177,6 +181,7 @@ function Shell() {
           {screen === "home" ? <HomeScreen /> : null}
           {screen === "ask" ? <AskScreen /> : null}
           {screen === "match" ? <MatchScreen /> : null}
+          {screen === "archive" ? <ArchiveScreen /> : null}
           {screen === "explorer" ? <ExplorerScreen /> : null}
           {screen === "players" ? <PlayersScreen /> : null}
           {screen === "feed" ? <FeedScreen /> : null}

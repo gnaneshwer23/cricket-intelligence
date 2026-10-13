@@ -37,6 +37,7 @@ const screens: ScreenId[] = [
   "home",
   "ask",
   "match",
+  "archive",
   "explorer",
   "players",
   "feed",
