@@ -38,11 +38,16 @@ export async function GET(request: Request) {
         series: m.series,
         format: m.format,
         score: m.score,
+        statusLine: m.note,
         provenance: m.provenance,
         teams: {
           home: m.teams.home.name,
           away: m.teams.away.name,
         },
+        homeName: m.teams.home.name,
+        awayName: m.teams.away.name,
+        homeShort: m.teams.home.shortName,
+        awayShort: m.teams.away.shortName,
       })),
     });
   } catch (err) {

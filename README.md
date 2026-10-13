@@ -50,9 +50,9 @@ Real **LIVE** badges need a free API key (signup requires your email — cannot 
    ```
    Restart `npm run dev -- --port 41731`. Confirm `GET /api/health` shows `demoMode: false`.
 3. **Vercel:** Project → Settings → Environment Variables → add the same two vars for **Production** + **Preview** → Redeploy.
-4. Home **Live Scores** and Match Room poll `/api/fixtures` + `/api/matches` every 15s. In-progress provider matches show real scores with provenance + timestamp. **DEMO sim is never labelled LIVE.**
+4. Home **Live Scores** and `#live` hub (Match Centre) use Live · Upcoming · Recent · All tabs. Poll `/api/fixtures` + `/api/matches` every ~15s **while the Live tab is active**. Cards show series, team abbreviations, score/overs, CRR when available, and a status line. Tap opens Match Centre with that `matchId`. **DEMO sim is never labelled LIVE.**
 
-Without a key, the Live Scores board still lists many seeded HISTORICAL / UPCOMING fixtures (IPL, WI, women’s, Tests) plus the Lord’s DEMO option.
+Without a key, the Live Scores board still lists many seeded HISTORICAL / UPCOMING fixtures (IPL, WI, women’s, Tests) plus the Lord’s DEMO option — with a clear **Add CricAPI key for live scores** CTA.
 
 ## Data layer (Stage 5)
 

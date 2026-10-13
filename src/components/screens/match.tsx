@@ -117,15 +117,15 @@ export function MatchScreen() {
     <div className="mx-auto max-w-6xl">
       <header className="mb-7 flex flex-wrap items-end justify-between gap-4">
         <div className="max-w-2xl">
-          <Kicker className="text-cyan">Match Room · today&apos;s fixtures</Kicker>
+          <Kicker className="text-cyan">Live Scores · Match Centre</Kicker>
           <h1 className="font-display mt-3 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
             {showDemoIntel
               ? `${matchMeta.title} (DEMO)`
-              : selectedRow?.title ?? "Pick a match"}
+              : selectedRow?.title ?? "Live Scores"}
           </h1>
           <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground">
-            Multi-match board first. Lord&apos;s England vs India is one DEMO option — not the whole
-            app. LIVE badges only when a provider key reports in-progress scores.
+            Scan Live · Upcoming · Recent, then open a card. Lord&apos;s is one DEMO option — never
+            labelled LIVE. Real LIVE needs a keyed CricAPI / Sportmonks provider.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -153,6 +153,7 @@ export function MatchScreen() {
         selectedId={selectedMatchId}
         onSelect={pickMatch}
         limit={14}
+        initialTab="all"
       />
       <div className="mt-3">
         <DataStatusStrip />

@@ -22,6 +22,10 @@ export async function GET() {
         startTimeIso: f.startTimeIso,
         homeName: f.homeName,
         awayName: f.awayName,
+        homeShort: f.homeShort,
+        awayShort: f.awayShort,
+        score: f.score,
+        statusLine: f.note,
         provenance: f.provenance,
       })),
     });

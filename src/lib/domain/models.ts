@@ -115,10 +115,12 @@ export type DomainMatch = {
 
 export type DomainFixtureListItem = Pick<
   DomainMatch,
-  "id" | "title" | "status" | "freshness" | "venue" | "series" | "format" | "startTimeIso" | "provenance" | "updatedAt"
+  "id" | "title" | "status" | "freshness" | "venue" | "series" | "format" | "startTimeIso" | "provenance" | "updatedAt" | "note" | "score"
 > & {
   homeName: string;
   awayName: string;
+  homeShort: string;
+  awayShort: string;
 };
 
 export type QualityIssue = {

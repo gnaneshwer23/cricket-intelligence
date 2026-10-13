@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { FreshnessBadge, ProvenanceStrip, StatusBadge } from "@/components/status-badge";
 import { Kicker } from "@/components/ui-bits";
 import { Button } from "@/components/ui/button";
@@ -13,21 +13,19 @@ import {
 } from "@/hooks/use-data-layer";
 import type { FreshnessStatus, MatchLifecycle } from "@/lib/contracts";
 import { matchMeta } from "@/lib/data";
+import {
+  computeCrr,
+  defaultBoardTab,
+  formatCrr,
+  matchesBoardTab,
+  rowAwayShort,
+  rowHomeShort,
+  tabCounts,
+  type BoardRowInput,
+  type LiveBoardTab,
+} from "@/lib/live-board";
 
-export type BoardRow = {
-  id: string;
-  title: string;
-  status: MatchLifecycle;
-  freshness: FreshnessStatus;
-  venue: string;
-  format: string;
-  series?: string;
-  score?: { runs: number; wickets: number; overs: string };
-  homeName?: string;
-  awayName?: string;
-  provenance?: { source: string; asOf: string; note?: string };
-  isDemo: boolean;
-};
+export type BoardRow = BoardRowInput;
 
 const STATUS_RANK: Record<string, number> = {
   LIVE: 0,
@@ -38,6 +36,13 @@ const STATUS_RANK: Record<string, number> = {
   STALE: 1,
 };
 
+const TAB_LABELS: { id: LiveBoardTab; label: string }[] = [
+  { id: "live", label: "Live" },
+  { id: "upcoming", label: "Upcoming" },
+  { id: "recent", label: "Recent" },
+  { id: "all", label: "All" },
+];
+
 function asLifecycle(raw: string | undefined, freshness: string | undefined): MatchLifecycle {
   // Never promote DEMO → LIVE
   if (raw === "DEMO" || freshness === "DEMO") return "DEMO";
@@ -45,7 +50,6 @@ function asLifecycle(raw: string | undefined, freshness: string | undefined): Ma
   if (raw === "LIVE") return "LIVE";
   if (raw === "UPCOMING" || freshness === "UPCOMING") return "UPCOMING";
   if (raw === "COMPLETED" || freshness === "HISTORICAL") return "COMPLETED";
-  if (raw === "DEMO") return "DEMO";
   return "COMPLETED";
 }
 
@@ -70,8 +74,12 @@ function fromFixture(f: FixtureRow): BoardRow {
     venue: f.venue,
     format: f.format,
     series: f.series,
+    score: f.score,
     homeName: f.homeName,
     awayName: f.awayName,
+    homeShort: f.homeShort,
+    awayShort: f.awayShort,
+    statusLine: f.statusLine,
     provenance: f.provenance,
     isDemo: status === "DEMO" || f.id === matchMeta.id || f.id.startsWith("demo-"),
   };
@@ -91,6 +99,9 @@ function fromMatch(m: ApiMatchRow): BoardRow {
     score: m.score,
     homeName: m.homeName ?? m.teams?.home,
     awayName: m.awayName ?? m.teams?.away,
+    homeShort: m.homeShort,
+    awayShort: m.awayShort,
+    statusLine: m.statusLine,
     provenance: m.provenance
       ? { source: m.provenance.source, asOf: m.provenance.asOf, note: m.provenance.note }
       : undefined,
@@ -115,6 +126,9 @@ function mergeBoard(fixtures: FixtureRow[], matches: ApiMatchRow[]): BoardRow[] 
       status: prev.isDemo || next.isDemo ? "DEMO" : next.status,
       freshness: prev.isDemo || next.isDemo ? "DEMO" : next.freshness,
       score: next.score ?? prev.score,
+      statusLine: next.statusLine ?? prev.statusLine,
+      homeShort: next.homeShort ?? prev.homeShort,
+      awayShort: next.awayShort ?? prev.awayShort,
       isDemo: prev.isDemo || next.isDemo,
     });
   }
@@ -131,6 +145,9 @@ function mergeBoard(fixtures: FixtureRow[], matches: ApiMatchRow[]): BoardRow[] 
       score: matchMeta.score,
       homeName: "England",
       awayName: "India",
+      homeShort: "ENG",
+      awayShort: "IND",
+      statusLine: matchMeta.dayLabel,
       provenance: {
         source: matchMeta.provenance.source,
         asOf: matchMeta.provenance.asOf,
@@ -153,6 +170,8 @@ type Props = {
   /** Compact strip for Home; full board for Match Room */
   compact?: boolean;
   limit?: number;
+  /** Initial tab override (e.g. Live hub) */
+  initialTab?: LiveBoardTab;
 };
 
 export function LiveFixturesBoard({
@@ -160,17 +179,35 @@ export function LiveFixturesBoard({
   onSelect,
   compact = false,
   limit = 12,
+  initialTab,
 }: Props) {
   const health = useDataHealth();
-  const fixtures = useFixtures(15_000);
-  const matches = useMatchList(24, 15_000);
+  /** null = follow smart default from loaded rows; set when user picks a tab */
+  const [tabOverride, setTabOverride] = useState<LiveBoardTab | null>(initialTab ?? null);
+  const [pollLive, setPollLive] = useState(initialTab === "live");
+
+  const fixtures = useFixtures(pollLive ? 15_000 : 0);
+  const matches = useMatchList(24, pollLive ? 15_000 : 0);
 
   const rows = useMemo(
-    () => mergeBoard(fixtures.fixtures, matches.matches).slice(0, limit),
-    [fixtures.fixtures, matches.matches, limit],
+    () => mergeBoard(fixtures.fixtures, matches.matches),
+    [fixtures.fixtures, matches.matches],
   );
 
-  const liveCount = rows.filter((r) => r.status === "LIVE" && !r.isDemo).length;
+  const tab: LiveBoardTab =
+    tabOverride ?? (rows.length > 0 ? defaultBoardTab(rows) : "all");
+
+  // Enable 15s polling only while Live tab is active (adjust-on-render)
+  if (tab === "live" && !pollLive) setPollLive(true);
+  if (tab !== "live" && pollLive) setPollLive(false);
+
+  const counts = useMemo(() => tabCounts(rows), [rows]);
+  const filtered = useMemo(() => {
+    const list = rows.filter((r) => matchesBoardTab(r, tab));
+    return list.slice(0, limit);
+  }, [rows, tab, limit]);
+
+  const liveCount = counts.live;
   const providerReady =
     health.status === "ok" &&
     health.summary &&
@@ -182,14 +219,14 @@ export function LiveFixturesBoard({
     fixtures.status === "unavailable" && matches.status === "unavailable";
 
   return (
-    <div className="rounded-[1.75rem] border border-white/8 bg-card/40">
+    <div id="live" className="rounded-[1.75rem] border border-white/8 bg-card/40 scroll-mt-24">
       <div className={`flex flex-wrap items-end justify-between gap-3 ${compact ? "p-4" : "p-5 sm:p-6"}`}>
         <div>
           <Kicker className="text-cyan">Live Scores</Kicker>
           <p className="mt-1.5 text-sm text-muted-foreground">
             {providerReady
-              ? `Provider synced · ${liveCount} LIVE · polls /api/fixtures + /api/matches`
-              : "Seeds + DEMO · add CRICKETOS_DATA_API_KEY for real LIVE scores"}
+              ? `Provider synced · ${liveCount} LIVE · polls every 15s on Live tab`
+              : "Seeds + DEMO · add CricAPI key for real LIVE scores"}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
@@ -198,10 +235,42 @@ export function LiveFixturesBoard({
               {health.summary.demoMode ? "DEMO mode" : health.summary.dataProvider}
             </span>
           ) : null}
-          {rows[0]?.provenance?.asOf ? (
+          {tab === "live" ? (
+            <span className="tabular-nums text-lime/80">auto-refresh 15s</span>
+          ) : rows[0]?.provenance?.asOf ? (
             <span className="tabular-nums">as of {rows[0].provenance.asOf.slice(0, 19)}</span>
           ) : null}
         </div>
+      </div>
+
+      <div
+        className="flex gap-1 overflow-x-auto border-t border-white/8 px-3 py-2 sm:px-5"
+        role="tablist"
+        aria-label="Fixture filters"
+      >
+        {TAB_LABELS.map((t) => {
+          const active = tab === t.id;
+          const count = counts[t.id];
+          return (
+            <button
+              key={t.id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => setTabOverride(t.id)}
+              className={`shrink-0 rounded-md px-3 py-1.5 text-xs font-medium tracking-wide transition ${
+                active
+                  ? "bg-lime/15 text-lime"
+                  : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
+              }`}
+            >
+              {t.label}
+              <span className={`ml-1.5 tabular-nums ${active ? "text-lime/80" : "text-muted-foreground/70"}`}>
+                {count}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {loading ? (
@@ -212,71 +281,16 @@ export function LiveFixturesBoard({
         <p className="border-t border-white/8 px-5 py-6 text-sm text-gold">
           Fixtures UNAVAILABLE — not claiming LIVE
         </p>
-      ) : (
-        <ul className="divide-y divide-white/8 border-t border-white/8">
-          {rows.map((row) => {
-            const selected = selectedId === row.id;
-            const label = row.isDemo ? `${row.title.replace(/ \(DEMO\)$/, "")}` : row.title;
-            return (
-              <li key={row.id}>
-                <button
-                  type="button"
-                  onClick={() => onSelect?.(row)}
-                  className={`flex w-full flex-wrap items-center justify-between gap-3 px-4 py-3.5 text-left transition sm:px-6 ${
-                    selected ? "bg-lime/10" : "hover:bg-white/4"
-                  }`}
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <StatusBadge status={row.status} />
-                      <FreshnessBadge freshness={row.freshness} />
-                      {row.isDemo ? (
-                        <span className="text-[10px] tracking-[0.14em] text-gold uppercase">
-                          DEMO option
-                        </span>
-                      ) : null}
-                    </div>
-                    <p className="mt-1.5 font-medium tracking-tight">{label}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {row.venue}
-                      {row.format ? ` · ${row.format}` : ""}
-                      {row.series ? ` · ${row.series}` : ""}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    {row.score ? (
-                      <p className="font-display text-2xl font-semibold tabular-nums">
-                        {row.score.runs}
-                        <span className="text-lime">/{row.score.wickets}</span>
-                      </p>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
-                        {row.status === "UPCOMING" ? "Not started" : "—"}
-                      </p>
-                    )}
-                    {row.score?.overs ? (
-                      <p className="mt-0.5 font-mono text-[11px] text-cyan">{row.score.overs} ov</p>
-                    ) : null}
-                  </div>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-
-      {!compact && rows[0]?.provenance ? (
-        <div className="border-t border-white/8 px-5 py-3 sm:px-6">
-          <ProvenanceStrip
-            source={rows.find((r) => r.status === "LIVE")?.provenance?.source ?? rows[0].provenance.source}
-            asOf={rows.find((r) => r.status === "LIVE")?.provenance?.asOf ?? rows[0].provenance.asOf}
-            note={
-              providerReady
-                ? "LIVE only when provider reports in-progress. DEMO sim is never labelled LIVE."
-                : "No provider key — board shows seeded HISTORICAL / UPCOMING + Lord's DEMO."
-            }
-          />
-          {!providerReady ? (
+      ) : filtered.length === 0 ? (
+        <div className="border-t border-white/8 px-5 py-6">
+          <p className="text-sm text-muted-foreground">
+            {tab === "live"
+              ? providerReady
+                ? "No in-progress matches from the provider right now."
+                : "No LIVE matches — seeds stay on Upcoming / Recent. Add a CricAPI key for real LIVE."
+              : "Nothing in this filter."}
+          </p>
+          {tab === "live" && !providerReady ? (
             <Button
               type="button"
               size="sm"
@@ -286,9 +300,143 @@ export function LiveFixturesBoard({
                 window.open("https://cricketdata.org/", "_blank", "noopener,noreferrer");
               }}
             >
-              Get free CricAPI key
+              Add CricAPI key for live scores
             </Button>
           ) : null}
+        </div>
+      ) : (
+        <ul className="divide-y divide-white/8 border-t border-white/8">
+          {filtered.map((row) => {
+            const selected = selectedId === row.id;
+            const home = rowHomeShort(row);
+            const away = rowAwayShort(row);
+            const crr = formatCrr(computeCrr(row.score));
+            const mini =
+              row.statusLine ??
+              (row.isDemo ? "Scripted DEMO board — not a broadcast feed" : undefined);
+            return (
+              <li key={row.id}>
+                <button
+                  type="button"
+                  onClick={() => onSelect?.(row)}
+                  className={`flex w-full flex-col gap-2 px-4 py-3.5 text-left transition sm:px-6 ${
+                    selected ? "bg-lime/10" : "hover:bg-white/4"
+                  }`}
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="min-w-0 truncate text-[11px] tracking-[0.12em] text-muted-foreground uppercase">
+                      {row.series ?? row.format}
+                      {row.series && row.format ? ` · ${row.format}` : ""}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <StatusBadge status={row.status} />
+                      {row.freshness !== row.status ? (
+                        <FreshnessBadge freshness={row.freshness} />
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-end justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-display text-lg font-semibold tracking-tight sm:text-xl">
+                        <span className="tabular-nums">{home}</span>
+                        <span className="mx-1.5 text-sm font-normal text-muted-foreground">vs</span>
+                        <span className="tabular-nums">{away}</span>
+                      </p>
+                      <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                        {row.homeName && row.awayName
+                          ? `${row.homeName} vs ${row.awayName}`
+                          : row.title.replace(/ \(DEMO\)$/, "")}
+                      </p>
+                      <p className="mt-1 text-[11px] text-muted-foreground/90">
+                        {row.venue}
+                      </p>
+                    </div>
+
+                    <div className="text-right">
+                      {row.score ? (
+                        <>
+                          <p className="font-display text-2xl font-semibold tabular-nums leading-none sm:text-[1.75rem]">
+                            {row.score.runs}
+                            <span className="text-lime">/{row.score.wickets}</span>
+                          </p>
+                          <p className="mt-1 font-mono text-[11px] text-cyan">
+                            {row.score.overs ? `${row.score.overs} ov` : ""}
+                            {crr ? ` · CRR ${crr}` : ""}
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          {row.status === "UPCOMING" ? "Not started" : "—"}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {mini ? (
+                    <p className="line-clamp-1 text-xs leading-relaxed text-muted-foreground">
+                      {mini}
+                    </p>
+                  ) : null}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {!compact ? (
+        <div className="border-t border-white/8 px-5 py-3 sm:px-6">
+          {rows[0]?.provenance ? (
+            <ProvenanceStrip
+              source={
+                rows.find((r) => r.status === "LIVE" && !r.isDemo)?.provenance?.source ??
+                rows[0].provenance.source
+              }
+              asOf={
+                rows.find((r) => r.status === "LIVE" && !r.isDemo)?.provenance?.asOf ??
+                rows[0].provenance.asOf
+              }
+              note={
+                providerReady
+                  ? "LIVE only when provider reports in-progress. DEMO sim is never labelled LIVE."
+                  : "No provider key — board shows seeded HISTORICAL / UPCOMING + Lord's DEMO."
+              }
+            />
+          ) : null}
+          {!providerReady ? (
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="border-white/12"
+                onClick={() => {
+                  window.open("https://cricketdata.org/", "_blank", "noopener,noreferrer");
+                }}
+              >
+                Add CricAPI key for live scores
+              </Button>
+              <span className="text-[11px] text-muted-foreground">
+                Set <code className="text-[10px]">CRICKETOS_DATA_PROVIDER=cricapi</code> + key — see{" "}
+                <code className="text-[10px]">docs/PROVIDERS.md</code>
+              </span>
+            </div>
+          ) : null}
+        </div>
+      ) : !providerReady ? (
+        <div className="border-t border-white/8 px-4 py-3 sm:px-6">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="border-white/12"
+            onClick={() => {
+              window.open("https://cricketdata.org/", "_blank", "noopener,noreferrer");
+            }}
+          >
+            Add CricAPI key for live scores
+          </Button>
         </div>
       ) : null}
     </div>

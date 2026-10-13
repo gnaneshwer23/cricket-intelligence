@@ -135,7 +135,10 @@ function subscribeHash(onStoreChange: () => void) {
 }
 
 function hashScreen(): ScreenId {
-  const id = window.location.hash.replace("#", "") as ScreenId;
+  const raw = window.location.hash.replace(/^#/, "").split(/[/?]/)[0] ?? "";
+  // Cricbuzz-style Live Scores hub — same Match Room surface
+  if (raw === "live") return "match";
+  const id = raw as ScreenId;
   return screens.includes(id) ? id : "home";
 }
 

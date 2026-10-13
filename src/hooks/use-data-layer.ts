@@ -31,10 +31,13 @@ export type ApiMatchRow = {
   format: string;
   series?: string;
   score?: { runs: number; wickets: number; overs: string };
+  statusLine?: string;
   provenance?: { source: string; asOf: string; note?: string; kind?: string };
   teams?: { home: string; away: string };
   homeName?: string;
   awayName?: string;
+  homeShort?: string;
+  awayShort?: string;
 };
 
 export type FixtureRow = {
@@ -48,6 +51,10 @@ export type FixtureRow = {
   startTimeIso?: string;
   homeName: string;
   awayName: string;
+  homeShort?: string;
+  awayShort?: string;
+  score?: { runs: number; wickets: number; overs: string };
+  statusLine?: string;
   provenance?: { source: string; asOf: string; note?: string };
 };
 

@@ -38,7 +38,7 @@ import type { ScreenId } from "@/lib/types";
 const primaryNav: { id: ScreenId; label: string; short: string; icon: typeof House }[] = [
   { id: "home", label: "Briefing", short: "Home", icon: House },
   { id: "ask", label: "Copilot", short: "Ask", icon: MessageCircle },
-  { id: "match", label: "Match Room", short: "Match", icon: Activity },
+  { id: "match", label: "Live Scores", short: "Live", icon: Activity },
   { id: "explorer", label: "Explorer", short: "Explore", icon: ChartColumn },
   { id: "players", label: "Players", short: "Players", icon: UserRound },
 ];
@@ -54,7 +54,7 @@ const laterNav: { id: ScreenId; label: string; icon: typeof House; note: string 
 const titles: Record<ScreenId, string> = {
   home: "Intelligence Briefing",
   ask: "Cricket Copilot",
-  match: "Match Room",
+  match: "Live Scores",
   explorer: "Cricket Explorer",
   players: "Player Intelligence",
   feed: "My Cricket",
@@ -123,7 +123,13 @@ function Shell() {
                   active ? "cos-cta shadow-[inset_2px_0_0_0_var(--color-lime)]" : ""
                 }`}
                 aria-current={active ? "page" : undefined}
-                onClick={() => go(item.id)}
+                onClick={() => {
+                  if (item.id === "match") {
+                    window.location.hash = "live";
+                  } else {
+                    go(item.id);
+                  }
+                }}
               >
                 <Icon />
                 {item.label}
@@ -201,7 +207,13 @@ function Shell() {
                   ? "text-lime"
                   : "text-muted-foreground hover:text-foreground"
               }`}
-              onClick={() => go(item.id)}
+              onClick={() => {
+                if (item.id === "match") {
+                  window.location.hash = "live";
+                } else {
+                  go(item.id);
+                }
+              }}
             >
               <Icon className="size-4" />
               {item.short}

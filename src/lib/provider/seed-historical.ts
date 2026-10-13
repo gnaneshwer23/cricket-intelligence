@@ -28,6 +28,7 @@ export const SEED_CRICAPI_ROWS: Record<string, unknown>[] = [
   {
     id: "seed-headingley-2019",
     name: "England vs Australia, 3rd Test",
+    series: "The Ashes 2019",
     status: "Match finished · England won by 1 wicket",
     venue: "Headingley, Leeds",
     matchType: "test",
@@ -38,6 +39,7 @@ export const SEED_CRICAPI_ROWS: Record<string, unknown>[] = [
   {
     id: "seed-wc-final-2019",
     name: "England vs New Zealand, Final",
+    series: "ICC Cricket World Cup 2019",
     status: "Match finished · England won (Super Over)",
     venue: "Lord's, London",
     matchType: "odi",
@@ -48,6 +50,7 @@ export const SEED_CRICAPI_ROWS: Record<string, unknown>[] = [
   {
     id: "seed-wtc-final-2023",
     name: "Australia vs India, WTC Final",
+    series: "ICC World Test Championship Final 2023",
     status: "Match finished · Australia won by 209 runs",
     venue: "The Oval, London",
     matchType: "test",
@@ -58,6 +61,7 @@ export const SEED_CRICAPI_ROWS: Record<string, unknown>[] = [
   {
     id: "seed-ashes-edgbaston-2005",
     name: "England vs Australia, 2nd Test",
+    series: "The Ashes 2005",
     status: "Match finished · England won by 2 runs",
     venue: "Edgbaston, Birmingham",
     matchType: "test",
@@ -68,6 +72,7 @@ export const SEED_CRICAPI_ROWS: Record<string, unknown>[] = [
   {
     id: "seed-upcoming-aus-sa",
     name: "Australia vs South Africa, 1st Test",
+    series: "Australia tour of South Africa 2026/27",
     status: "Match not started",
     venue: "Centurion",
     matchType: "test",
@@ -78,6 +83,7 @@ export const SEED_CRICAPI_ROWS: Record<string, unknown>[] = [
   {
     id: "seed-ipl-final-2024",
     name: "Kolkata Knight Riders vs Sunrisers Hyderabad, Final",
+    series: "Indian Premier League 2024",
     status: "Match finished · KKR won by 8 wickets",
     venue: "MA Chidambaram Stadium, Chennai",
     matchType: "t20",
@@ -88,6 +94,7 @@ export const SEED_CRICAPI_ROWS: Record<string, unknown>[] = [
   {
     id: "seed-wi-eng-t20-2024",
     name: "West Indies vs England, 1st T20I",
+    series: "England tour of West Indies 2024/25",
     status: "Match finished · West Indies won by 4 wickets",
     venue: "Kensington Oval, Bridgetown",
     matchType: "t20",
@@ -98,6 +105,7 @@ export const SEED_CRICAPI_ROWS: Record<string, unknown>[] = [
   {
     id: "seed-women-wc-final-2022",
     name: "Australia Women vs England Women, Final",
+    series: "ICC Women's Cricket World Cup 2022",
     status: "Match finished · Australia Women won by 71 runs",
     venue: "AMC Stadium, Christchurch",
     matchType: "odi",
@@ -108,6 +116,7 @@ export const SEED_CRICAPI_ROWS: Record<string, unknown>[] = [
   {
     id: "seed-ind-aus-wtc-2023",
     name: "India vs Australia, Border-Gavaskar (archive)",
+    series: "Border-Gavaskar Trophy 2022/23",
     status: "Match finished · Australia won by 9 wickets",
     venue: "Gabba, Brisbane",
     matchType: "test",
@@ -118,6 +127,7 @@ export const SEED_CRICAPI_ROWS: Record<string, unknown>[] = [
   {
     id: "seed-upcoming-ipl-opener",
     name: "Mumbai Indians vs Chennai Super Kings, Match 1",
+    series: "Indian Premier League 2026",
     status: "Match not started",
     venue: "Wankhede Stadium, Mumbai",
     matchType: "t20",
@@ -128,6 +138,7 @@ export const SEED_CRICAPI_ROWS: Record<string, unknown>[] = [
   {
     id: "seed-upcoming-ind-w-aus-w",
     name: "India Women vs Australia Women, 1st ODI",
+    series: "Australia Women tour of India 2026",
     status: "Match not started",
     venue: "Wankhede Stadium, Mumbai",
     matchType: "odi",

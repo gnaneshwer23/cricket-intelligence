@@ -15,6 +15,7 @@ import type {
 } from "@/lib/domain/models";
 import { ballsToOvers, oversToBalls } from "@/lib/calc";
 import { isRecordExport } from "@/lib/ingestion/validate";
+import { teamAbbr } from "@/lib/team-abbr";
 
 export function slugId(prefix: string, raw: string): string {
   const cleaned = raw
@@ -101,13 +102,13 @@ export function teamFromNames(
       id: slugId("team", homeName),
       providerIds: { [provider]: homeName },
       name: homeName,
-      shortName: homeName.slice(0, 3).toUpperCase(),
+      shortName: teamAbbr(homeName),
     },
     away: {
       id: slugId("team", awayName),
       providerIds: { [provider]: awayName },
       name: awayName,
-      shortName: awayName.slice(0, 3).toUpperCase(),
+      shortName: teamAbbr(awayName),
     },
   };
 }
@@ -146,7 +147,12 @@ export function normaliseCricApiMatch(row: Record<string, unknown>): DomainMatch
     freshness: lifecycleToFreshness(lifecycle),
     title: typeof row.name === "string" ? row.name : `${homeName} vs ${awayName}`,
     venue: typeof row.venue === "string" ? row.venue : "Unknown venue",
-    series: typeof row.series_id === "string" ? `series:${row.series_id}` : undefined,
+    series:
+      typeof row.series === "string" && row.series.trim()
+        ? row.series.trim()
+        : typeof row.series_id === "string"
+          ? `series:${row.series_id}`
+          : undefined,
     format: mapFormat(typeof row.matchType === "string" ? row.matchType : undefined),
     startTimeIso: typeof row.dateTimeGMT === "string" ? row.dateTimeGMT : undefined,
     teams: teamFromNames(homeName, awayName, "cricapi"),
@@ -169,8 +175,12 @@ export function toFixtureItem(match: DomainMatch): DomainFixtureListItem {
     startTimeIso: match.startTimeIso,
     provenance: match.provenance,
     updatedAt: match.updatedAt,
+    note: match.note,
+    score: match.score,
     homeName: match.teams.home.name,
     awayName: match.teams.away.name,
+    homeShort: match.teams.home.shortName,
+    awayShort: match.teams.away.shortName,
   };
 }
 

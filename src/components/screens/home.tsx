@@ -52,12 +52,24 @@ export function HomeScreen() {
   const fixtureStatus = (fixtureHighlight?.status ?? "UPCOMING") as MatchLifecycle;
 
   function openMatchFromBoard(row: BoardRow) {
-    go("match");
-    // Match Room reads hash + selected demo via session flag
     try {
       sessionStorage.setItem("cricketos-match-pick", row.id);
     } catch {
       /* ignore */
+    }
+    // #live is the Live Scores hub (Match Room); keep matchId for centre
+    if (typeof window !== "undefined") {
+      window.location.hash = "live";
+    } else {
+      go("match");
+    }
+  }
+
+  function openLiveHub() {
+    if (typeof window !== "undefined") {
+      window.location.hash = "live";
+    } else {
+      go("match");
     }
   }
 
@@ -142,13 +154,18 @@ export function HomeScreen() {
         </div>
       </section>
 
-      {/* Live Scores board — multi-match; DEMO never labelled LIVE */}
-      <section className="mt-10">
+      {/* Live Scores hub — Cricbuzz-style scanning; DEMO never labelled LIVE */}
+      <section className="mt-10" aria-labelledby="live-scores-heading">
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <Kicker className="text-cyan">Live Scores</Kicker>
+            <Kicker className="text-cyan">
+              <span id="live-scores-heading">Live Scores</span>
+            </Kicker>
             <p className="mt-1.5 text-sm text-muted-foreground">
-              Today&apos;s fixtures + archive · polls every 15s · provider LIVE when keyed
+              Live · Upcoming · Recent · tap a card for Match Centre ·{" "}
+              <a href="#live" className="text-cyan underline-offset-2 hover:underline">
+                #live
+              </a>
             </p>
           </div>
           <Button
@@ -156,9 +173,9 @@ export function HomeScreen() {
             variant="outline"
             size="sm"
             className="cos-cta border-white/12"
-            onClick={() => go("match")}
+            onClick={openLiveHub}
           >
-            Open Match Room
+            Full Live Scores
           </Button>
         </div>
         <div className="mb-3">
@@ -176,7 +193,19 @@ export function HomeScreen() {
               Scripted England vs India session — one Match Room option, not a live feed
             </p>
           </div>
-          <Button type="button" size="sm" variant="ghost" onClick={() => go("match")}>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              try {
+                sessionStorage.setItem("cricketos-match-pick", matchMeta.id);
+              } catch {
+                /* ignore */
+              }
+              openLiveHub();
+            }}
+          >
             Open DEMO board
           </Button>
         </div>
@@ -188,7 +217,7 @@ export function HomeScreen() {
             } catch {
               /* ignore */
             }
-            go("match");
+            openLiveHub();
           }}
         />
       </section>
