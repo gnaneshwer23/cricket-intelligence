@@ -110,8 +110,8 @@ Header (teams, competition, score, innings, status, source/freshness) → situat
 - [x] DEMO playground E2E path wired: situation → timeline/graph → evidence → Ask/What-If → return with shared `matchFocus`
 - [x] Truth mode: home does not invent scores; freshness preserves HISTORICAL/UPCOMING under demoMode
 - [x] Seeds not used as Copilot live evidence (quarantine answer + filter)
-- [ ] `npm test` / `lint` / `typecheck` / `build` reported honestly (in progress)
-- [ ] Deploy health re-checked after ship; no false “LIVE verified” claim without key
+- [x] `npm test` (74 pass) / `lint` / `typecheck` / `build` — verified locally 2026-10-13
+- [x] Deploy production `2865a54` READY; `/api/health` truth mode; seed freshness HISTORICAL on deploy — no LIVE claim without key
 
 ## Risks / deferred
 
