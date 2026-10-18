@@ -35,6 +35,13 @@ async function allMatches(): Promise<DomainMatch[]> {
   return stored;
 }
 
+async function matchById(id: string): Promise<DomainMatch | null> {
+  const stored = await getStorage().getMatch(id);
+  if (stored) return stored;
+  const demo = getDemoMatch();
+  return id === demo.id ? demo : null;
+}
+
 async function scorecardFor(matchId: string): Promise<DomainScorecard | null> {
   const storage = getStorage();
   let card = await storage.getScorecard(matchId);
@@ -107,6 +114,23 @@ async function cardMentionsPlayer(matchId: string, needle: string): Promise<bool
 export async function searchHistoricalMatchesPaged(
   filter: HistoricalMatchFilter = {},
 ): Promise<HistoricalSearchResult> {
+  const storage = getStorage();
+  if (storage.searchMatches) {
+    const pageSize = Math.min(Math.max(filter.limit ?? 20, 1), 100);
+    const page = Math.max(filter.page ?? 0, 0);
+    const found = await storage.searchMatches({ ...filter, page, limit: pageSize });
+    return {
+      matches: await Promise.all(found.matches.map((m) => attachCoverage(m))),
+      total: found.total,
+      page,
+      pageSize,
+      hasMore: (page + 1) * pageSize < found.total,
+      archiveClaim: ARCHIVE_POLICY.claim,
+      measuredYearMin: found.yearMin,
+      measuredYearMax: found.yearMax,
+    };
+  }
+
   let list = await Promise.all((await allMatches()).map((m) => attachCoverage(m)));
 
   const teamNeedle = (filter.teamContains ?? filter.teamId ?? "").toLowerCase();
@@ -228,9 +252,7 @@ export async function compareMatches(
   leftId: string,
   rightId: string,
 ): Promise<MatchComparison | null> {
-  const list = await allMatches();
-  const left = list.find((m) => m.id === leftId);
-  const right = list.find((m) => m.id === rightId);
+  const [left, right] = await Promise.all([matchById(leftId), matchById(rightId)]);
   if (!left || !right) return null;
 
   const notes: string[] = [];
@@ -263,7 +285,11 @@ export async function compareMatches(
  */
 export async function playerBattingTrend(playerId: string): Promise<PlayerTrend | null> {
   const storage = getStorage();
-  const matches = await allMatches();
+  const matches = storage.matchIdsForPlayer
+    ? (
+        await Promise.all((await storage.matchIdsForPlayer(playerId)).map((id) => matchById(id)))
+      ).filter((m): m is DomainMatch => Boolean(m))
+    : await allMatches();
   const points: PlayerTrend["points"] = [];
   let playerName = playerId;
 

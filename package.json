@@ -7,14 +7,18 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit",
-    "test": "tsx --test \"src/lib/__tests__/**/*.test.ts\""
+    "typecheck": "next typegen && tsc --noEmit",
+    "test": "tsx --test \"src/lib/__tests__/**/*.test.ts\"",
+    "db:migrate": "tsx scripts/db-migrate.ts",
+    "ingest:cricsheet": "tsx scripts/ingest-cricsheet.ts"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
     "cn": "^0.4.0",
+    "fflate": "0.8.3",
     "lucide-react": "^1.55.0",
     "next": "16.4.0",
+    "pg": "8.23.1",
     "radix-ui": "^1.8.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
@@ -24,6 +28,7 @@
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^20",
+    "@types/pg": "8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",

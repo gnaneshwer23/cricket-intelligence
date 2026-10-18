@@ -69,6 +69,12 @@ export type DomainBall = {
   isSix?: boolean;
   dismissalText?: string;
   commentary?: string;
+  /** 1-based innings number within the match (super overs continue the count). */
+  inningsNumber?: number;
+  battingTeam?: string;
+  nonStrikerId?: string;
+  wicketKind?: string;
+  playerOutId?: string;
 };
 
 export type DomainBattingCardRow = {
