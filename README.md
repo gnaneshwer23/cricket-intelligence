@@ -69,6 +69,7 @@ Without a key: honest empty/setup state — **not** fake England–India 245/4, 
 | `GET /api/stats/players?q=` | Typo-tolerant player search (Postgres) |
 | `GET /api/stats/players/:id` | Batting + bowling with SQL evidence; filters `format`, `phase`, `yearFrom`, `yearTo`, `competition`, `gender` |
 | `GET /api/stats/matchup?batter=&bowler=` | Batter vs bowler by season, with sample-size warning |
+| `GET /api/stats/winprob/:matchId` | T20 win-probability worm + turning points (model `t20-wp-v1`, see `docs/WIN_PROBABILITY.md`) |
 
 **Wire a live provider:** see [Exact steps for true live details](#exact-steps-for-true-live-details-cricapi--cricketdataorg) above. Seeds remain for API tests only — they do **not** populate the customer-facing home as truth.
 
@@ -80,6 +81,7 @@ export DATABASE_URL=postgres://localhost:5432/cricketos_dev
 npm run db:migrate
 npm run ingest:cricsheet -- --file ipl_json.zip   # or tests_json.zip, t20s_json.zip, all_json.zip
 npm run ingest:register                            # aliases: "Virat Kohli" → V Kohli
+npm run winprob:train && npm run winprob:backfill   # T20 win probability v1 (holdout 2025–26)
 CRICKETOS_STORAGE_BACKEND=postgres npm run dev -- --port 41731
 ```
 

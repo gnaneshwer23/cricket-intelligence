@@ -1,0 +1,299 @@
+{
+  "version": "t20-wp-v1",
+  "format": "t20",
+  "trainedOn": "Indian Premier League 2008–2024 (1045 matches)",
+  "holdout": "Indian Premier League 2025–2026 (138 matches)",
+  "seasonPars": {
+    "2008": 163.2,
+    "2009": 150.3,
+    "2010": 165.3,
+    "2011": 156.2,
+    "2012": 158.4,
+    "2013": 157,
+    "2014": 163.9,
+    "2015": 167.4,
+    "2016": 164.3,
+    "2017": 166.7,
+    "2018": 172.1,
+    "2019": 168.3,
+    "2020": 169.2,
+    "2021": 159.3,
+    "2022": 171.1,
+    "2023": 183,
+    "2024": 190.1,
+    "2025": 192.4,
+    "2026": 196.4
+  },
+  "defaultPar": 160,
+  "firstInnings": {
+    "features": [
+      "bias",
+      "runs/par",
+      "wickets/10",
+      "ballsBowled/120",
+      "runs/par × ballsLeft/120",
+      "wickets/10 × ballsLeft/120",
+      "(wickets/10)²",
+      "par/180",
+      "impactPlayerEra"
+    ],
+    "coefficients": [
+      0.12054034667633598,
+      2.8359555074988907,
+      -1.5289480735038745,
+      -1.719652496706605,
+      0.766713641865136,
+      -1.0677603260536663,
+      -0.6207795333233093,
+      -0.4392205067329605,
+      0.24207196882892495
+    ]
+  },
+  "chase": {
+    "features": [
+      "bias",
+      "runsNeeded/par",
+      "ballsLeft/120",
+      "wicketsLeft/10",
+      "requiredRate ÷ par rate (capped 3)",
+      "ln((needed+1)/(ballsLeft+1))",
+      "wicketsLeft/10 × ballsLeft/120",
+      "target/par",
+      "impactPlayerEra"
+    ],
+    "coefficients": [
+      1.680988195181927,
+      -2.786187095544596,
+      -1.073753302665238,
+      2.8420454614269715,
+      -1.569341043983501,
+      -2.1620599737765724,
+      1.1124345750322304,
+      0.6853007206231141,
+      0.05395271806347489
+    ]
+  },
+  "metrics": {
+    "recencyHalfLifeYears": "none",
+    "halfLifeSelection": [
+      {
+        "halfLife": "none",
+        "firstBrier": 0.2151,
+        "chaseBrier": 0.121
+      },
+      {
+        "halfLife": 8,
+        "firstBrier": 0.2151,
+        "chaseBrier": 0.1213
+      },
+      {
+        "halfLife": 4,
+        "firstBrier": 0.2149,
+        "chaseBrier": 0.1215
+      },
+      {
+        "halfLife": 2,
+        "firstBrier": 0.2147,
+        "chaseBrier": 0.122
+      }
+    ],
+    "excludedMatches": 60,
+    "exclusionRule": "revised target (D/L), tie, no result, reduced overs, or no chase",
+    "trainBaseRates": {
+      "battingFirstWins": 0.4628,
+      "chaseWins": 0.5199
+    },
+    "holdoutFirstInnings": {
+      "Constant (train base rate)": {
+        "n": 17391,
+        "brier": 0.2457,
+        "logLoss": 0.6846,
+        "ece": 0.039
+      },
+      "Linear baseline": {
+        "n": 17391,
+        "brier": 0.2273,
+        "logLoss": 0.6473,
+        "ece": 0.1167
+      },
+      "v1 model": {
+        "n": 17391,
+        "brier": 0.2203,
+        "logLoss": 0.6308,
+        "ece": 0.0851,
+        "bins": [
+          {
+            "from": 0,
+            "to": 0.1,
+            "n": 26,
+            "meanPredicted": 0.087,
+            "observed": 0
+          },
+          {
+            "from": 0.1,
+            "to": 0.2,
+            "n": 301,
+            "meanPredicted": 0.151,
+            "observed": 0.096
+          },
+          {
+            "from": 0.2,
+            "to": 0.3,
+            "n": 904,
+            "meanPredicted": 0.261,
+            "observed": 0.07
+          },
+          {
+            "from": 0.3,
+            "to": 0.4,
+            "n": 2083,
+            "meanPredicted": 0.356,
+            "observed": 0.143
+          },
+          {
+            "from": 0.4,
+            "to": 0.5,
+            "n": 4716,
+            "meanPredicted": 0.458,
+            "observed": 0.342
+          },
+          {
+            "from": 0.5,
+            "to": 0.6,
+            "n": 5109,
+            "meanPredicted": 0.547,
+            "observed": 0.54
+          },
+          {
+            "from": 0.6,
+            "to": 0.7,
+            "n": 2978,
+            "meanPredicted": 0.645,
+            "observed": 0.573
+          },
+          {
+            "from": 0.7,
+            "to": 0.8,
+            "n": 1122,
+            "meanPredicted": 0.736,
+            "observed": 0.702
+          },
+          {
+            "from": 0.8,
+            "to": 0.9,
+            "n": 152,
+            "meanPredicted": 0.827,
+            "observed": 0.77
+          },
+          {
+            "from": 0.9,
+            "to": 1,
+            "n": 0,
+            "meanPredicted": null,
+            "observed": null
+          }
+        ]
+      }
+    },
+    "holdoutChase": {
+      "Constant (train base rate)": {
+        "n": 15914,
+        "brier": 0.248,
+        "logLoss": 0.6892,
+        "ece": 0.039
+      },
+      "Linear baseline": {
+        "n": 15914,
+        "brier": 0.1526,
+        "logLoss": 0.4687,
+        "ece": 0.1282
+      },
+      "v1 model": {
+        "n": 15914,
+        "brier": 0.1186,
+        "logLoss": 0.3798,
+        "ece": 0.0806,
+        "bins": [
+          {
+            "from": 0,
+            "to": 0.1,
+            "n": 1938,
+            "meanPredicted": 0.037,
+            "observed": 0.002
+          },
+          {
+            "from": 0.1,
+            "to": 0.2,
+            "n": 1439,
+            "meanPredicted": 0.15,
+            "observed": 0.104
+          },
+          {
+            "from": 0.2,
+            "to": 0.3,
+            "n": 1376,
+            "meanPredicted": 0.249,
+            "observed": 0.169
+          },
+          {
+            "from": 0.3,
+            "to": 0.4,
+            "n": 1402,
+            "meanPredicted": 0.352,
+            "observed": 0.315
+          },
+          {
+            "from": 0.4,
+            "to": 0.5,
+            "n": 1557,
+            "meanPredicted": 0.449,
+            "observed": 0.495
+          },
+          {
+            "from": 0.5,
+            "to": 0.6,
+            "n": 1427,
+            "meanPredicted": 0.55,
+            "observed": 0.699
+          },
+          {
+            "from": 0.6,
+            "to": 0.7,
+            "n": 1315,
+            "meanPredicted": 0.651,
+            "observed": 0.841
+          },
+          {
+            "from": 0.7,
+            "to": 0.8,
+            "n": 1430,
+            "meanPredicted": 0.752,
+            "observed": 0.922
+          },
+          {
+            "from": 0.8,
+            "to": 0.9,
+            "n": 1671,
+            "meanPredicted": 0.85,
+            "observed": 0.958
+          },
+          {
+            "from": 0.9,
+            "to": 1,
+            "n": 2359,
+            "meanPredicted": 0.955,
+            "observed": 0.967
+          }
+        ]
+      }
+    },
+    "holdoutChaseStart": {
+      "n": 138,
+      "brier": 0.1923,
+      "logLoss": 0.5717,
+      "ece": 0.1278,
+      "accuracy": 0.7174,
+      "constantBrier": 0.2472
+    }
+  }
+}

@@ -11,7 +11,9 @@
     "test": "tsx --test \"src/lib/__tests__/**/*.test.ts\"",
     "db:migrate": "tsx scripts/db-migrate.ts",
     "ingest:cricsheet": "tsx scripts/ingest-cricsheet.ts",
-    "ingest:register": "tsx scripts/ingest-cricsheet-register.ts"
+    "ingest:register": "tsx scripts/ingest-cricsheet-register.ts",
+    "winprob:train": "tsx scripts/train-winprob.ts",
+    "winprob:backfill": "tsx scripts/winprob-backfill.ts"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
