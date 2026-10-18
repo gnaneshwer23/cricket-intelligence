@@ -132,7 +132,8 @@ export class PostgresStorage implements CricketStorage {
   readonly kind = "postgres" as const;
   readonly label = "Postgres (durable)";
 
-  constructor(private readonly pool: Pool) {}
+  /** Exposed for the read-only stats engine. */
+  constructor(readonly pool: Pool) {}
 
   private async tx<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
     const client = await this.pool.connect();
@@ -478,12 +479,12 @@ async function insertBallBatch(client: PoolClient, matchId: string, balls: Domai
     `INSERT INTO balls (id, match_id, innings_id, over_number, ball_in_over, payload,
        innings_number, batting_team, batter_id, bowler_id, non_striker_id,
        runs_batter, runs_extras, runs_total, is_wide, is_no_ball, is_wicket,
-       wicket_kind, player_out_id)
+       wicket_kind, player_out_id, bowler_runs, is_super_over)
      SELECT * FROM UNNEST(
        $1::text[], $2::text[], $3::text[], $4::int[], $5::int[], $6::jsonb[],
        $7::int[], $8::text[], $9::text[], $10::text[], $11::text[],
        $12::int[], $13::int[], $14::int[], $15::bool[], $16::bool[], $17::bool[],
-       $18::text[], $19::text[])
+       $18::text[], $19::text[], $20::int[], $21::bool[])
      ON CONFLICT (id) DO UPDATE SET payload = EXCLUDED.payload,
        innings_number = EXCLUDED.innings_number, batting_team = EXCLUDED.batting_team,
        batter_id = EXCLUDED.batter_id, bowler_id = EXCLUDED.bowler_id,
@@ -491,7 +492,8 @@ async function insertBallBatch(client: PoolClient, matchId: string, balls: Domai
        runs_extras = EXCLUDED.runs_extras, runs_total = EXCLUDED.runs_total,
        is_wide = EXCLUDED.is_wide, is_no_ball = EXCLUDED.is_no_ball,
        is_wicket = EXCLUDED.is_wicket, wicket_kind = EXCLUDED.wicket_kind,
-       player_out_id = EXCLUDED.player_out_id`,
+       player_out_id = EXCLUDED.player_out_id, bowler_runs = EXCLUDED.bowler_runs,
+       is_super_over = EXCLUDED.is_super_over`,
     [
       balls.map((b) => b.id),
       balls.map(() => matchId),
@@ -512,6 +514,8 @@ async function insertBallBatch(client: PoolClient, matchId: string, balls: Domai
       balls.map((b) => b.isWicket),
       balls.map((b) => b.wicketKind ?? null),
       balls.map((b) => b.playerOutId ?? null),
+      balls.map((b) => b.bowlerRuns ?? null),
+      balls.map((b) => Boolean(b.isSuperOver)),
     ],
   );
 }

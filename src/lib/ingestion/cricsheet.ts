@@ -342,6 +342,8 @@ export function parseCricsheetMatch(raw: unknown, cricsheetId: string): Cricshee
           isSix: d.runs.batter === 6 && !d.runs.non_boundary,
           wicketKind: first?.kind,
           playerOutId: first ? playerId(first.player_out) : undefined,
+          bowlerRuns: conceded,
+          isSuperOver: inn.super_over || undefined,
           dismissalText: first ? `${first.player_out} ${dismissalText(first, d.bowler)}` : undefined,
         });
       });

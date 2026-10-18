@@ -75,6 +75,9 @@ export type DomainBall = {
   nonStrikerId?: string;
   wicketKind?: string;
   playerOutId?: string;
+  /** Runs charged to the bowler (off the bat + wides + no-balls). */
+  bowlerRuns?: number;
+  isSuperOver?: boolean;
 };
 
 export type DomainBattingCardRow = {

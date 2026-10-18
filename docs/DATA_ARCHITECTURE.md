@@ -53,6 +53,13 @@ Demo mode never promotes the board to LIVE.
 - Nightly delta: Vercel Cron → `GET /api/ingestion/cricsheet` (`Authorization: Bearer $CRON_SECRET`) pulls `recently_added_7_json.zip`; refuses memory storage.
 - Quality issues are recorded on the ingestion run for review, never silently dropped. Verified locally: full IPL archive (1,243 matches, 295,732 deliveries) with 0 quality flags; spot checks match published records.
 
+## Verified stats engine
+
+- `src/lib/stats/engine.ts` computes player batting, bowling and batter-vs-bowler matchups straight from `balls` with parameterised SQL. Every response carries `evidence` (exact SQL, params, row counts), `sample` (n + warning) and `missing` (inputs it could not use). Thin samples are flagged, and nothing is imputed.
+- Conventions: balls faced exclude wides. Bowler runs = off the bat + wides + no-balls (`balls.bowler_runs`). Bowler wickets = bowled, caught, c&b, lbw, stumped, hit wicket. Retired hurt/not out is not out. Super overs are excluded. Phases (0-based overs) are T20 0–5/6–14/15–19 and ODI 0–9/10–39/40–49.
+- Player search: trigram + surname edit distance + double-metaphone bonus over Cricsheet names and register aliases (`npm run ingest:register`). Needs the `pg_trgm` and `fuzzystrmatch` extensions (migration 003).
+- Verified against published IPL records: Kohli 2016 (973 runs, 16 inns, 4×100, 7×50, avg 81.08, SR 152.03, HS 113, 83×4, 38×6) and Harshal Patel 2021 (32 wkts, 459 runs, 56.2 ov, best 5/27). Economy is rounded half-up (8.15), whereas some sites truncate (8.14).
+
 ## Security
 
 - API keys only via server env (`CRICKETOS_DATA_API_KEY`) — never `NEXT_PUBLIC_`.
