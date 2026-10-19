@@ -231,7 +231,7 @@ export function PlayersScreen() {
                 Find any player
               </h2>
               <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground">
-                CricketOS is multi-team — Kohli, Babar, Mandhana, Warner, legends. Search the
+                Cricket Intelligence is multi-team — Kohli, Babar, Mandhana, Warner, legends. Search the
                 catalog or pick someone you follow. We do not open on Joe Root by default.
               </p>
               <div className="mt-5 flex flex-wrap gap-2">

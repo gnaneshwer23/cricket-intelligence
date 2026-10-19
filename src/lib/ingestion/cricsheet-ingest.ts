@@ -33,7 +33,7 @@ function runId(): string {
 export async function fetchCricsheetZip(file: string, fetchImpl: typeof fetch = fetch): Promise<Uint8Array> {
   if (!/^[a-z0-9_]+\.zip$/i.test(file)) throw new Error(`invalid Cricsheet file name: ${file}`);
   const res = await fetchImpl(`${CRICSHEET_BASE_URL}/${file}`, {
-    headers: { "user-agent": "CricketOS ingest (+https://cricsheet.org attribution)" },
+    headers: { "user-agent": "Cricket Intelligence ingest (+https://cricsheet.org attribution)" },
   });
   if (!res.ok) throw new Error(`Cricsheet download ${file} failed: HTTP ${res.status}`);
   return new Uint8Array(await res.arrayBuffer());

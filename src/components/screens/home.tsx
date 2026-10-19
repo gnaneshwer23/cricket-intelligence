@@ -138,7 +138,7 @@ export function HomeScreen() {
         <div className="relative z-[1] px-6 py-12 sm:px-12 sm:py-16 lg:px-16 lg:py-20">
           <div className="cos-hero-in max-w-2xl">
             <p className="font-display text-[clamp(3rem,8vw,4.75rem)] font-semibold leading-none text-navy">
-              CricketOS
+              Cricket Intelligence
             </p>
             <h1 className="font-display mt-7 text-[clamp(1.65rem,4vw,2.75rem)] font-medium leading-[1.15] text-ink text-balance">
               Every match has a story. Find the evidence.
@@ -148,7 +148,10 @@ export function HomeScreen() {
               behind every result.
             </p>
             <p className="mt-3 text-sm text-slate">
-              {greeting}. Ask CricketOS — facts need a licensed provider; DEMO is opt-in only.
+              {greeting}.{" "}
+              {providerReady
+                ? "Live scores from the provider feed, history from ball-by-ball data — every number has a source."
+                : "Ask Cricket Intelligence — live facts need a licensed provider; DEMO is opt-in only."}
             </p>
           </div>
 
@@ -160,7 +163,7 @@ export function HomeScreen() {
             }}
           >
             <label className="sr-only" htmlFor="home-ask">
-              Ask CricketOS
+              Ask Cricket Intelligence
             </label>
             <Input
               id="home-ask"
@@ -193,7 +196,7 @@ export function HomeScreen() {
             ) : null}
             <Button type="submit" className="cos-cta h-12 px-7 text-base" size="lg">
               <ArrowUp />
-              Ask CricketOS
+              Ask Cricket Intelligence
             </Button>
           </form>
           {voice.listening || voice.interim ? (

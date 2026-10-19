@@ -56,7 +56,7 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/stats/winpr
       worm: worm.points,
       turningPoints: turningPoints(worm.points),
       evidence: worm.evidence,
-      source: "Cricsheet ball-by-ball (cricsheet.org, ODC-By 1.0) via CricketOS",
+      source: "Cricsheet ball-by-ball (cricsheet.org, ODC-By 1.0) via Cricket Intelligence",
     });
   } catch (err) {
     return statsError(err);

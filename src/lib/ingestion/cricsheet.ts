@@ -1,5 +1,5 @@
 /**
- * Cricsheet (https://cricsheet.org) JSON → CricketOS domain entities.
+ * Cricsheet (https://cricsheet.org) JSON → Cricket Intelligence domain entities.
  *
  * Cricsheet data is licensed under ODC-By 1.0: commercial use is allowed,
  * attribution is required. Every entity carries provider "cricsheet".

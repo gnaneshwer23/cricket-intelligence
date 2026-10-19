@@ -415,7 +415,7 @@ export function MatchScreen() {
               })
             }
           >
-            Ask CricketOS
+            Ask Cricket Intelligence
           </Button>
         </div>
       </header>
@@ -740,7 +740,7 @@ export function MatchScreen() {
                     })
                   }
                 >
-                  Ask CricketOS (contextual)
+                  Ask Cricket Intelligence (contextual)
                 </Button>
                 <Button
                   type="button"
@@ -790,7 +790,7 @@ export function MatchScreen() {
               <Kicker>Limitations</Kicker>
               <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
                 <li>· Label: DEMO — never LIVE</li>
-                <li>· Source: bundled CricketOS demo dataset</li>
+                <li>· Source: bundled Cricket Intelligence demo dataset</li>
                 <li>· Win model figures are illustrative model, not official</li>
                 <li>· Persistence: in-memory unless Postgres is configured</li>
               </ul>

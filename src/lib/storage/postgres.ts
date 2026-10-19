@@ -88,6 +88,9 @@ export function buildMatchWhere(filter: HistoricalMatchFilter): WhereBuilder {
   }
   const series = (filter.competitionContains ?? filter.seriesContains ?? "").trim();
   if (series) w.clauses.push(`series ILIKE ${addParam(w, `%${escapeLike(series)}%`)}`);
+  if (filter.titleContains?.trim()) {
+    w.clauses.push(`title ILIKE ${addParam(w, `%${escapeLike(filter.titleContains.trim())}%`)}`);
+  }
   if (filter.resultContains?.trim()) {
     const p = addParam(w, `%${escapeLike(filter.resultContains.trim())}%`);
     w.clauses.push(`(COALESCE(note, '') ILIKE ${p} OR COALESCE(result_text, '') ILIKE ${p})`);

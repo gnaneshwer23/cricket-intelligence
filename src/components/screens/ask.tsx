@@ -95,7 +95,7 @@ export function AskScreen() {
   return (
     <div className="mx-auto flex max-w-3xl flex-col">
       <PageTitle
-        kicker="Ask CricketOS"
+        kicker="Ask Cricket Intelligence"
         title="Ask cricket anything."
         lede="Intent → retrieve → calculate → explain. Figures come only from a licensed provider feed or the labelled DEMO playground — Copilot will not invent match scores or stats. Voice uses the same path when your browser supports it."
       />

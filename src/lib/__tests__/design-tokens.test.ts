@@ -31,11 +31,11 @@ describe("visual redesign tokens", () => {
     assert.match(css, /cos-hero-in[\s\S]*animation:\s*none/);
   });
 
-  it("home hero keeps brand promise and Ask CricketOS CTA", () => {
+  it("home hero keeps brand promise and Ask Cricket Intelligence CTA", () => {
     const home = readFileSync(join(root, "src/components/screens/home.tsx"), "utf8");
     assert.match(home, /Every match has a story\. Find the evidence\./);
     assert.match(home, /Explore cricket history, understand match situations/);
-    assert.match(home, /Ask CricketOS/);
+    assert.match(home, /Ask Cricket Intelligence/);
     assert.match(home, /EmptyState/);
   });
 

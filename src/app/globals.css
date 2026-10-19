@@ -40,7 +40,7 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  /* CricketOS — pitch green semantic; action orange for CTAs */
+  /* Cricket Intelligence — pitch green semantic; action orange for CTAs */
   --color-lime: var(--cos-pitch);
   --color-pitch: var(--cos-pitch);
   --color-action: var(--cos-action);

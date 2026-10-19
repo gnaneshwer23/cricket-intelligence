@@ -1,5 +1,5 @@
 /**
- * Map provider payloads → domain models + stable CricketOS IDs.
+ * Map provider payloads → domain models + stable Cricket Intelligence IDs.
  */
 
 import type { FreshnessStatus, MatchLifecycle, Provenance } from "@/lib/contracts";
@@ -121,7 +121,7 @@ export function provenanceFor(
 ): Provenance {
   return {
     kind,
-    source: provider === "demo" ? "Bundled CricketOS demo dataset" : `${provider} adapter`,
+    source: provider === "demo" ? "Bundled Cricket Intelligence demo dataset" : `${provider} adapter`,
     asOf: new Date().toISOString(),
     note,
     provider,

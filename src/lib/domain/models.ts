@@ -195,6 +195,8 @@ export type HistoricalMatchFilter = {
   competitionContains?: string;
   /** Result text fragment (won by / draw / etc.). */
   resultContains?: string;
+  /** Match title fragment, e.g. "Final", "Qualifier 1". */
+  titleContains?: string;
   gender?: GenderFilter;
   /** Inclusive calendar year bounds (from startTimeIso). */
   yearFrom?: number;
