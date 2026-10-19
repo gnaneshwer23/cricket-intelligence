@@ -167,7 +167,15 @@ async function listFixturesUnified(): Promise<DomainFixtureListItem[]> {
     }
   }
 
-  return [...map.values()];
+  // Live first, then soonest upcoming, then most recent results.
+  const rank: Partial<Record<FreshnessStatus, number>> = { LIVE: 0, STALE: 1, UPCOMING: 2, HISTORICAL: 3 };
+  return [...map.values()].sort((a, b) => {
+    const r = (rank[a.freshness] ?? 9) - (rank[b.freshness] ?? 9);
+    if (r) return r;
+    const at = a.startTimeIso ?? "";
+    const bt = b.startTimeIso ?? "";
+    return a.freshness === "HISTORICAL" ? bt.localeCompare(at) : at.localeCompare(bt);
+  });
 }
 
 export function getDataService(): DataService {

@@ -24,6 +24,12 @@ export type CricketOsConfig = {
   providerTimeoutMs: number;
   /** Max retries on 429/5xx. */
   providerMaxRetries: number;
+  /** Shared-cache TTLs for quota-limited providers (ms). */
+  providerTtlCurrentMs: number;
+  providerTtlScheduleMs: number;
+  providerTtlPlayersMs: number;
+  /** Stop calling the provider when this many daily hits remain. */
+  providerQuotaReserve: number;
   /**
    * Server-only token required to trigger ingestion POST.
    * When unset, ingestion trigger routes refuse (no public unbounded ingest).
@@ -80,6 +86,11 @@ export function getCricketOsConfig(): CricketOsConfig {
     staleAfterMs: readInt("CRICKETOS_STALE_AFTER_MS", 120_000),
     providerTimeoutMs: readInt("CRICKETOS_PROVIDER_TIMEOUT_MS", 12_000),
     providerMaxRetries: readInt("CRICKETOS_PROVIDER_MAX_RETRIES", 2),
+    // Defaults fit CricAPI free (100 hits/day): ~48 current + ~8 schedule calls/day.
+    providerTtlCurrentMs: readInt("CRICKETOS_PROVIDER_TTL_CURRENT_MS", 30 * 60_000),
+    providerTtlScheduleMs: readInt("CRICKETOS_PROVIDER_TTL_SCHEDULE_MS", 3 * 60 * 60_000),
+    providerTtlPlayersMs: readInt("CRICKETOS_PROVIDER_TTL_PLAYERS_MS", 24 * 60 * 60_000),
+    providerQuotaReserve: readInt("CRICKETOS_PROVIDER_QUOTA_RESERVE", 10),
     ingestionTokenConfigured: Boolean(process.env.CRICKETOS_INGESTION_TOKEN?.trim()),
   };
 }

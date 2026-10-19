@@ -54,8 +54,10 @@ export function rowAwayShort(row: BoardRowInput): string {
 export function matchesBoardTab(row: BoardRowInput, tab: LiveBoardTab): boolean {
   if (tab === "all") return true;
   if (tab === "live") {
-    // DEMO is never a Live-tab match (optional demo stays under All / dedicated CTA)
-    return row.status === "LIVE" && !row.isDemo && row.freshness === "LIVE";
+    // In-progress matches: LIVE, or STALE when the (delayed, cached) feed is older
+    // than the freshness window — the row keeps its STALE badge and "as of" time.
+    // DEMO is never a Live-tab match (optional demo stays under All / dedicated CTA).
+    return row.status === "LIVE" && !row.isDemo && (row.freshness === "LIVE" || row.freshness === "STALE");
   }
   if (tab === "upcoming") {
     return row.status === "UPCOMING" || row.freshness === "UPCOMING";

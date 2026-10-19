@@ -41,7 +41,7 @@ With no live credentials, the app stays in **truth mode** (`demoMode: true` on `
 
 ### Exact steps for true live details (CricAPI / CricketData.org)
 
-Real fixtures / LIVE scores need a free API key. Signup needs your email / OTP — **not automatable by the agent**.
+Real fixtures / LIVE scores need a free API key. Every CricAPI call goes through a shared, quota-guarded cache (Postgres `provider_cache`), so the free tier's 100 hits/day cover all visitors and instances: about 48 `currentMatches` + 8 schedule calls a day, and no calls once 10 hits remain. Live scores are therefore up to ~30 min old and are labelled STALE with their "as of" time. Signup needs your email / OTP — **not automatable by the agent**.
 
 1. Open [https://cricketdata.org/](https://cricketdata.org/) → **Sign Up / Login** → copy your API key.
 2. **Local:** copy `.env.example` → `.env.local` and set:
@@ -70,6 +70,10 @@ Without a key: honest empty/setup state — **not** fake England–India 245/4, 
 | `GET /api/stats/players/:id` | Batting + bowling with SQL evidence; filters `format`, `phase`, `yearFrom`, `yearTo`, `competition`, `gender` |
 | `GET /api/stats/matchup?batter=&bowler=` | Batter vs bowler by season, with sample-size warning |
 | `GET /api/stats/winprob/:matchId` | T20 win-probability worm + turning points (model `t20-wp-v1`, see `docs/WIN_PROBABILITY.md`) |
+| `GET /api/provider/series?search=` | Current / upcoming series (CricAPI, cached 24 h) |
+| `GET /api/provider/series/:id` | Series header + fixtures (cached 6 h) |
+| `GET /api/provider/matches/:id` | Match detail: innings scores, toss, series (cached 30 min) |
+| `GET /api/provider/players/:id` | Player profile + career stats by format (cached 7 days) |
 
 **Wire a live provider:** see [Exact steps for true live details](#exact-steps-for-true-live-details-cricapi--cricketdataorg) above. Seeds remain for API tests only — they do **not** populate the customer-facing home as truth.
 
