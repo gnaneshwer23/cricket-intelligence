@@ -1,6 +1,8 @@
-# CricketOS
+# Cricket Intelligence
 
 **Follow the match. Understand the game. Explore what happens next.**
+
+> Product name: **Cricket Intelligence** (formerly CricketOS — internal identifiers such as `CRICKETOS_*` env vars are unchanged).
 
 Multi-team cricket intelligence — India, Australia, West Indies, IPL, women’s cricket, and historical legends — with Match Room, Explorer charts, grounded Copilot, player DNA, and what-if labs.
 
@@ -54,6 +56,16 @@ Real fixtures / LIVE scores need a free API key. Every CricAPI call goes through
 4. Home **Live Scores** and `#live` then show **provider fixtures only** (series, venue, status, scores, timestamps). Briefings are derived from those rows (e.g. “3 matches live”, “Next: X vs Y at Z”) — never authored fiction. **DEMO sim is never labelled LIVE** and is only via **Try DEMO playground** (`#demo`).
 
 Without a key: honest empty/setup state — **not** fake England–India 245/4, Root milestones, win models, or GOAT stories.
+
+## Assistant (chat or speak)
+
+The **Ask AI** button opens a chat panel on every screen. Type or tap the mic (Web Speech API); toggle the speaker to hear replies.
+
+- `POST /api/assistant` — tool-grounded agent via **Vercel AI Gateway** (default `google/gemini-2.5-flash`, works on the gateway free tier; set `CRICKETOS_ASSISTANT_MODEL`, e.g. `anthropic/claude-haiku-5.5`, once paid credits are enabled).
+- Tools wrap existing verified paths: player search + Cricsheet stats, matchups, live fixtures/match detail (cached CricAPI), archive search, T20 win probability, series.
+- **Verifier:** every number in a draft answer must appear in this turn's tool results (or the question), allowing only rounding and probability→%; otherwise one corrective retry, then a refusal. Answers show the tools used and a "numbers verified" badge.
+- Guards: first step must call a tool, 6-step cap, 700 output tokens, last 12 messages, 1,500-char questions, 12 requests/min per client. `CRICKETOS_ASSISTANT=off` disables it.
+- Auth: on Vercel the project's OIDC token is used automatically; locally run `vercel env pull` (or set `AI_GATEWAY_API_KEY`). If the model is unreachable, the widget answers with the built-in rules engine, labelled "Offline answer".
 
 ## Data layer (Stage 5)
 

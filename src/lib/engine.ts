@@ -158,7 +158,7 @@ function noDatasetAnswer(followups?: string[]): Answer {
     headline: "I don't have that in the dataset",
     paragraphs: [
       "Live and historical numerical facts require a configured licensed provider (CRICKETOS_DATA_PROVIDER=cricapi + CRICKETOS_DATA_API_KEY).",
-      "CricketOS will not invent match scores, player stats, win probabilities, or AI briefings. Open the labelled DEMO playground only if you want the scripted Lord’s illustration — it is never treated as live truth.",
+      "Cricket Intelligence will not invent match scores, player stats, win probabilities, or AI briefings. Open the labelled DEMO playground only if you want the scripted Lord’s illustration — it is never treated as live truth.",
     ],
     followups: follow(
       followups ?? [
@@ -320,7 +320,7 @@ function answerQuestionInner(
         headline: "Seed archive is not Copilot evidence",
         paragraphs: [
           `You have Match Intelligence focus on “${focus.title}” (${focus.freshness}).`,
-          "Seeded archive rows are browseable for titles, venues, and summary scores, but CricketOS does not treat them as verified Copilot evidence or live facts.",
+          "Seeded archive rows are browseable for titles, venues, and summary scores, but Cricket Intelligence does not treat them as verified Copilot evidence or live facts.",
           "Configure a licensed provider for fixture-backed answers, or open the labelled DEMO playground for the scripted illustration.",
         ],
         followups: follow([
@@ -1393,7 +1393,7 @@ function answerFromHistoricalArchive(
     return {
       headline: `${matches.length} normalised matches in the archive`,
       paragraphs: [
-        "These rows came through the CricketOS normalisation path (seeded HISTORICAL + DEMO board). None are labelled LIVE without a configured provider.",
+        "These rows came through the Cricket Intelligence normalisation path (seeded HISTORICAL + DEMO board). None are labelled LIVE without a configured provider.",
         ...matches.slice(0, 8).map(formatHistoricalLine),
       ],
       followups: follow([

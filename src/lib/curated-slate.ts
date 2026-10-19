@@ -1,5 +1,5 @@
 /**
- * Multi-team curated defaults — CricketOS is not a single-player watch product.
+ * Multi-team curated defaults — Cricket Intelligence is not a single-player watch product.
  * Used for first-run follows, briefing fallbacks, and Copilot empty prompts.
  */
 

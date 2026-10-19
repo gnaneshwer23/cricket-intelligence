@@ -154,6 +154,10 @@ export async function searchHistoricalMatchesPaged(
   if (seriesNeedle) {
     list = list.filter((m) => (m.series ?? "").toLowerCase().includes(seriesNeedle));
   }
+  if (filter.titleContains) {
+    const t = filter.titleContains.toLowerCase();
+    list = list.filter((m) => m.title.toLowerCase().includes(t));
+  }
   if (filter.resultContains) {
     const r = filter.resultContains.toLowerCase();
     list = list.filter((m) =>

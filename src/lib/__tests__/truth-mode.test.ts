@@ -114,7 +114,7 @@ describe("copilot truth mode", () => {
         score: { runs: 245, wickets: 4, overs: "48.2" },
         isDemo: true,
         isSeed: false,
-        provenance: { source: "Bundled CricketOS demo dataset" },
+        provenance: { source: "Bundled Cricket Intelligence demo dataset" },
       },
     });
     assert.match(answer.headline, /DEMO situation/i);

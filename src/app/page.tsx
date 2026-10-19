@@ -1,5 +1,5 @@
-import { CricketOS } from "@/components/cricket-os";
+import { CricketIntelligenceApp } from "@/components/cricket-os";
 
 export default function Page() {
-  return <CricketOS />;
+  return <CricketIntelligenceApp />;
 }

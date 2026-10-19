@@ -25,7 +25,7 @@ export function TruthSetupPanel({
         {SETUP_HEADLINE}
       </h2>
       <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">
-        CricketOS will not invent match scores, player stats, win probabilities, or AI briefings.
+        Cricket Intelligence will not invent match scores, player stats, win probabilities, or AI briefings.
         Add a licensed CricAPI key to show real fixtures and scores.
       </p>
       <ol className="mt-5 list-decimal space-y-2 pl-5 text-sm leading-relaxed text-muted-foreground">

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { AppStateProvider, useApp } from "@/components/app-state";
 import { MatchFocusStrip } from "@/components/match-focus-strip";
+import { AssistantWidget } from "@/components/assistant-widget";
 import { Onboarding } from "@/components/onboarding";
 import { ArchiveScreen } from "@/components/screens/archive";
 import { AskScreen } from "@/components/screens/ask";
@@ -42,7 +43,7 @@ const primaryNav: { id: ScreenId; label: string; short: string; icon: typeof Hou
   { id: "home", label: "Cricket Today", short: "Today", icon: House },
   { id: "match", label: "Match Intelligence", short: "Match", icon: Activity },
   { id: "archive", label: "Historical Archive", short: "Archive", icon: Library },
-  { id: "ask", label: "Ask CricketOS", short: "Ask", icon: MessageCircle },
+  { id: "ask", label: "Ask Cricket Intelligence", short: "Ask", icon: MessageCircle },
 ];
 
 const laterNav: { id: ScreenId; label: string; icon: typeof House; note: string }[] = [
@@ -57,7 +58,7 @@ const laterNav: { id: ScreenId; label: string; icon: typeof House; note: string 
 
 const titles: Record<ScreenId, string> = {
   home: "Cricket Today",
-  ask: "Ask CricketOS",
+  ask: "Ask Cricket Intelligence",
   match: "Match Intelligence",
   archive: "Historical Archive",
   explorer: "Cricket Explorer",
@@ -74,7 +75,7 @@ function Shell() {
   const [more, setMore] = useState(false);
 
   useEffect(() => {
-    document.title = `${titles[screen]} · CricketOS`;
+    document.title = `${titles[screen]} · Cricket Intelligence`;
   }, [screen]);
 
   useEffect(() => {
@@ -109,7 +110,7 @@ function Shell() {
       <aside className="cos-rail fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-sidebar-border bg-sidebar px-3 py-6 lg:flex">
         <div className="px-2">
           <p className="font-display text-[1.65rem] font-semibold leading-none text-navy">
-            CricketOS
+            Cricket Intelligence
           </p>
           <p className="mt-2 text-xs leading-relaxed text-sidebar-foreground/70">
             Understand every match. Explore the evidence. Ask cricket anything.
@@ -165,7 +166,7 @@ function Shell() {
         <p className="px-2 text-[11px] leading-relaxed text-sidebar-foreground/55">
           The match is the centre
           <span className="mt-1.5 block text-sidebar-foreground/40">
-            Truth mode until a provider key is set. DEMO playground is opt-in only.
+            Every number has a source — no invented scores. Tap Ask AI to chat or speak.
           </span>
         </p>
       </aside>
@@ -173,9 +174,9 @@ function Shell() {
       <div className="lg:pl-60">
         <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-canvas/85 px-4 py-3.5 backdrop-blur-xl lg:hidden">
           <div>
-            <p className="font-display text-xl font-semibold text-navy">CricketOS</p>
+            <p className="font-display text-xl font-semibold text-navy">Cricket Intelligence</p>
             <p className="text-[10px] tracking-[0.18em] text-muted-foreground uppercase">
-              Intelligence layer
+              Evidence-first cricket
             </p>
           </div>
           <p className="text-[10px] tracking-[0.14em] text-action uppercase">Match centre</p>
@@ -267,6 +268,7 @@ function Shell() {
           </div>
         </SheetContent>
       </Sheet>
+      {onboarded ? <AssistantWidget /> : null}
       </div>
 
       <Onboarding />
@@ -274,7 +276,7 @@ function Shell() {
   );
 }
 
-export function CricketOS() {
+export function CricketIntelligenceApp() {
   return (
     <AppStateProvider>
       <Shell />

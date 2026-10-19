@@ -13,14 +13,14 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
 });
 
-/* Geometric display — bold editorial CricketOS identity. */
+/* Geometric display — bold editorial Cricket Intelligence identity. */
 const syne = Syne({
   subsets: ["latin"],
   variable: "--font-syne",
 });
 
 export const metadata: Metadata = {
-  title: "CricketOS · Cricket Intelligence",
+  title: "Cricket Intelligence",
   description:
     "Understand every match. Explore the evidence. Ask cricket anything — grounded cricket intelligence with honest DEMO labels.",
 };

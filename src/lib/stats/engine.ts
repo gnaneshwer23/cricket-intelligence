@@ -40,7 +40,7 @@ export type Verified<T> = {
   source: string;
 };
 
-export const STATS_SOURCE = "Cricsheet ball-by-ball (cricsheet.org, ODC-By 1.0) via CricketOS";
+export const STATS_SOURCE = "Cricsheet ball-by-ball (cricsheet.org, ODC-By 1.0) via Cricket Intelligence";
 
 /** Dismissal kinds credited to the bowler. */
 export const BOWLER_WICKET_KINDS = [

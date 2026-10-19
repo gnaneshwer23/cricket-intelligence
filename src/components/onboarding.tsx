@@ -79,7 +79,7 @@ export function Onboarding() {
             </button>
           </div>
           <Progress value={progress} className="mt-3 h-1.5" />
-          <p className="font-display mt-4 text-4xl tracking-tight text-navy sm:text-5xl">CricketOS</p>
+          <p className="font-display mt-4 text-4xl tracking-tight text-navy sm:text-5xl">Cricket Intelligence</p>
           <h2 id="onboarding-title" className="font-display mt-2 text-2xl tracking-tight sm:text-3xl">
             {step === 0 && "Pick your cricket world"}
             {step === 1 && "Which nations do you follow?"}

@@ -22,7 +22,7 @@ import { runQualityChecks } from "@/lib/ingestion/quality";
 import type { DomainFixtureListItem } from "@/lib/domain/models";
 
 export const SEED_PROVIDER = "seed";
-export const SEED_SOURCE = "CricketOS seeded historical archive";
+export const SEED_SOURCE = "Cricket Intelligence seeded historical archive";
 
 /**
  * CricAPI-shaped raw match rows (completed / upcoming only).

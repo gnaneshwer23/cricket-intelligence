@@ -23,7 +23,7 @@ export const matchMeta: MatchMeta = {
   winModel: { eng: 58, ind: 42 },
   provenance: {
     kind: "demo",
-    source: "Bundled CricketOS demo dataset",
+    source: "Bundled Cricket Intelligence demo dataset",
     asOf: "Session snapshot (illustrative)",
     note: "Not a live or official scorecard. DEMO labels are intentional.",
     provider: "demo",
