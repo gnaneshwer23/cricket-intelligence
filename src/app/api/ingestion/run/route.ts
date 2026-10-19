@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { ingestFixtures } from "@/lib/ingestion/runner";
 import { getDataAdapter } from "@/lib/provider";
@@ -25,7 +26,9 @@ export async function POST(request: Request) {
     request.headers.get("x-cricketos-ingestion-token") ??
     request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
 
-  if (!provided || provided !== expected) {
+  const a = Buffer.from(provided ?? "");
+  const b = Buffer.from(expected);
+  if (!provided || a.length !== b.length || !timingSafeEqual(a, b)) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 

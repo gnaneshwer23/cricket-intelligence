@@ -30,7 +30,8 @@ Copy `.env.example` → `.env.local`. Secrets stay **server-side only** (never `
 | `CRICKETOS_DATA_PROVIDER` | `demo` | `demo` \| `cricapi` \| `sportmonks` |
 | `CRICKETOS_DATA_API_KEY` | — | Server-only data API key |
 | `CRICKETOS_STORAGE_BACKEND` | `memory` | `memory` (ephemeral) \| `postgres` (needs `DATABASE_URL` + migrations) |
-| `DATABASE_URL` | — | Managed Postgres URL when durable storage is ready |
+| `DATABASE_URL` | — | Postgres URL (Neon / Supabase / local); run `npm run db:migrate` |
+| `CRON_SECRET` | — | Enables the nightly Cricsheet delta cron (`/api/ingestion/cricsheet`) |
 | `CRICKETOS_INGESTION_TOKEN` | — | Required for `POST /api/ingestion/run` (disabled when unset) |
 | `CRICKETOS_LLM_PROVIDER` | `off` | `off` \| `openai` \| `anthropic` |
 | `CRICKETOS_LLM_API_KEY` | — | Server-only LLM key (explain layer only) |
@@ -64,11 +65,27 @@ Without a key: honest empty/setup state — **not** fake England–India 245/4, 
 | `GET /api/fixtures` | Fixture list for Home / Match Room |
 | `GET /api/ingestion/status` | Operator ingestion summary |
 | `POST /api/ingestion/run` | Token-gated ingest (refused without token) |
+| `GET /api/ingestion/cricsheet` | Cron-gated Cricsheet delta (Postgres only) |
+| `GET /api/stats/players?q=` | Typo-tolerant player search (Postgres) |
+| `GET /api/stats/players/:id` | Batting + bowling with SQL evidence; filters `format`, `phase`, `yearFrom`, `yearTo`, `competition`, `gender` |
+| `GET /api/stats/matchup?batter=&bowler=` | Batter vs bowler by season, with sample-size warning |
+| `GET /api/stats/winprob/:matchId` | T20 win-probability worm + turning points (model `t20-wp-v1`, see `docs/WIN_PROBABILITY.md`) |
 
 **Wire a live provider:** see [Exact steps for true live details](#exact-steps-for-true-live-details-cricapi--cricketdataorg) above. Seeds remain for API tests only — they do **not** populate the customer-facing home as truth.
 
 Freshness labels: **LIVE / STALE / UNAVAILABLE / DEMO / HISTORICAL / UPCOMING**.  
-Default persistence is **in-memory** and labelled ephemeral — not production durable storage.
+Default persistence is **in-memory** and labelled ephemeral. For durable storage + real history:
+
+```bash
+export DATABASE_URL=postgres://localhost:5432/cricketos_dev
+npm run db:migrate
+npm run ingest:cricsheet -- --file ipl_json.zip   # or tests_json.zip, t20s_json.zip, all_json.zip
+npm run ingest:register                            # aliases: "Virat Kohli" → V Kohli
+npm run winprob:train && npm run winprob:backfill   # T20 win probability v1 (holdout 2025–26)
+CRICKETOS_STORAGE_BACKEND=postgres npm run dev -- --port 41731
+```
+
+Historical ball-by-ball comes from [Cricsheet](https://cricsheet.org) (ODC-By 1.0 — attribution required). See `docs/DATA_ARCHITECTURE.md`.
 
 ## Product surfaces
 
@@ -124,14 +141,15 @@ Copilot: retrieve from provider / normalised data → calculate → explain with
 - `docs/PROVIDER_EVALUATION.md` — evidence-based provider comparison
 - `docs/DATA_ARCHITECTURE.md` — adapter → storage → UI flow
 - `docs/DATA_QUALITY.md` — invariants + synthetic fixtures
-- `docs/migrations/001_cricketos.sql` — Postgres sketch (manual apply)
+- `docs/migrations/*.sql` — Postgres schema (`npm run db:migrate`)
 
 ## Known limitations
 
 - No provider key on Vercel by default — product Live Scores stay empty until you paste a CricAPI key
 - DEMO playground is a **scripted simulation**, labelled DEMO (never LIVE), opt-in only
 - Provider adapters are implemented and **unit-tested with mocks**; live keyed calls need credentials + license confirmation
-- Persistence defaults to **in-memory** until `DATABASE_URL` + migrations + a Postgres client are wired
+- Persistence defaults to **in-memory** unless `CRICKETOS_STORAGE_BACKEND=postgres` + `DATABASE_URL` are set
+- Cricsheet data populates the archive/API layer; UI surfaces (Explorer charts, player pages) do not read it yet
 - LLM explain path is stubbed behind env (not implemented end-to-end)
 - Explorer over-series is England 1st innings DEMO only — multi-match search does not invent charts
 - Fantasy / Community remain light secondary surfaces
@@ -141,7 +159,7 @@ Copilot: retrieve from provider / normalised data → calculate → explain with
 ## Roadmap (priority)
 
 1. Obtain licensed Sportmonks (or CricAPI) credentials and verify coverage
-2. Wire Postgres client + apply migrations for durable storage
+2. Provision Postgres on Vercel, backfill Cricsheet, wire Explorer / players to stored deliveries
 3. Optional LLM explain that may only restate calc + evidence
 4. Second innings / multi-match Explorer series from normalised balls
 5. Personalisation depth (alerts with real freshness)

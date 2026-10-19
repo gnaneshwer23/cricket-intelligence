@@ -66,7 +66,9 @@
 }
 
 :root {
-  --cos-canvas: #f6f5f2;
+  --cos-canvas: #fbfaf7;
+  --cos-sky: #cfe3f4;
+  --cos-turf: #d8edd9;
   --cos-navy: #03314c;
   --cos-deep: #084e6e;
   --cos-blue: #236686;
@@ -78,9 +80,9 @@
   --cos-warm: #d83c16;
   --background: var(--cos-canvas);
   --foreground: var(--cos-ink);
-  --card: #fffcf8;
+  --card: #fffefc;
   --card-foreground: var(--cos-ink);
-  --popover: #fffcf8;
+  --popover: #fffefc;
   --popover-foreground: var(--cos-ink);
   --primary: var(--cos-action);
   --primary-foreground: #fffaf5;
@@ -100,13 +102,14 @@
   --chart-4: var(--cos-pitch);
   --chart-5: var(--cos-slate);
   --radius: 0.75rem;
-  --sidebar: color-mix(in oklab, var(--cos-navy) 96%, black);
-  --sidebar-foreground: color-mix(in oklab, white 92%, var(--cos-mist));
+  /* Light frosted rail — navy type on near-white glass */
+  --sidebar: color-mix(in oklab, white 82%, transparent);
+  --sidebar-foreground: var(--cos-navy);
   --sidebar-primary: var(--cos-action);
   --sidebar-primary-foreground: #fffaf5;
-  --sidebar-accent: color-mix(in oklab, var(--cos-deep) 70%, black);
-  --sidebar-accent-foreground: color-mix(in oklab, white 90%, var(--cos-mist));
-  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-accent: color-mix(in oklab, var(--cos-blue) 9%, white);
+  --sidebar-accent-foreground: var(--cos-navy);
+  --sidebar-border: color-mix(in oklab, var(--cos-navy) 9%, transparent);
   --sidebar-ring: var(--cos-action);
 }
 
@@ -166,18 +169,25 @@
   body {
     @apply text-foreground;
     background-color: var(--background);
-    /* Soft off-white atmosphere — navy wash + blue mist (not flat white) */
+    /* Daylight at the ground: warm white canvas, sky glow, a hint of turf. */
     background-image:
-      radial-gradient(920px 420px at 92% -8%, color-mix(in oklab, var(--cos-blue) 14%, transparent), transparent 58%),
-      radial-gradient(680px 380px at -6% 100%, color-mix(in oklab, var(--cos-action) 8%, transparent), transparent 55%),
-      linear-gradient(
-        180deg,
-        #faf9f6 0%,
-        var(--cos-canvas) 42%,
-        color-mix(in oklab, var(--cos-navy) 3.5%, var(--cos-canvas)) 100%
-      );
+      radial-gradient(1100px 560px at 88% -12%, color-mix(in oklab, var(--cos-sky) 85%, transparent), transparent 62%),
+      radial-gradient(820px 520px at -8% 108%, color-mix(in oklab, var(--cos-turf) 90%, transparent), transparent 60%),
+      radial-gradient(640px 420px at 55% 112%, color-mix(in oklab, var(--cos-action) 5%, transparent), transparent 60%),
+      linear-gradient(180deg, #ffffff 0%, var(--cos-canvas) 46%, #f7f8f5 100%);
     background-attachment: fixed;
     min-height: 100%;
+  }
+  /* Fine dot texture, fading out below the fold — depth without noise. */
+  body::before {
+    content: "";
+    pointer-events: none;
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background-image: radial-gradient(color-mix(in oklab, var(--cos-navy) 9%, transparent) 0.7px, transparent 0.8px);
+    background-size: 22px 22px;
+    mask-image: linear-gradient(180deg, black 0%, transparent 70%);
   }
 }
 
@@ -323,20 +333,19 @@
     stroke-width 0.35s ease;
 }
 
-/* Full-bleed hero — soft canvas plane with navy brand field */
+/* Hero — bright white card with sky light and a soft turf edge */
 .cos-hero {
   position: relative;
   isolation: isolate;
   overflow: hidden;
   background:
-    radial-gradient(ellipse 85% 70% at 8% 0%, color-mix(in oklab, var(--cos-blue) 18%, transparent), transparent 55%),
-    radial-gradient(ellipse 55% 45% at 100% 85%, color-mix(in oklab, var(--cos-action) 12%, transparent), transparent 50%),
-    linear-gradient(
-      155deg,
-      #fffdf9 0%,
-      color-mix(in oklab, var(--cos-navy) 4%, white) 48%,
-      color-mix(in oklab, var(--cos-blue) 6%, var(--cos-canvas)) 100%
-    );
+    radial-gradient(ellipse 80% 70% at 100% 0%, color-mix(in oklab, var(--cos-sky) 90%, transparent), transparent 60%),
+    radial-gradient(ellipse 60% 55% at 0% 100%, color-mix(in oklab, var(--cos-turf) 85%, transparent), transparent 58%),
+    linear-gradient(160deg, #ffffff 0%, #fffefb 55%, color-mix(in oklab, var(--cos-sky) 22%, white) 100%);
+  box-shadow:
+    0 1px 0 0 white inset,
+    0 1px 2px color-mix(in oklab, var(--cos-navy) 6%, transparent),
+    0 24px 60px -28px color-mix(in oklab, var(--cos-navy) 22%, transparent);
 }
 
 .cos-hero::before {
@@ -344,10 +353,13 @@
   pointer-events: none;
   position: absolute;
   inset: 0;
+  z-index: -1;
+  /* Pitch strip — a faint centre band like a cut wicket */
   background:
-    linear-gradient(115deg, transparent 42%, oklch(0.2 0.02 230 / 0.03) 50%, transparent 58%),
-    radial-gradient(circle at 72% 38%, color-mix(in oklab, var(--cos-navy) 6%, transparent), transparent 42%);
-  opacity: 0.95;
+    linear-gradient(90deg, transparent 0%, color-mix(in oklab, var(--cos-turf) 55%, transparent) 50%, transparent 100%)
+      center / 34% 100% no-repeat;
+  opacity: 0.55;
+  mask-image: linear-gradient(180deg, transparent 0%, black 45%, transparent 100%);
 }
 
 .cos-scoreboard {
@@ -422,8 +434,23 @@
 }
 
 .cos-surface {
-  border: 1px solid color-mix(in oklab, var(--cos-navy) 10%, transparent);
-  background: color-mix(in oklab, white 78%, var(--cos-canvas));
+  border: 1px solid color-mix(in oklab, var(--cos-navy) 8%, transparent);
+  background: color-mix(in oklab, white 92%, var(--cos-canvas));
+  box-shadow: 0 1px 2px color-mix(in oklab, var(--cos-navy) 5%, transparent);
+}
+
+/* Light rail — frosted glass over the canvas */
+.cos-rail {
+  backdrop-filter: blur(18px) saturate(1.2);
+  box-shadow: 1px 0 0 0 color-mix(in oklab, white 70%, transparent) inset;
+}
+
+/* Onboarding header — daylight instead of night pitch */
+.cos-onboard-head {
+  background:
+    radial-gradient(ellipse at top right, color-mix(in oklab, var(--cos-sky) 95%, transparent), transparent 60%),
+    radial-gradient(ellipse at bottom left, color-mix(in oklab, var(--cos-turf) 90%, transparent), transparent 55%),
+    linear-gradient(160deg, #ffffff, var(--cos-canvas));
 }
 
 .cos-divider {

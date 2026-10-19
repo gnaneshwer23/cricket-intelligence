@@ -17,7 +17,7 @@ import { ingestFixtures } from "@/lib/ingestion/runner";
 import { getCricketOsConfig, getPublicRuntimeFlags } from "@/lib/provider/config";
 import { getDataAdapter } from "@/lib/provider";
 import { getDemoMatch, getDemoScorecard } from "@/lib/provider/demo-adapter";
-import { buildSeedBundle, SEED_PROVIDER } from "@/lib/provider/seed-historical";
+import { buildSeedBundle } from "@/lib/provider/seed-historical";
 import {
   compareMatches,
   searchHistoricalMatches,
@@ -47,11 +47,13 @@ async function runBootstrap(): Promise<BootstrapResult> {
   let seeded = 0;
   let providerSynced = 0;
 
-  const existing = await storage.listMatches();
-  const hasSeed = existing.some((m) => m.providerIds?.[SEED_PROVIDER] || m.id.startsWith("seed-"));
+  const bundle = buildSeedBundle();
+  // Point lookup, not a full scan — durable stores may hold tens of thousands of matches.
+  const hasSeed = bundle.matches.length
+    ? Boolean(await storage.getMatch(bundle.matches[0]!.id))
+    : true;
 
   if (!hasSeed) {
-    const bundle = buildSeedBundle();
     for (const match of bundle.matches) {
       // Honesty: never write LIVE from seed
       if (match.status === "LIVE" || match.freshness === "LIVE") continue;
@@ -139,14 +141,14 @@ function primaryFreshness(
 async function listFixturesUnified(): Promise<DomainFixtureListItem[]> {
   await ensureDataReady();
   const cfg = getCricketOsConfig();
-  const stored = await listStoredMatches();
-  const fromStorage = stored.map(toFixtureItem);
 
   // Truth mode: seeds + DEMO stay in storage for tests / playground lookups,
   // but never populate the customer-facing fixtures board as "truth".
   if (cfg.demoMode) {
     return [];
   }
+
+  const fromStorage = (await listStoredMatches()).map(toFixtureItem);
 
   const adapter = getDataAdapter();
   const remote = await adapter.listFixtures({ limit: 20 });

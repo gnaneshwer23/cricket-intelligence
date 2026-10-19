@@ -5,7 +5,7 @@
  * Decorative mic is forbidden: unsupported browsers get no mic button.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { detectVoiceCapability } from "@/lib/voice-capability";
 
 type SpeechRecognitionLike = {
@@ -39,16 +39,36 @@ function getRecognitionCtor(): SpeechRecognitionCtor | null {
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }
 
-function initialCaps() {
-  if (typeof window === "undefined") {
-    return { recognition: false, tts: false };
-  }
+// Capabilities never change after load, so there is nothing to subscribe to.
+function subscribeNoop() {
+  return () => {};
+}
+
+function clientCaps() {
   return detectVoiceCapability(
     window as Window & {
       SpeechRecognition?: unknown;
       webkitSpeechRecognition?: unknown;
     },
   );
+}
+
+/**
+ * Server snapshot is "unsupported" so SSR and the hydration render agree;
+ * React re-renders with the real client snapshot right after hydration.
+ */
+function useVoiceCaps() {
+  const recognition = useSyncExternalStore(
+    subscribeNoop,
+    () => clientCaps().recognition,
+    () => false,
+  );
+  const tts = useSyncExternalStore(
+    subscribeNoop,
+    () => clientCaps().tts,
+    () => false,
+  );
+  return { recognition, tts };
 }
 
 export type VoiceAskState = {
@@ -64,13 +84,15 @@ export type VoiceAskState = {
 
 export function useVoiceAsk(opts?: { onTranscript?: (text: string) => void }) {
   const onTranscriptRef = useRef(opts?.onTranscript);
-  const caps = initialCaps();
+  const caps = useVoiceCaps();
+  // supported/ttsSupported here are runtime overrides (flipped off on failure);
+  // the effective values are ANDed with detected capabilities below.
   const [state, setState] = useState<VoiceAskState>(() => ({
-    supported: caps.recognition,
-    ttsSupported: caps.tts,
+    supported: true,
+    ttsSupported: true,
     listening: false,
     speaking: false,
-    permission: caps.recognition ? "unknown" : "unsupported",
+    permission: "unknown",
     error: null,
     transcript: "",
     interim: "",
@@ -223,6 +245,12 @@ export function useVoiceAsk(opts?: { onTranscript?: (text: string) => void }) {
 
   return {
     ...state,
+    supported: caps.recognition && state.supported,
+    ttsSupported: caps.tts && state.ttsSupported,
+    permission:
+      !caps.recognition && state.permission === "unknown"
+        ? "unsupported"
+        : state.permission,
     startListening,
     stopListening,
     clearTranscript,

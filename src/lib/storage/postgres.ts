@@ -1,99 +1,542 @@
+import { Pool, type PoolClient, type PoolConfig } from "pg";
+import { deriveCoverage, inferGender, type CoverageLevel } from "@/lib/coverage";
+import type { FreshnessStatus } from "@/lib/contracts";
 import type {
   DomainBall,
   DomainMatch,
   DomainPlayer,
   DomainScorecard,
+  HistoricalMatchFilter,
   IngestionRunRecord,
 } from "@/lib/domain/models";
 import { MemoryStorage } from "@/lib/storage/memory";
-import type { CricketStorage } from "@/lib/storage/types";
+import type {
+  CricketStorage,
+  MatchPlayerRow,
+  StorageMatchSearch,
+  StorageStats,
+} from "@/lib/storage/types";
 
 /**
- * Postgres-backed storage — scaffolding only.
- * When DATABASE_URL is missing or migrations are not applied, callers must
- * use MemoryStorage. This class throws on use if not implemented against a live DB.
- *
- * Migrations live in `docs/migrations/001_cricketos.sql` (apply manually when credentials allow).
+ * Durable Postgres storage. Schema: `docs/migrations/*.sql`, applied by
+ * `npm run db:migrate`. All SQL is parameterised.
  */
-export class PostgresStorageUnavailable implements CricketStorage {
-  readonly kind = "postgres" as const;
-  readonly label =
-    "Postgres requested but unavailable — use memory until DATABASE_URL + migrations are applied";
 
-  private fail(): never {
-    throw new Error(
-      "Postgres storage not connected. Apply docs/migrations/001_cricketos.sql with DATABASE_URL, or set CRICKETOS_STORAGE_BACKEND=memory.",
+const COVERAGE_ORDER: CoverageLevel[] = ["result", "scorecard", "innings", "ball_by_ball"];
+
+/** Rows per multi-row INSERT for deliveries (14 params each, well under the 65535 cap). */
+const BALL_BATCH = 1000;
+
+export function escapeLike(raw: string): string {
+  return raw.replace(/[\\%_]/g, (c) => `\\${c}`);
+}
+
+function coverageAtLeast(min: CoverageLevel): CoverageLevel[] {
+  return COVERAGE_ORDER.slice(COVERAGE_ORDER.indexOf(min));
+}
+
+/** Coverage + gender derivable from the match row alone (scorecard/balls bump it later). */
+function matchSearchMeta(match: DomainMatch) {
+  const coverage =
+    match.coverage ??
+    deriveCoverage({
+      status: match.status,
+      note: match.note ?? match.resultText,
+      score: match.score,
+      startTimeIso: match.startTimeIso,
+      title: match.title,
+      series: match.series,
+      homeName: match.teams.home.name,
+      awayName: match.teams.away.name,
+      isDemo: match.freshness === "DEMO" || match.status === "DEMO",
+    });
+  return {
+    coverageLevel: coverage.level,
+    gender:
+      match.coverage?.gender ??
+      inferGender({
+        title: match.title,
+        series: match.series,
+        homeName: match.teams.home.name,
+        awayName: match.teams.away.name,
+      }),
+  };
+}
+
+type WhereBuilder = { clauses: string[]; params: unknown[] };
+
+function addParam(w: WhereBuilder, value: unknown): string {
+  w.params.push(value);
+  return `$${w.params.length}`;
+}
+
+export function buildMatchWhere(filter: HistoricalMatchFilter): WhereBuilder {
+  const w: WhereBuilder = { clauses: [], params: [] };
+
+  const team = (filter.teamContains ?? filter.teamId ?? "").trim();
+  if (team) {
+    const p = addParam(w, `%${escapeLike(team)}%`);
+    w.clauses.push(
+      `(home_name ILIKE ${p} OR away_name ILIKE ${p}` +
+        ` OR teams->'home'->>'id' ILIKE ${p} OR teams->'away'->>'id' ILIKE ${p}` +
+        ` OR teams->'home'->>'shortName' ILIKE ${p} OR teams->'away'->>'shortName' ILIKE ${p})`,
+    );
+  }
+  if (filter.format) w.clauses.push(`format = ${addParam(w, filter.format)}`);
+  if (filter.venueContains?.trim()) {
+    w.clauses.push(`venue ILIKE ${addParam(w, `%${escapeLike(filter.venueContains.trim())}%`)}`);
+  }
+  const series = (filter.competitionContains ?? filter.seriesContains ?? "").trim();
+  if (series) w.clauses.push(`series ILIKE ${addParam(w, `%${escapeLike(series)}%`)}`);
+  if (filter.resultContains?.trim()) {
+    const p = addParam(w, `%${escapeLike(filter.resultContains.trim())}%`);
+    w.clauses.push(`(COALESCE(note, '') ILIKE ${p} OR COALESCE(result_text, '') ILIKE ${p})`);
+  }
+  if (filter.gender && filter.gender !== "unknown") {
+    w.clauses.push(`gender = ${addParam(w, filter.gender)}`);
+  }
+  if (filter.yearFrom != null) {
+    w.clauses.push(`EXTRACT(YEAR FROM start_time) >= ${addParam(w, filter.yearFrom)}`);
+  }
+  if (filter.yearTo != null) {
+    w.clauses.push(`EXTRACT(YEAR FROM start_time) <= ${addParam(w, filter.yearTo)}`);
+  }
+  if (filter.fromIso) w.clauses.push(`start_time >= ${addParam(w, filter.fromIso)}`);
+  if (filter.toIso) w.clauses.push(`start_time <= ${addParam(w, filter.toIso)}`);
+  if (filter.freshness?.length) {
+    w.clauses.push(`freshness = ANY(${addParam(w, filter.freshness)}::text[])`);
+  }
+  if (filter.coverageLevel) {
+    w.clauses.push(`coverage_level = ${addParam(w, filter.coverageLevel)}`);
+  }
+  if (filter.coverageAtLeast) {
+    w.clauses.push(
+      `coverage_level = ANY(${addParam(w, coverageAtLeast(filter.coverageAtLeast))}::text[])`,
+    );
+  }
+  if (filter.playerContains?.trim()) {
+    const p = addParam(w, `%${escapeLike(filter.playerContains.trim())}%`);
+    w.clauses.push(
+      `EXISTS (SELECT 1 FROM match_players mp WHERE mp.match_id = matches.id AND mp.player_name ILIKE ${p})`,
+    );
+  }
+  return w;
+}
+
+function iso(value: unknown): string | undefined {
+  if (value instanceof Date) return value.toISOString();
+  return typeof value === "string" ? value : undefined;
+}
+
+export class PostgresStorage implements CricketStorage {
+  readonly kind = "postgres" as const;
+  readonly label = "Postgres (durable)";
+
+  /** Exposed for the read-only stats engine. */
+  constructor(readonly pool: Pool) {}
+
+  private async tx<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      const out = await fn(client);
+      await client.query("COMMIT");
+      return out;
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+
+  async upsertMatch(match: DomainMatch): Promise<void> {
+    const meta = matchSearchMeta(match);
+    await this.pool.query(
+      `INSERT INTO matches (id, provider_ids, status, freshness, title, venue, series, format,
+         start_time, teams, score, note, provenance, updated_at, payload,
+         home_name, away_name, gender, coverage_level, result_text, provider)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
+       ON CONFLICT (id) DO UPDATE SET
+         provider_ids = EXCLUDED.provider_ids, status = EXCLUDED.status,
+         freshness = EXCLUDED.freshness, title = EXCLUDED.title, venue = EXCLUDED.venue,
+         series = EXCLUDED.series, format = EXCLUDED.format, start_time = EXCLUDED.start_time,
+         teams = EXCLUDED.teams, score = EXCLUDED.score, note = EXCLUDED.note,
+         provenance = EXCLUDED.provenance, updated_at = EXCLUDED.updated_at,
+         payload = EXCLUDED.payload, home_name = EXCLUDED.home_name,
+         away_name = EXCLUDED.away_name, gender = EXCLUDED.gender,
+         -- never downgrade coverage measured from scorecard / balls
+         coverage_level = CASE
+           WHEN array_position(ARRAY['result','scorecard','innings','ball_by_ball'], matches.coverage_level)
+              > array_position(ARRAY['result','scorecard','innings','ball_by_ball'], EXCLUDED.coverage_level)
+           THEN matches.coverage_level ELSE EXCLUDED.coverage_level END,
+         result_text = EXCLUDED.result_text, provider = EXCLUDED.provider`,
+      [
+        match.id,
+        JSON.stringify(match.providerIds ?? {}),
+        match.status,
+        match.freshness,
+        match.title,
+        match.venue,
+        match.series ?? null,
+        match.format,
+        match.startTimeIso ?? null,
+        JSON.stringify(match.teams),
+        match.score ? JSON.stringify(match.score) : null,
+        match.note ?? null,
+        JSON.stringify(match.provenance),
+        match.updatedAt,
+        JSON.stringify(match),
+        match.teams.home.name,
+        match.teams.away.name,
+        meta.gender,
+        meta.coverageLevel,
+        match.resultText ?? match.note ?? null,
+        match.provenance.provider ?? null,
+      ],
     );
   }
 
-  async upsertMatch(): Promise<void> {
-    this.fail();
+  async getMatch(id: string): Promise<DomainMatch | null> {
+    const res = await this.pool.query<{ payload: DomainMatch }>(
+      "SELECT payload FROM matches WHERE id = $1",
+      [id],
+    );
+    return res.rows[0]?.payload ?? null;
   }
-  async getMatch(): Promise<DomainMatch | null> {
-    this.fail();
-  }
+
   async listMatches(): Promise<DomainMatch[]> {
-    this.fail();
+    const res = await this.pool.query<{ payload: DomainMatch }>(
+      "SELECT payload FROM matches ORDER BY start_time DESC NULLS LAST",
+    );
+    return res.rows.map((r) => r.payload);
   }
-  async upsertScorecard(): Promise<void> {
-    this.fail();
+
+  async searchMatches(filter: HistoricalMatchFilter): Promise<StorageMatchSearch> {
+    const w = buildMatchWhere(filter);
+    const where = w.clauses.length ? `WHERE ${w.clauses.join(" AND ")}` : "";
+    const pageSize = Math.min(Math.max(filter.limit ?? 20, 1), 100);
+    const page = Math.max(filter.page ?? 0, 0);
+
+    const agg = await this.pool.query<{ total: string; ymin: number | null; ymax: number | null }>(
+      `SELECT COUNT(*) AS total,
+              MIN(EXTRACT(YEAR FROM start_time))::int AS ymin,
+              MAX(EXTRACT(YEAR FROM start_time))::int AS ymax
+         FROM matches ${where}`,
+      w.params,
+    );
+    const rows = await this.pool.query<{ payload: DomainMatch }>(
+      `SELECT payload FROM matches ${where}
+        ORDER BY start_time DESC NULLS LAST, id
+        LIMIT $${w.params.length + 1} OFFSET $${w.params.length + 2}`,
+      [...w.params, pageSize, page * pageSize],
+    );
+    const a = agg.rows[0];
+    return {
+      matches: rows.rows.map((r) => r.payload),
+      total: Number(a?.total ?? 0),
+      yearMin: a?.ymin ?? undefined,
+      yearMax: a?.ymax ?? undefined,
+    };
   }
-  async getScorecard(): Promise<DomainScorecard | null> {
-    this.fail();
+
+  async upsertScorecard(card: DomainScorecard): Promise<void> {
+    const appearances = new Map<string, MatchPlayerRow>();
+    for (const rows of Object.values(card.batting)) {
+      for (const r of rows ?? []) appearances.set(r.playerId, { playerId: r.playerId, playerName: r.playerName });
+    }
+    for (const rows of Object.values(card.bowling)) {
+      for (const r of rows ?? []) appearances.set(r.playerId, { playerId: r.playerId, playerName: r.playerName });
+    }
+    await this.tx(async (client) => {
+      await client.query(
+        `INSERT INTO scorecards (match_id, payload, updated_at) VALUES ($1, $2, NOW())
+         ON CONFLICT (match_id) DO UPDATE SET payload = EXCLUDED.payload, updated_at = NOW()`,
+        [card.matchId, JSON.stringify(card)],
+      );
+      if (appearances.size) {
+        await client.query(
+          `UPDATE matches SET coverage_level = 'innings'
+            WHERE id = $1 AND coverage_level IN ('result', 'scorecard')`,
+          [card.matchId],
+        );
+        await insertMatchPlayers(client, card.matchId, [...appearances.values()]);
+      }
+    });
   }
-  async upsertBalls(): Promise<void> {
-    this.fail();
+
+  async getScorecard(matchId: string): Promise<DomainScorecard | null> {
+    const res = await this.pool.query<{ payload: DomainScorecard }>(
+      "SELECT payload FROM scorecards WHERE match_id = $1",
+      [matchId],
+    );
+    return res.rows[0]?.payload ?? null;
   }
-  async getBalls(): Promise<DomainBall[]> {
-    this.fail();
+
+  async upsertBalls(matchId: string, balls: DomainBall[]): Promise<void> {
+    if (!balls.length) return;
+    await this.tx(async (client) => {
+      for (let i = 0; i < balls.length; i += BALL_BATCH) {
+        await insertBallBatch(client, matchId, balls.slice(i, i + BALL_BATCH));
+      }
+      await client.query(
+        "UPDATE matches SET coverage_level = 'ball_by_ball' WHERE id = $1",
+        [matchId],
+      );
+    });
   }
-  async upsertPlayer(): Promise<void> {
-    this.fail();
+
+  async getBalls(matchId: string): Promise<DomainBall[]> {
+    const res = await this.pool.query<{ payload: DomainBall }>(
+      `SELECT payload FROM balls WHERE match_id = $1
+        ORDER BY innings_number NULLS FIRST, innings_id, over_number, ball_in_over`,
+      [matchId],
+    );
+    return res.rows.map((r) => r.payload);
   }
-  async getPlayer(): Promise<DomainPlayer | null> {
-    this.fail();
+
+  async upsertPlayer(player: DomainPlayer): Promise<void> {
+    await this.pool.query(
+      `INSERT INTO players (id, provider_ids, name, team_id, role, payload, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, NOW())
+       ON CONFLICT (id) DO UPDATE SET provider_ids = EXCLUDED.provider_ids, name = EXCLUDED.name,
+         team_id = COALESCE(EXCLUDED.team_id, players.team_id),
+         role = COALESCE(EXCLUDED.role, players.role),
+         payload = EXCLUDED.payload, updated_at = NOW()`,
+      [
+        player.id,
+        JSON.stringify(player.providerIds ?? {}),
+        player.name,
+        player.teamId ?? null,
+        player.role ?? null,
+        JSON.stringify(player),
+      ],
+    );
   }
+
+  async upsertPlayers(players: DomainPlayer[]): Promise<void> {
+    const unique = [...new Map(players.map((p) => [p.id, p])).values()];
+    if (!unique.length) return;
+    await this.pool.query(
+      `INSERT INTO players (id, provider_ids, name, team_id, role, payload, updated_at)
+       SELECT id, provider_ids, name, team_id, role, payload, NOW()
+         FROM UNNEST($1::text[], $2::jsonb[], $3::text[], $4::text[], $5::text[], $6::jsonb[])
+           AS t(id, provider_ids, name, team_id, role, payload)
+       ON CONFLICT (id) DO UPDATE SET provider_ids = players.provider_ids || EXCLUDED.provider_ids,
+         name = EXCLUDED.name,
+         team_id = COALESCE(EXCLUDED.team_id, players.team_id),
+         role = COALESCE(EXCLUDED.role, players.role),
+         payload = EXCLUDED.payload, updated_at = NOW()`,
+      [
+        unique.map((p) => p.id),
+        unique.map((p) => JSON.stringify(p.providerIds ?? {})),
+        unique.map((p) => p.name),
+        unique.map((p) => p.teamId ?? null),
+        unique.map((p) => p.role ?? null),
+        unique.map((p) => JSON.stringify(p)),
+      ],
+    );
+  }
+
+  async getPlayer(id: string): Promise<DomainPlayer | null> {
+    const res = await this.pool.query<{ payload: DomainPlayer }>(
+      "SELECT payload FROM players WHERE id = $1",
+      [id],
+    );
+    return res.rows[0]?.payload ?? null;
+  }
+
   async listPlayers(): Promise<DomainPlayer[]> {
-    this.fail();
+    const res = await this.pool.query<{ payload: DomainPlayer }>(
+      "SELECT payload FROM players ORDER BY name",
+    );
+    return res.rows.map((r) => r.payload);
   }
-  async recordIngestionRun(): Promise<void> {
-    this.fail();
+
+  async upsertMatchPlayers(matchId: string, rows: MatchPlayerRow[]): Promise<void> {
+    if (!rows.length) return;
+    const client = await this.pool.connect();
+    try {
+      await insertMatchPlayers(client, matchId, rows);
+    } finally {
+      client.release();
+    }
   }
+
+  async matchIdsForPlayer(playerId: string): Promise<string[]> {
+    const res = await this.pool.query<{ match_id: string }>(
+      `SELECT mp.match_id FROM match_players mp JOIN matches m ON m.id = mp.match_id
+        WHERE mp.player_id = $1 ORDER BY m.start_time NULLS LAST`,
+      [playerId],
+    );
+    return res.rows.map((r) => r.match_id);
+  }
+
+  async recordIngestionRun(run: IngestionRunRecord): Promise<void> {
+    await this.pool.query(
+      `INSERT INTO ingestion_runs (id, provider, operation, status, started_at, finished_at,
+         fetched, upserted, skipped, errors, notes)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+       ON CONFLICT (id) DO UPDATE SET status = EXCLUDED.status, finished_at = EXCLUDED.finished_at,
+         fetched = EXCLUDED.fetched, upserted = EXCLUDED.upserted, skipped = EXCLUDED.skipped,
+         errors = EXCLUDED.errors, notes = EXCLUDED.notes`,
+      [
+        run.id,
+        run.provider,
+        run.operation,
+        run.status,
+        run.startedAt,
+        run.finishedAt ?? null,
+        run.fetched,
+        run.upserted,
+        run.skipped,
+        JSON.stringify(run.errors.slice(0, 200)),
+        run.notes ?? null,
+      ],
+    );
+  }
+
   async latestIngestionRun(): Promise<IngestionRunRecord | null> {
-    this.fail();
+    return (await this.listIngestionRuns(1))[0] ?? null;
   }
-  async listIngestionRuns(): Promise<IngestionRunRecord[]> {
-    this.fail();
+
+  async listIngestionRuns(limit = 20): Promise<IngestionRunRecord[]> {
+    const res = await this.pool.query<{
+      id: string;
+      provider: string;
+      operation: string;
+      status: IngestionRunRecord["status"];
+      started_at: Date;
+      finished_at: Date | null;
+      fetched: number;
+      upserted: number;
+      skipped: number;
+      errors: string[];
+      notes: string | null;
+    }>(
+      `SELECT id, provider, operation, status, started_at, finished_at, fetched, upserted,
+              skipped, errors, notes
+         FROM ingestion_runs ORDER BY started_at DESC LIMIT $1`,
+      [limit],
+    );
+    return res.rows.map((r) => ({
+      id: r.id,
+      provider: r.provider,
+      operation: r.operation,
+      status: r.status,
+      startedAt: iso(r.started_at) ?? "",
+      finishedAt: iso(r.finished_at),
+      fetched: r.fetched,
+      upserted: r.upserted,
+      skipped: r.skipped,
+      errors: r.errors ?? [],
+      notes: r.notes ?? undefined,
+    }));
+  }
+
+  async stats(): Promise<StorageStats> {
+    const fres = await this.pool.query<{ freshness: FreshnessStatus; n: string }>(
+      "SELECT freshness, COUNT(*) AS n FROM matches GROUP BY freshness",
+    );
+    const pres = await this.pool.query<{ n: string }>("SELECT COUNT(*) AS n FROM players");
+    const freshnessCounts: StorageStats["freshnessCounts"] = {};
+    let matchCount = 0;
+    for (const row of fres.rows) {
+      const n = Number(row.n);
+      freshnessCounts[row.freshness] = n;
+      matchCount += n;
+    }
+    return { matchCount, playerCount: Number(pres.rows[0]?.n ?? 0), freshnessCounts };
+  }
+
+  async close(): Promise<void> {
+    await this.pool.end();
   }
 }
 
-/** Prefer memory when postgres is not ready — never silently pretend memory is postgres. */
+async function insertMatchPlayers(
+  client: PoolClient,
+  matchId: string,
+  rows: MatchPlayerRow[],
+): Promise<void> {
+  await client.query(
+    `INSERT INTO match_players (match_id, player_id, player_name, team_name)
+     SELECT $1::text, * FROM UNNEST($2::text[], $3::text[], $4::text[])
+     ON CONFLICT (match_id, player_id) DO UPDATE SET
+       player_name = EXCLUDED.player_name,
+       team_name = COALESCE(EXCLUDED.team_name, match_players.team_name)`,
+    [
+      matchId,
+      rows.map((r) => r.playerId),
+      rows.map((r) => r.playerName),
+      rows.map((r) => r.teamName ?? null),
+    ],
+  );
+}
+
+async function insertBallBatch(client: PoolClient, matchId: string, balls: DomainBall[]) {
+  await client.query(
+    `INSERT INTO balls (id, match_id, innings_id, over_number, ball_in_over, payload,
+       innings_number, batting_team, batter_id, bowler_id, non_striker_id,
+       runs_batter, runs_extras, runs_total, is_wide, is_no_ball, is_wicket,
+       wicket_kind, player_out_id, bowler_runs, is_super_over)
+     SELECT * FROM UNNEST(
+       $1::text[], $2::text[], $3::text[], $4::int[], $5::int[], $6::jsonb[],
+       $7::int[], $8::text[], $9::text[], $10::text[], $11::text[],
+       $12::int[], $13::int[], $14::int[], $15::bool[], $16::bool[], $17::bool[],
+       $18::text[], $19::text[], $20::int[], $21::bool[])
+     ON CONFLICT (id) DO UPDATE SET payload = EXCLUDED.payload,
+       innings_number = EXCLUDED.innings_number, batting_team = EXCLUDED.batting_team,
+       batter_id = EXCLUDED.batter_id, bowler_id = EXCLUDED.bowler_id,
+       non_striker_id = EXCLUDED.non_striker_id, runs_batter = EXCLUDED.runs_batter,
+       runs_extras = EXCLUDED.runs_extras, runs_total = EXCLUDED.runs_total,
+       is_wide = EXCLUDED.is_wide, is_no_ball = EXCLUDED.is_no_ball,
+       is_wicket = EXCLUDED.is_wicket, wicket_kind = EXCLUDED.wicket_kind,
+       player_out_id = EXCLUDED.player_out_id, bowler_runs = EXCLUDED.bowler_runs,
+       is_super_over = EXCLUDED.is_super_over`,
+    [
+      balls.map((b) => b.id),
+      balls.map(() => matchId),
+      balls.map((b) => b.inningsId),
+      balls.map((b) => b.overNumber),
+      balls.map((b) => b.ballInOver),
+      balls.map((b) => JSON.stringify(b)),
+      balls.map((b) => b.inningsNumber ?? null),
+      balls.map((b) => b.battingTeam ?? null),
+      balls.map((b) => b.batsmanId ?? null),
+      balls.map((b) => b.bowlerId ?? null),
+      balls.map((b) => b.nonStrikerId ?? null),
+      balls.map((b) => b.runsOffBat),
+      balls.map((b) => b.extras),
+      balls.map((b) => b.totalRuns),
+      balls.map((b) => Boolean(b.isWide)),
+      balls.map((b) => Boolean(b.isNoBall)),
+      balls.map((b) => b.isWicket),
+      balls.map((b) => b.wicketKind ?? null),
+      balls.map((b) => b.playerOutId ?? null),
+      balls.map((b) => b.bowlerRuns ?? null),
+      balls.map((b) => Boolean(b.isSuperOver)),
+    ],
+  );
+}
+
+let sharedPool: Pool | null = null;
+
+export function createPool(databaseUrl: string, overrides?: PoolConfig): Pool {
+  return new Pool({
+    connectionString: databaseUrl,
+    max: Number.parseInt(process.env.CRICKETOS_PG_POOL_MAX ?? "5", 10) || 5,
+    idleTimeoutMillis: 10_000,
+    connectionTimeoutMillis: 10_000,
+    ...overrides,
+  });
+}
+
+/** Postgres when configured; memory otherwise. Never labels memory as durable. */
 export function createStorage(backend: "memory" | "postgres", databaseUrl: string | null): CricketStorage {
   if (backend === "postgres" && databaseUrl) {
-    // No pg client wired without credentials / dependency install in this session.
-    // Return unavailable wrapper so callers fall back explicitly.
-    console.warn(
-      "[storage] DATABASE_URL present but Postgres client not wired — using memory with pending-durable label",
-    );
-    const mem = new MemoryStorage();
-    return {
-      kind: "memory",
-      label:
-        "In-memory fallback (DATABASE_URL set but Postgres client/migrations pending — NOT production durable)",
-      upsertMatch: (m) => mem.upsertMatch(m),
-      getMatch: (id) => mem.getMatch(id),
-      listMatches: () => mem.listMatches(),
-      upsertScorecard: (c) => mem.upsertScorecard(c),
-      getScorecard: (id) => mem.getScorecard(id),
-      upsertBalls: (id, b) => mem.upsertBalls(id, b),
-      getBalls: (id) => mem.getBalls(id),
-      upsertPlayer: (p) => mem.upsertPlayer(p),
-      getPlayer: (id) => mem.getPlayer(id),
-      listPlayers: () => mem.listPlayers(),
-      recordIngestionRun: (r) => mem.recordIngestionRun(r),
-      latestIngestionRun: () => mem.latestIngestionRun(),
-      listIngestionRuns: (n) => mem.listIngestionRuns(n),
-    };
+    sharedPool ??= createPool(databaseUrl);
+    return new PostgresStorage(sharedPool);
   }
   return new MemoryStorage();
 }

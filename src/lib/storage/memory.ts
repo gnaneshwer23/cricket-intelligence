@@ -5,7 +5,7 @@ import type {
   DomainScorecard,
   IngestionRunRecord,
 } from "@/lib/domain/models";
-import type { CricketStorage } from "@/lib/storage/types";
+import type { CricketStorage, StorageStats } from "@/lib/storage/types";
 
 /**
  * In-memory store — process-local, lost on restart.
@@ -50,7 +50,11 @@ export class MemoryStorage implements CricketStorage {
     this.balls.set(
       matchId,
       [...map.values()].sort(
-        (a, b) => a.overNumber - b.overNumber || a.ballInOver - b.ballInOver,
+        (a, b) =>
+          (a.inningsNumber ?? 0) - (b.inningsNumber ?? 0) ||
+          a.inningsId.localeCompare(b.inningsId) ||
+          a.overNumber - b.overNumber ||
+          a.ballInOver - b.ballInOver,
       ),
     );
   }
@@ -84,6 +88,18 @@ export class MemoryStorage implements CricketStorage {
 
   async listIngestionRuns(limit = 20): Promise<IngestionRunRecord[]> {
     return this.runs.slice(0, limit);
+  }
+
+  async stats(): Promise<StorageStats> {
+    const freshnessCounts: StorageStats["freshnessCounts"] = {};
+    for (const m of this.matches.values()) {
+      freshnessCounts[m.freshness] = (freshnessCounts[m.freshness] ?? 0) + 1;
+    }
+    return {
+      matchCount: this.matches.size,
+      playerCount: this.players.size,
+      freshnessCounts,
+    };
   }
 
   /** Test helper */

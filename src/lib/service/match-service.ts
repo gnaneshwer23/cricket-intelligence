@@ -74,9 +74,14 @@ export async function getScorecardByMatchId(matchId: string): Promise<DomainScor
   return null;
 }
 
+/** Fixture-board candidates: current / upcoming rows, never the whole archive. */
+const FIXTURE_FRESHNESS: DomainMatch["freshness"][] = ["LIVE", "STALE", "UPCOMING"];
+
 export async function listStoredMatches(): Promise<DomainMatch[]> {
   const storage = getStorage();
-  const list = await storage.listMatches();
+  const list = storage.searchMatches
+    ? (await storage.searchMatches({ freshness: FIXTURE_FRESHNESS, limit: 100 })).matches
+    : await storage.listMatches();
   if (list.length === 0) return [getDemoMatch()];
   return list;
 }
@@ -85,13 +90,11 @@ export async function getOperatorHealth(): Promise<OperatorHealthSummary> {
   const cfg = getCricketOsConfig();
   const flags = getPublicRuntimeFlags();
   const storage = getStorage();
-  const matches = await storage.listMatches();
-  const players = await storage.listPlayers();
+  const stats = await storage.stats();
   const last = await storage.latestIngestionRun();
-  const freshnessCounts: OperatorHealthSummary["freshnessCounts"] = {};
-  for (const m of matches.length ? matches : [getDemoMatch()]) {
-    freshnessCounts[m.freshness] = (freshnessCounts[m.freshness] ?? 0) + 1;
-  }
+  const freshnessCounts: OperatorHealthSummary["freshnessCounts"] = stats.matchCount
+    ? stats.freshnessCounts
+    : { [getDemoMatch().freshness]: 1 };
 
   return {
     demoMode: flags.demoMode,
@@ -102,8 +105,8 @@ export async function getOperatorHealth(): Promise<OperatorHealthSummary> {
     storageLabel: storage.label,
     lastIngestion: last,
     freshnessCounts,
-    matchCount: matches.length || 1,
-    playerCount: players.length,
+    matchCount: stats.matchCount || 1,
+    playerCount: stats.playerCount,
     asOf: new Date().toISOString(),
   };
 }
