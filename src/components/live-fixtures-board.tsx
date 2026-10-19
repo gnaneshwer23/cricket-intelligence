@@ -126,16 +126,20 @@ function mergeBoard(fixtures: FixtureRow[], matches: ApiMatchRow[]): BoardRow[] 
       map.set(m.id, next);
       continue;
     }
+    // The fixture row is the fresh provider read; the stored match is a snapshot
+    // from ingest time, so it only fills gaps and never overrides live scores.
     map.set(m.id, {
-      ...prev,
       ...next,
-      status: next.status === "DEMO" || prev.status === "DEMO" ? "DEMO" : next.status,
+      ...prev,
+      status: next.status === "DEMO" || prev.status === "DEMO" ? "DEMO" : prev.status,
       freshness:
-        next.freshness === "DEMO" || prev.freshness === "DEMO" ? "DEMO" : next.freshness,
-      score: next.score ?? prev.score,
-      statusLine: next.statusLine ?? prev.statusLine,
-      homeShort: next.homeShort ?? prev.homeShort,
-      awayShort: next.awayShort ?? prev.awayShort,
+        next.freshness === "DEMO" || prev.freshness === "DEMO" ? "DEMO" : prev.freshness,
+      score: prev.score ?? next.score,
+      statusLine: prev.statusLine ?? next.statusLine,
+      series: prev.series ?? next.series,
+      homeShort: prev.homeShort ?? next.homeShort,
+      awayShort: prev.awayShort ?? next.awayShort,
+      provenance: prev.provenance ?? next.provenance,
       isDemo: prev.isDemo || next.isDemo,
     });
   }
@@ -210,7 +214,7 @@ export function LiveFixturesBoard({
           <Kicker className="text-cyan">Live Scores</Kicker>
           <p className="mt-1.5 text-sm text-muted-foreground">
             {providerReady
-              ? `Provider synced · ${liveCount} LIVE · polls every 15s on Live tab`
+              ? `Provider synced · ${liveCount} in progress · scores refresh about every 30 min on the free feed`
               : "Truth mode · add CricAPI key for live scores (no invented fixtures)"}
           </p>
         </div>
@@ -221,7 +225,9 @@ export function LiveFixturesBoard({
             </span>
           ) : null}
           {tab === "live" ? (
-            <span className="tabular-nums text-lime/80">auto-refresh 15s</span>
+            <span className="tabular-nums text-lime/80">
+              {rows[0]?.provenance?.asOf ? `as of ${rows[0].provenance.asOf.slice(11, 16)} UTC` : "auto-refresh"}
+            </span>
           ) : rows[0]?.provenance?.asOf ? (
             <span className="tabular-nums">as of {rows[0].provenance.asOf.slice(0, 19)}</span>
           ) : null}

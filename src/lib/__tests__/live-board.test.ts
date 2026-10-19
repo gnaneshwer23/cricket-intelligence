@@ -25,6 +25,8 @@ describe("teamAbbr", () => {
     assert.equal(teamAbbr("England"), "ENG");
     assert.equal(teamAbbr("West Indies"), "WI");
     assert.equal(teamAbbr("India Women"), "IND-W");
+    assert.equal(teamAbbr("A1 (ind)"), "A1", "knockout placeholder");
+    assert.equal(teamAbbr("Mumbai Indians (wpl)"), "MI");
     assert.equal(teamAbbr("Mumbai Indians"), "MI");
     assert.equal(teamAbbr("Kolkata Knight Riders"), "KKR");
   });
@@ -59,9 +61,11 @@ describe("live-board filters", () => {
     assert.equal(matchesBoardTab(live, "live"), true);
   });
 
-  it("requires both LIVE status and freshness for Live tab", () => {
+  it("keeps in-progress matches on the Live tab even when the feed is STALE", () => {
     const staleish = row({ id: "x", status: "LIVE", freshness: "STALE" });
-    assert.equal(matchesBoardTab(staleish, "live"), false);
+    assert.equal(matchesBoardTab(staleish, "live"), true);
+    const unavailable = row({ id: "y", status: "LIVE", freshness: "UNAVAILABLE" });
+    assert.equal(matchesBoardTab(unavailable, "live"), false);
   });
 
   it("splits upcoming / recent / all", () => {

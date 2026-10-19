@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "tsx --test \"src/lib/__tests__/**/*.test.ts\"",
+    "test": "tsx --test --test-concurrency=1 \"src/lib/__tests__/**/*.test.ts\"",
     "db:migrate": "tsx scripts/db-migrate.ts",
     "ingest:cricsheet": "tsx scripts/ingest-cricsheet.ts",
     "ingest:register": "tsx scripts/ingest-cricsheet-register.ts",

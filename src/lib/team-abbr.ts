@@ -48,10 +48,13 @@ export function teamAbbr(name: string | undefined | null): string {
   for (const [full, code] of Object.entries(EXACT)) {
     if (key.startsWith(full)) return code;
   }
-  const words = name.trim().split(/\s+/).filter(Boolean);
+  // Knockout placeholders such as "A1 (ind)" → "A1"; drop bracketed notes.
+  const base = name.replace(/\s*\([^)]*\)\s*/g, " ").trim() || name.trim();
+  if (EXACT[base.toLowerCase()]) return EXACT[base.toLowerCase()]!;
+  const words = base.split(/\s+/).filter(Boolean);
   if (words.length === 1) return words[0]!.slice(0, 3).toUpperCase();
   if (words.length === 2) {
-    return `${words[0]![0] ?? ""}${words[1]![0] ?? ""}`.toUpperCase() || name.slice(0, 3).toUpperCase();
+    return `${words[0]![0] ?? ""}${words[1]![0] ?? ""}`.toUpperCase() || base.slice(0, 3).toUpperCase();
   }
   return words
     .slice(0, 3)

@@ -130,36 +130,64 @@ export function provenanceFor(
 }
 
 /** Normalise a CricAPI match row */
-export function normaliseCricApiMatch(row: Record<string, unknown>): DomainMatch {
+export type CricApiNormaliseOptions = {
+  /** When the provider response was fetched (cache-aware); defaults to now. */
+  fetchedAtIso?: string;
+  /** LIVE rows older than this become STALE. */
+  staleAfterMs?: number;
+  nowMs?: number;
+};
+
+/**
+ * CricAPI lifecycle: its in-progress status text reads like "India need 45
+ * runs", so trust matchStarted / matchEnded when present, text otherwise.
+ */
+export function cricApiLifecycle(row: Record<string, unknown>): MatchLifecycle {
+  const status = typeof row.status === "string" ? row.status : undefined;
+  if (typeof row.matchStarted === "boolean" || typeof row.matchEnded === "boolean") {
+    if (row.matchEnded === true) return "COMPLETED";
+    if (row.matchStarted === true) return "LIVE";
+    return "UPCOMING";
+  }
+  return mapLifecycle(status);
+}
+
+export function normaliseCricApiMatch(row: Record<string, unknown>, opts: CricApiNormaliseOptions = {}): DomainMatch {
   const idRaw = String(row.id);
   const teams = Array.isArray(row.teams) ? row.teams.map(String) : [];
   const homeName = teams[0] ?? "Team A";
   const awayName = teams[1] ?? "Team B";
-  const lifecycle = mapLifecycle(typeof row.status === "string" ? row.status : undefined);
+  const lifecycle = cricApiLifecycle(row);
+  const fetchedAt = opts.fetchedAtIso ?? new Date(opts.nowMs ?? Date.now()).toISOString();
+  const ageMs = (opts.nowMs ?? Date.now()) - Date.parse(fetchedAt);
+  const stale = opts.staleAfterMs != null && ageMs > opts.staleAfterMs;
   const scoreArr = Array.isArray(row.score) ? row.score : [];
   const lastScore = scoreArr.length ? scoreArr[scoreArr.length - 1] : undefined;
   const score = parseScore(lastScore);
 
   return {
     id: slugId("cricapi", idRaw),
-    providerIds: { cricapi: idRaw },
+    providerIds: {
+      cricapi: idRaw,
+      ...(typeof row.series_id === "string" ? { cricapiSeries: row.series_id } : {}),
+    },
     status: lifecycle,
-    freshness: lifecycleToFreshness(lifecycle),
+    freshness: lifecycleToFreshness(lifecycle, { stale }),
     title: typeof row.name === "string" ? row.name : `${homeName} vs ${awayName}`,
     venue: typeof row.venue === "string" ? row.venue : "Unknown venue",
-    series:
-      typeof row.series === "string" && row.series.trim()
-        ? row.series.trim()
-        : typeof row.series_id === "string"
-          ? `series:${row.series_id}`
-          : undefined,
+    // currentMatches carries only series_id; the adapter fills `series` from the cached series list.
+    series: typeof row.series === "string" && row.series.trim() ? row.series.trim() : undefined,
     format: mapFormat(typeof row.matchType === "string" ? row.matchType : undefined),
     startTimeIso: typeof row.dateTimeGMT === "string" ? row.dateTimeGMT : undefined,
     teams: teamFromNames(homeName, awayName, "cricapi"),
     score,
     note: typeof row.status === "string" ? row.status : undefined,
-    provenance: provenanceFor("cricapi", lifecycle === "COMPLETED" ? "historical" : "fact", idRaw),
-    updatedAt: new Date().toISOString(),
+    provenance: {
+      ...provenanceFor("cricapi", lifecycle === "COMPLETED" ? "historical" : "fact", idRaw),
+      asOf: fetchedAt,
+      note: "CricketData.org (CricAPI) — free tier is delayed; cached and shared to stay within the daily quota.",
+    },
+    updatedAt: fetchedAt,
   };
 }
 
