@@ -1,10 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { FreshnessBadge, ProvenanceStrip, StatusBadge } from "@/components/status-badge";
-import { TruthSetupPanel } from "@/components/truth-setup-panel";
-import { Kicker } from "@/components/ui-bits";
-import { Button } from "@/components/ui/button";
+import { EmptyState, LivePill, SourceChip, StatRing } from "@/components/ui-bits";
 import {
   useDataHealth,
   useFixtures,
@@ -12,6 +9,7 @@ import {
   type ApiMatchRow,
   type FixtureRow,
 } from "@/hooks/use-data-layer";
+import { oversToBalls } from "@/lib/calc";
 import type { FreshnessStatus, MatchLifecycle } from "@/lib/contracts";
 import {
   computeCrr,
@@ -24,7 +22,7 @@ import {
   type BoardRowInput,
   type LiveBoardTab,
 } from "@/lib/live-board";
-import { filterProductFixtures, isDemoMatchId, openDemoPlayground } from "@/lib/truth-mode";
+import { filterProductFixtures, isDemoMatchId } from "@/lib/truth-mode";
 
 export type BoardRow = BoardRowInput;
 
@@ -196,7 +194,6 @@ export function LiveFixturesBoard({
     return list.slice(0, limit);
   }, [rows, tab, limit]);
 
-  const liveCount = counts.live;
   const providerReady =
     health.status === "ok" &&
     health.summary &&
@@ -204,225 +201,125 @@ export function LiveFixturesBoard({
     health.summary.dataApiKeyConfigured;
 
   const loading = fixtures.status === "loading" && matches.status === "loading";
-  const unavailable =
-    fixtures.status === "unavailable" && matches.status === "unavailable";
+  const unavailable = fixtures.status === "unavailable" && matches.status === "unavailable";
+  const asOf = rows.find((r) => r.status === "LIVE" && !r.isDemo)?.provenance?.asOf ?? rows[0]?.provenance?.asOf;
 
   return (
-    <div id="live" className="rounded-[1.75rem] border border-border bg-card/40 scroll-mt-24">
-      <div className={`flex flex-wrap items-end justify-between gap-3 ${compact ? "p-4" : "p-5 sm:p-6"}`}>
-        <div>
-          <Kicker className="text-cyan">Live Scores</Kicker>
-          <p className="mt-1.5 text-sm text-muted-foreground">
-            {providerReady
-              ? `Provider synced · ${liveCount} in progress · scores refresh about every 30 min on the free feed`
-              : "Truth mode · add CricAPI key for live scores (no invented fixtures)"}
-          </p>
+    <div id="live" className="scroll-mt-28">
+      <div className={`flex flex-wrap items-center justify-between gap-3 ${compact ? "mb-3" : "mb-5"}`}>
+        <div role="tablist" aria-label="Fixture filters" className="glass inline-flex gap-1 rounded-full p-1">
+          {TAB_LABELS.map((t) => {
+            const active = tab === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setTabOverride(t.id)}
+                className={`rounded-full px-4 py-1.5 text-xs font-medium transition ${
+                  active ? "bg-navy text-white" : "text-slate hover:text-navy"
+                }`}
+              >
+                {t.label}
+                <span className={`ml-1.5 tabular-nums ${active ? "text-white/70" : "text-mist"}`}>{counts[t.id]}</span>
+              </button>
+            );
+          })}
         </div>
-        <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-          {health.summary ? (
-            <span className="tracking-[0.12em] uppercase">
-              {health.summary.demoMode ? "DEMO mode" : health.summary.dataProvider}
-            </span>
-          ) : null}
-          {tab === "live" ? (
-            <span className="tabular-nums text-lime/80">
-              {rows[0]?.provenance?.asOf ? `as of ${rows[0].provenance.asOf.slice(11, 16)} UTC` : "auto-refresh"}
-            </span>
-          ) : rows[0]?.provenance?.asOf ? (
-            <span className="tabular-nums">as of {rows[0].provenance.asOf.slice(0, 19)}</span>
-          ) : null}
-        </div>
-      </div>
-
-      <div
-        className="flex gap-1 overflow-x-auto border-t border-border px-3 py-2 sm:px-5"
-        role="tablist"
-        aria-label="Fixture filters"
-      >
-        {TAB_LABELS.map((t) => {
-          const active = tab === t.id;
-          const count = counts[t.id];
-          return (
-            <button
-              key={t.id}
-              type="button"
-              role="tab"
-              aria-selected={active}
-              onClick={() => setTabOverride(t.id)}
-              className={`shrink-0 rounded-md px-3 py-1.5 text-xs font-medium tracking-wide transition ${
-                active
-                  ? "bg-lime/15 text-lime"
-                  : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
-              }`}
-            >
-              {t.label}
-              <span className={`ml-1.5 tabular-nums ${active ? "text-lime/80" : "text-muted-foreground/70"}`}>
-                {count}
-              </span>
-            </button>
-          );
-        })}
+        {asOf ? <SourceChip>Live feed · as of {asOf.slice(11, 16)} UTC</SourceChip> : null}
       </div>
 
       {loading ? (
-        <p className="border-t border-border px-5 py-6 text-sm text-muted-foreground">
-          Loading fixtures board…
-        </p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {[0, 1].map((i) => (
+            <div key={i} className="glass h-36 animate-pulse rounded-[1.5rem]" />
+          ))}
+        </div>
       ) : unavailable ? (
-        <p className="border-t border-border px-5 py-6 text-sm text-gold">
-          Fixtures UNAVAILABLE — not claiming LIVE
-        </p>
+        <EmptyState title="Scores are unavailable right now" detail="The live feed didn't respond. Try again in a minute." />
       ) : !providerReady && rows.length === 0 ? (
-        <div className="border-t border-border p-4 sm:p-5">
-          <TruthSetupPanel compact showDemoLink />
-        </div>
+        <EmptyState title="Live scores aren't connected yet" detail="Connect a live data provider to see current and upcoming matches." />
       ) : filtered.length === 0 ? (
-        <div className="border-t border-border px-5 py-6">
-          <p className="text-sm text-muted-foreground">
-            {tab === "live"
-              ? providerReady
-                ? "No in-progress matches from the provider right now."
-                : "No LIVE matches without a provider key."
-              : "Nothing in this filter."}
-          </p>
-          {!providerReady ? (
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              className="mt-3 text-gold"
-              onClick={() => openDemoPlayground()}
-            >
-              Try DEMO playground
-            </Button>
-          ) : null}
-        </div>
+        <EmptyState
+          title={tab === "live" ? "No matches in progress" : "Nothing here yet"}
+          detail={tab === "live" ? "Check Upcoming for the next fixtures." : undefined}
+        />
       ) : (
-        <ul className="divide-y divide-border border-t border-border">
+        <ul className={`grid gap-3 ${compact ? "sm:grid-cols-2" : "sm:grid-cols-2 lg:grid-cols-3"}`}>
           {filtered.map((row) => {
             const selected = selectedId === row.id;
             const home = rowHomeShort(row);
             const away = rowAwayShort(row);
             const crr = formatCrr(computeCrr(row.score));
-            const mini =
-              row.statusLine ??
-              (row.isDemo ? "Scripted DEMO board — not a broadcast feed" : undefined);
+            const live = row.status === "LIVE";
+            const scheduled = row.format === "t20" ? 20 : row.format === "odi" ? 50 : 0;
+            const legal = row.score?.overs ? oversToBalls(String(row.score.overs)) : 0;
             return (
               <li key={row.id}>
                 <button
                   type="button"
                   onClick={() => onSelect?.(row)}
-                  className={`flex w-full flex-col gap-2 px-4 py-3.5 text-left transition sm:px-6 ${
-                    selected ? "bg-lime/10" : "hover:bg-navy/4"
+                  className={`glass group flex h-full w-full flex-col gap-3 rounded-[1.5rem] p-4 text-left transition hover:-translate-y-0.5 sm:p-5 ${
+                    selected ? "ring-2 ring-cobalt/40" : ""
                   }`}
                 >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="min-w-0 truncate text-[11px] tracking-[0.12em] text-muted-foreground uppercase">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="min-w-0 truncate text-[10.5px] tracking-[0.14em] text-slate uppercase">
                       {row.series ?? row.format}
-                      {row.series && row.format ? ` · ${row.format}` : ""}
                     </p>
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <StatusBadge status={row.status} />
-                      {row.freshness !== row.status ? (
-                        <FreshnessBadge freshness={row.freshness} />
-                      ) : null}
-                    </div>
+                    {live ? (
+                      <LivePill stale={row.freshness === "STALE"} />
+                    ) : (
+                      <span className="rounded-full bg-white/70 px-2.5 py-1 text-[10.5px] font-medium text-slate">
+                        {row.status === "UPCOMING" ? "Upcoming" : "Result"}
+                      </span>
+                    )}
                   </div>
 
-                  <div className="flex flex-wrap items-end justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="font-display text-lg font-semibold tracking-tight sm:text-xl">
-                        <span className="tabular-nums">{home}</span>
-                        <span className="mx-1.5 text-sm font-normal text-muted-foreground">vs</span>
-                        <span className="tabular-nums">{away}</span>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-display text-xl font-semibold tracking-tight text-navy">
+                        {home} <span className="text-sm font-light text-mist">vs</span> {away}
                       </p>
-                      <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                        {row.homeName && row.awayName
-                          ? `${row.homeName} vs ${row.awayName}`
-                          : row.title.replace(/ \(DEMO\)$/, "")}
-                      </p>
-                      <p className="mt-1 text-[11px] text-muted-foreground/90">
-                        {row.venue}
+                      <p className="mt-0.5 truncate text-xs text-slate">
+                        {row.homeName && row.awayName ? `${row.homeName} vs ${row.awayName}` : row.title}
                       </p>
                     </div>
-
-                    <div className="text-right">
-                      {row.score ? (
-                        <>
-                          <p className="font-display text-2xl font-semibold tabular-nums leading-none sm:text-[1.75rem]">
-                            {row.score.runs}
-                            <span className="text-lime">/{row.score.wickets}</span>
-                          </p>
-                          <p className="mt-1 font-mono text-[11px] text-cyan">
-                            {row.score.overs ? `${row.score.overs} ov` : ""}
-                            {crr ? ` · CRR ${crr}` : ""}
-                          </p>
-                        </>
+                    {row.score ? (
+                      live && scheduled ? (
+                        <StatRing value={legal} max={scheduled * 6} size={70} label={`${row.score.overs} of ${scheduled} overs`}>
+                          <div className="leading-none">
+                            <p className="font-display text-base font-semibold tabular-nums text-navy">
+                              {row.score.runs}/{row.score.wickets}
+                            </p>
+                            <p className="mt-0.5 text-[9.5px] text-slate tabular-nums">{row.score.overs} ov</p>
+                          </div>
+                        </StatRing>
                       ) : (
-                        <p className="text-sm text-muted-foreground">
-                          {row.status === "UPCOMING" ? "Not started" : "—"}
-                        </p>
-                      )}
-                    </div>
+                        <div className="text-right">
+                          <p className="font-display text-2xl font-semibold tabular-nums leading-none text-navy">
+                            {row.score.runs}/{row.score.wickets}
+                          </p>
+                          <p className="mt-1 text-[11px] text-slate tabular-nums">
+                            {row.score.overs ? `${row.score.overs} ov` : ""}
+                            {crr ? ` · RR ${crr}` : ""}
+                          </p>
+                        </div>
+                      )
+                    ) : (
+                      <p className="text-sm text-slate">{row.status === "UPCOMING" ? "Not started" : "—"}</p>
+                    )}
                   </div>
 
-                  {mini ? (
-                    <p className="line-clamp-1 text-xs leading-relaxed text-muted-foreground">
-                      {mini}
-                    </p>
-                  ) : null}
+                  {row.statusLine ? <p className="line-clamp-2 text-xs leading-relaxed text-slate">{row.statusLine}</p> : null}
+                  {row.venue ? <p className="mt-auto truncate text-[11px] text-mist">{row.venue}</p> : null}
                 </button>
               </li>
             );
           })}
         </ul>
       )}
-
-      {!compact ? (
-        <div className="border-t border-border px-5 py-3 sm:px-6">
-          {rows[0]?.provenance ? (
-            <ProvenanceStrip
-              source={
-                rows.find((r) => r.status === "LIVE" && !r.isDemo)?.provenance?.source ??
-                rows[0].provenance.source
-              }
-              asOf={
-                rows.find((r) => r.status === "LIVE" && !r.isDemo)?.provenance?.asOf ??
-                rows[0].provenance.asOf
-              }
-              note={
-                providerReady
-                  ? "LIVE only when provider reports in-progress. Seeds and DEMO never appear on this board."
-                  : "No provider key — product board stays empty. Open DEMO playground for the scripted sim."
-              }
-            />
-          ) : null}
-          {!providerReady ? (
-            <div className="mt-3 flex flex-wrap items-center gap-3">
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="border-border"
-                onClick={() => {
-                  window.open("https://cricketdata.org/", "_blank", "noopener,noreferrer");
-                }}
-              >
-                Add CricAPI key for live scores
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                className="text-gold"
-                onClick={() => openDemoPlayground()}
-              >
-                Try DEMO playground
-              </Button>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
     </div>
   );
 }

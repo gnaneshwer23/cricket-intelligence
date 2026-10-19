@@ -28,15 +28,81 @@ export function Panel({
   className?: string;
   children: React.ReactNode;
 }) {
+  return <section className={cn("glass rounded-[1.75rem] p-5 sm:p-7", className)}>{children}</section>;
+}
+
+/** Circular progress ring (e.g. overs bowled of scheduled). */
+export function StatRing({
+  value,
+  max,
+  size = 64,
+  stroke = 6,
+  label,
+  children,
+  tone = "cobalt",
+}: {
+  value: number;
+  max: number;
+  size?: number;
+  stroke?: number;
+  label: string;
+  children?: React.ReactNode;
+  tone?: "cobalt" | "live" | "white";
+}) {
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const frac = max > 0 ? Math.min(Math.max(value / max, 0), 1) : 0;
+  const color = tone === "live" ? "var(--cos-live)" : tone === "white" ? "#ffffff" : "var(--cos-blue)";
+  const track = tone === "white" ? "rgba(255,255,255,.28)" : "color-mix(in oklab, var(--cos-navy) 8%, transparent)";
   return (
-    <section
+    <div className="relative inline-grid place-items-center" style={{ width: size, height: size }} role="img" aria-label={label}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={track} strokeWidth={stroke} />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke={color}
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={c}
+          strokeDashoffset={c * (1 - frac)}
+          style={{ transition: "stroke-dashoffset .6s cubic-bezier(.22,1,.36,1)" }}
+        />
+      </svg>
+      {children ? <div className="absolute inset-0 grid place-items-center text-center">{children}</div> : null}
+    </div>
+  );
+}
+
+/** Quiet provenance chip — where a number came from and when. */
+export function SourceChip({ children, className }: { children: React.ReactNode; className?: string }) {
+  return (
+    <span
       className={cn(
-        "rounded-[1.5rem] border border-border bg-card/80 p-5 sm:p-7",
+        "inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/60 px-2.5 py-1 text-[10.5px] text-slate backdrop-blur",
         className,
       )}
     >
+      <span className="size-1.5 rounded-full bg-cobalt/70" aria-hidden />
       {children}
-    </section>
+    </span>
+  );
+}
+
+/** Pill-style live / status marker. */
+export function LivePill({ stale }: { stale?: boolean }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10.5px] font-semibold tracking-wide uppercase",
+        stale ? "bg-amber-100/80 text-amber-800" : "bg-live/10 text-live",
+      )}
+    >
+      <span className={cn("size-1.5 rounded-full", stale ? "bg-amber-500" : "cos-live-dot bg-live")} aria-hidden />
+      {stale ? "Live · delayed" : "Live"}
+    </span>
   );
 }
 
@@ -61,7 +127,7 @@ export function EmptyState({
         : "text-navy";
   return (
     <div
-      className="rounded-[1.25rem] border border-dashed border-border bg-card/60 px-5 py-8 text-center"
+      className="glass rounded-[1.5rem] px-5 py-8 text-center"
       role="status"
     >
       <p className={cn("font-display text-lg font-semibold tracking-tight", toneClass)}>
@@ -75,7 +141,7 @@ export function EmptyState({
       {actionLabel && onAction ? (
         <button
           type="button"
-          className="mt-4 text-sm font-medium text-action underline-offset-2 hover:underline"
+          className="mt-4 rounded-full bg-navy px-4 py-2 text-sm font-medium text-white hover:bg-navy/90"
           onClick={onAction}
         >
           {actionLabel}
@@ -107,21 +173,23 @@ export function Kicker({
 export function PageTitle({
   kicker,
   title,
+  emphasis,
   lede,
 }: {
   kicker: string;
   title: string;
+  /** Bold half of a mixed-weight headline, e.g. title "Match" + emphasis "Centre". */
+  emphasis?: string;
   lede?: string;
 }) {
   return (
     <header className="mb-8 max-w-3xl">
       <Kicker>{kicker}</Kicker>
-      <h1 className="font-display mt-3 text-3xl font-semibold tracking-tight text-navy text-balance sm:text-4xl">
+      <h1 className="font-display mt-3 text-4xl font-light tracking-tight text-navy text-balance sm:text-5xl">
         {title}
+        {emphasis ? <span className="font-semibold"> {emphasis}</span> : null}
       </h1>
-      {lede ? (
-        <p className="mt-4 max-w-xl text-base leading-relaxed text-muted-foreground">{lede}</p>
-      ) : null}
+      {lede ? <p className="mt-4 max-w-xl text-base leading-relaxed text-slate">{lede}</p> : null}
     </header>
   );
 }

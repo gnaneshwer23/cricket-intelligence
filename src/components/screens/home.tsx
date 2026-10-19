@@ -1,586 +1,246 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowUp, Mic, MicOff } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { useApp } from "@/components/app-state";
-import { DataStatusStrip } from "@/components/data-status-strip";
-import { LiveFixturesBoard, type BoardRow } from "@/components/live-fixtures-board";
-import { TruthSetupPanel } from "@/components/truth-setup-panel";
-import { FreshnessBadge, StatusBadge } from "@/components/status-badge";
-import { EmptyState, Kicker, Panel, Spark, useGreeting } from "@/components/ui-bits";
-import { useDataHealth, useFixtures, useMatchList } from "@/hooks/use-data-layer";
+import { ArrowRight, ArrowUpRight, Mic, MicOff, Sparkles } from "lucide-react";
+import { openAssistant, useApp } from "@/components/app-state";
+import { LiveFixturesBoard } from "@/components/live-fixtures-board";
+import { Kicker, SourceChip, useGreeting } from "@/components/ui-bits";
+import { useDataHealth, useMatchList } from "@/hooks/use-data-layer";
 import { useVoiceAsk } from "@/hooks/use-voice-ask";
-import { ARCHIVE_POLICY } from "@/lib/coverage";
-import type { FreshnessStatus, MatchLifecycle } from "@/lib/contracts";
 import { getPlayer, teamLabel, teams } from "@/lib/data";
-import { buildProviderBriefing } from "@/lib/provider-briefing";
-import { openDemoPlayground } from "@/lib/truth-mode";
 
 const SUGGESTED = [
-  "What fixtures are available right now?",
-  "Compare Headingley 2019 and 1981",
-  "What coverage do we have for World Cup finals?",
-  "Open the DEMO playground situation",
+  "What's live right now?",
+  "Kohli vs Bumrah head-to-head",
+  "How did the IPL 2023 final swing?",
+  "Best death-overs economy in IPL history: Bumrah or Rashid?",
+];
+
+const CAPABILITIES = [
+  {
+    title: "Live, honestly labelled",
+    body: "Scores from the live feed with the time they were fetched — never padded or guessed.",
+  },
+  {
+    title: "Ball-by-ball history",
+    body: "Every IPL match since 2008, delivery by delivery: splits, matchups and records you can trust.",
+  },
+  {
+    title: "Win-probability stories",
+    body: "See how a match swung, ball by ball, from a model that publishes its own accuracy.",
+  },
 ];
 
 export function HomeScreen() {
-  const { go, followedPlayers, followedTeams, recentChats, setMatchFocus } = useApp();
-  const { greeting } = useGreeting();
+  const { go, followedPlayers, followedTeams } = useApp();
+  const { greeting, dateLabel } = useGreeting();
   const health = useDataHealth();
-  const fixtures = useFixtures(15_000);
-  const archive = useMatchList(8);
-  const voice = useVoiceAsk();
+  const archive = useMatchList(6);
   const [draft, setDraft] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [showFixture, setShowFixture] = useState(false);
-
-  const providerReady =
-    health.status === "ok" &&
-    health.summary &&
-    !health.summary.demoMode &&
-    health.summary.dataApiKeyConfigured;
-
-  const fixtureHighlight = fixtures.upcoming ?? fixtures.fixtures[0] ?? null;
-  const fixtureFreshness = (fixtureHighlight?.freshness ?? "UNAVAILABLE") as FreshnessStatus;
-  const fixtureStatus = (fixtureHighlight?.status ?? "UPCOMING") as MatchLifecycle;
-
-  const briefing = useMemo(() => {
-    if (!providerReady) return [];
-    return buildProviderBriefing(fixtures.fixtures);
-  }, [providerReady, fixtures.fixtures]);
+  const voice = useVoiceAsk({ onTranscript: (t) => setDraft(t) });
 
   const mine = followedPlayers
     .map((id) => getPlayer(id))
-    .filter((player) => player !== undefined)
-    .slice(0, 4);
-  const myTeams = teams.filter((team) => followedTeams.includes(team.id));
+    .filter((p) => p !== undefined)
+    .slice(0, 6);
+  const myTeams = teams.filter((t) => followedTeams.includes(t.id));
 
-  const historicalRows = useMemo(
+  const recent = useMemo(
     () =>
       archive.matches
-        .filter((m) => m.freshness === "HISTORICAL" || m.status === "COMPLETED")
-        .slice(0, 5),
+        .filter((m) => (m.freshness === "HISTORICAL" || m.status === "COMPLETED") && !m.id.startsWith("demo"))
+        .slice(0, 4),
     [archive.matches],
   );
 
-  const coverageLine = useMemo(() => {
-    const counts = health.summary?.freshnessCounts;
-    if (!counts) return ARCHIVE_POLICY.claim;
-    const hist = counts.HISTORICAL ?? 0;
-    const up = counts.UPCOMING ?? 0;
-    return `Verified in store: ${hist} historical · ${up} upcoming · measured seed sample ${ARCHIVE_POLICY.measuredSeedEarliest}–${ARCHIVE_POLICY.measuredSeedLatest} (not full 1973–present).`;
-  }, [health.summary]);
+  const matchCount = health.summary?.matchCount ?? 0;
+  const playerCount = health.summary?.playerCount ?? 0;
 
-  function openMatchFromBoard(row: BoardRow) {
-    try {
-      sessionStorage.setItem("cricketos-match-pick", row.id);
-    } catch {
-      /* ignore */
-    }
-    setMatchFocus({
-      id: row.id,
-      title: row.title,
-      status: String(row.status),
-      freshness: String(row.freshness),
-      venue: row.venue,
-      format: row.format,
-      series: row.series,
-      score: row.score,
-      homeName: row.homeName,
-      awayName: row.awayName,
-      isDemo: Boolean(row.isDemo),
-      isSeed: row.id.startsWith("seed-"),
-      provenance: row.provenance,
-    });
-    if (typeof window !== "undefined") {
-      window.location.hash = "live";
-    } else {
-      go("match");
-    }
-  }
-
-  function openLiveHub() {
-    if (typeof window !== "undefined") {
-      window.location.hash = "live";
-    } else {
-      go("match");
-    }
-  }
-
-  function submit(question: string, mode: "general" | "historical" | "career" | "predictions" = "general") {
-    const text = question.trim();
-    if (!text) {
-      setError("Ask a question first.");
-      return;
-    }
-    setError(null);
-    go("ask", { mode, seedAsk: text });
-  }
-
-  function applyVoiceTranscript() {
-    const text = `${voice.transcript} ${voice.interim}`.trim();
-    if (text) setDraft(text);
-    voice.stopListening();
+  function ask(question: string) {
+    const q = question.trim();
+    if (!q) return;
+    openAssistant(q);
+    setDraft("");
   }
 
   return (
-    <div className="mx-auto max-w-6xl">
-      <section className="cos-hero rounded-[2rem] border border-border">
-        <div className="relative z-[1] px-6 py-12 sm:px-12 sm:py-16 lg:px-16 lg:py-20">
-          <div className="cos-hero-in max-w-2xl">
-            <p className="font-display text-[clamp(3rem,8vw,4.75rem)] font-semibold leading-none text-navy">
-              Cricket Intelligence
-            </p>
-            <h1 className="font-display mt-7 text-[clamp(1.65rem,4vw,2.75rem)] font-medium leading-[1.15] text-ink text-balance">
-              Every match has a story. Find the evidence.
-            </h1>
-            <p className="mt-5 max-w-lg text-[0.95rem] leading-relaxed text-muted-foreground sm:text-base">
-              Explore cricket history, understand match situations and investigate the numbers
-              behind every result.
-            </p>
-            <p className="mt-3 text-sm text-slate">
-              {greeting}.{" "}
-              {providerReady
-                ? "Live scores from the provider feed, history from ball-by-ball data — every number has a source."
-                : "Ask Cricket Intelligence — live facts need a licensed provider; DEMO is opt-in only."}
-            </p>
-          </div>
+    <div className="space-y-12">
+      {/* Hero */}
+      <section className="hero-field rounded-[2.25rem] px-6 py-10 sm:px-12 sm:py-14">
+        <div className="cos-hero-in relative max-w-3xl">
+          <p className="text-[11px] tracking-[0.22em] text-white/75 uppercase">
+            {greeting} · {dateLabel}
+          </p>
+          <h1 className="font-display mt-4 text-5xl leading-[1.02] tracking-tight sm:text-7xl">
+            <span className="font-light">Cricket</span>
+            <br />
+            <span className="font-semibold">Intelligence</span>
+          </h1>
+          <p className="mt-5 max-w-xl text-base leading-relaxed text-white/85 sm:text-lg">
+            Live scores, ball-by-ball history and an AI analyst that shows its working — for fans who want to
+            understand the game, not just follow it.
+          </p>
 
           <form
-            className="cos-hero-in-delay mt-10 flex max-w-xl flex-col gap-3 sm:flex-row sm:items-stretch"
-            onSubmit={(event) => {
-              event.preventDefault();
-              submit(draft);
+            className="cos-hero-in-delay mt-8 flex max-w-2xl items-center gap-2 rounded-full bg-white/95 p-1.5 pl-5 shadow-[0_20px_50px_-25px_rgba(11,27,63,.6)]"
+            onSubmit={(e) => {
+              e.preventDefault();
+              ask(draft);
             }}
           >
-            <label className="sr-only" htmlFor="home-ask">
-              Ask Cricket Intelligence
-            </label>
-            <Input
-              id="home-ask"
+            <Sparkles className="size-4 shrink-0 text-cobalt" aria-hidden />
+            <input
               value={draft}
-              onChange={(event) => {
-                setDraft(event.target.value);
-                if (error) setError(null);
-              }}
-              placeholder="What happened at Headingley in 2019?"
-              aria-invalid={error ? true : undefined}
-              className="h-12! flex-1 border-border bg-white/80 px-4 text-base cos-ask-focus"
+              onChange={(e) => setDraft(e.target.value)}
+              placeholder={voice.listening ? "Listening…" : "Ask anything — a player, a match, a record"}
+              aria-label="Ask Cricket Intelligence"
+              className="min-w-0 flex-1 bg-transparent py-2.5 text-[15px] text-navy outline-none placeholder:text-mist"
             />
             {voice.supported ? (
-              <Button
+              <button
                 type="button"
-                variant="outline"
-                className="h-12 border-border px-4"
+                onClick={() => (voice.listening ? voice.stopListening() : voice.startListening())}
+                aria-label={voice.listening ? "Stop listening" : "Speak your question"}
                 aria-pressed={voice.listening}
-                aria-label={voice.listening ? "Stop listening" : "Dictate question"}
-                onClick={() => {
-                  if (voice.listening) applyVoiceTranscript();
-                  else {
-                    voice.clearTranscript();
-                    voice.startListening();
-                  }
-                }}
+                className={`grid size-10 shrink-0 place-items-center rounded-full transition ${
+                  voice.listening ? "bg-live text-white" : "bg-cobalt/10 text-cobalt hover:bg-cobalt/15"
+                }`}
               >
-                {voice.listening ? <MicOff /> : <Mic />}
-              </Button>
+                {voice.listening ? <MicOff className="size-4" /> : <Mic className="size-4" />}
+              </button>
             ) : null}
-            <Button type="submit" className="cos-cta h-12 px-7 text-base" size="lg">
-              <ArrowUp />
-              Ask Cricket Intelligence
-            </Button>
+            <button
+              type="submit"
+              className="flex shrink-0 items-center gap-1.5 rounded-full bg-navy px-5 py-2.5 text-sm font-medium text-white transition hover:bg-navy/90"
+            >
+              Ask <ArrowRight className="size-4" />
+            </button>
           </form>
-          {voice.listening || voice.interim ? (
-            <p className="mt-2 text-sm text-blue" role="status">
-              Listening… {voice.interim || voice.transcript || "speak now"}
-            </p>
-          ) : null}
-          {voice.error ? <p className="mt-2 text-sm text-gold">{voice.error}</p> : null}
-          {error ? <p className="mt-2 text-sm text-destructive">{error}</p> : null}
 
-          <div className="cos-hero-in-stagger mt-8 flex flex-wrap gap-2">
+          <div className="cos-hero-in-stagger mt-5 flex flex-wrap gap-2">
             {SUGGESTED.map((q) => (
               <button
                 key={q}
                 type="button"
-                className="rounded-full border border-border bg-white/70 px-3 py-1.5 text-left text-xs text-navy transition hover:border-action/50 hover:text-action"
-                onClick={() =>
-                  submit(
-                    q,
-                    q.toLowerCase().includes("headingley") || q.toLowerCase().includes("world cup")
-                      ? "historical"
-                      : q.toLowerCase().includes("demo")
-                        ? "predictions"
-                        : "general",
-                  )
-                }
+                onClick={() => ask(q)}
+                className="rounded-full border border-white/35 bg-white/15 px-3.5 py-1.5 text-xs text-white backdrop-blur transition hover:bg-white/25"
               >
                 {q}
               </button>
             ))}
           </div>
-
-          <div className="cos-hero-in-stagger mt-8 flex flex-wrap gap-3">
-            <Button
-              type="button"
-              variant="secondary"
-              className="cos-cta"
-              onClick={() => go("archive")}
-            >
-              Browse historical archive
-            </Button>
-            <Button type="button" variant="outline" className="border-border" onClick={openLiveHub}>
-              Match Intelligence
-            </Button>
-            <Button type="button" variant="ghost" onClick={() => go("players")}>
-              Players
-            </Button>
-            <Button type="button" variant="ghost" onClick={() => go("teams")}>
-              Teams
-            </Button>
-          </div>
-          <p className="cos-hero-in-stagger mt-4 max-w-xl text-xs leading-relaxed text-slate">
-            {coverageLine}
-          </p>
         </div>
+
+        {/* Data scale */}
+        <dl className="relative mt-12 grid max-w-2xl grid-cols-3 gap-3">
+          {[
+            { k: "Matches", v: matchCount ? matchCount.toLocaleString("en-GB") : "—" },
+            { k: "Players", v: playerCount ? playerCount.toLocaleString("en-GB") : "—" },
+            { k: "Since", v: "2008" },
+          ].map((s) => (
+            <div key={s.k} className="rounded-2xl border border-white/25 bg-white/12 px-4 py-3 backdrop-blur">
+              <dt className="text-[10.5px] tracking-[0.18em] text-white/70 uppercase">{s.k}</dt>
+              <dd className="font-display mt-1 text-2xl font-semibold tabular-nums">{s.v}</dd>
+            </div>
+          ))}
+        </dl>
       </section>
 
-      <section className="mt-10 cos-stagger" aria-labelledby="live-scores-heading">
+      {/* Live */}
+      <section aria-labelledby="live-heading">
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <Kicker className="text-blue">
-              <span id="live-scores-heading">Cricket Today</span>
-            </Kicker>
-            <p className="mt-1.5 text-sm text-muted-foreground">
-              {providerReady
-                ? "Provider fixtures only · tap a card for Match Intelligence"
-                : "Requires CRICKETOS_DATA_API_KEY · no invented scores"}
-            </p>
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="cos-cta border-border"
-            onClick={openLiveHub}
-          >
-            Match Intelligence
-          </Button>
-        </div>
-        <div className="mb-3">
-          <DataStatusStrip />
-        </div>
-        {providerReady ? (
-          fixtures.fixtures.length === 0 ? (
-            <EmptyState
-              title="No live fixtures right now"
-              detail="The provider returned no product rows. Check back when the feed has matches, or browse the historical archive."
-              actionLabel="Open archive"
-              onAction={() => go("archive")}
-            />
-          ) : (
-            <LiveFixturesBoard compact limit={8} onSelect={openMatchFromBoard} />
-          )
-        ) : (
-          <TruthSetupPanel compact showDemoLink />
-        )}
-      </section>
-
-      <section className="mt-10 cos-stagger" aria-labelledby="archive-entry-heading">
-        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <Kicker>
-              <span id="archive-entry-heading">Historical search</span>
-            </Kicker>
-            <p className="mt-1.5 text-sm text-muted-foreground">
-              Seed + provider archive · open a match or ask with context
-            </p>
-          </div>
-          <Button type="button" size="sm" variant="secondary" onClick={() => go("archive")}>
-            Full archive filters
-          </Button>
-        </div>
-        {archive.status === "loading" ? (
-          <EmptyState title="Loading archive…" detail="Fetching verified `/api/matches` rows." />
-        ) : archive.status === "unavailable" ? (
-          <EmptyState
-            title="Archive unavailable"
-            detail="Could not load historical matches. Try again shortly."
-            tone="warn"
-          />
-        ) : historicalRows.length === 0 ? (
-          <EmptyState
-            title="No historical rows yet"
-            detail="Filters may be empty in this store. Open the full archive to adjust coverage."
-            actionLabel="Full archive"
-            onAction={() => go("archive")}
-          />
-        ) : (
-          <ul className="divide-y divide-border">
-            {historicalRows.map((m) => (
-              <li key={m.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
-                <button
-                  type="button"
-                  className="text-left font-medium text-ink transition hover:text-action"
-                  onClick={() => {
-                    setMatchFocus({
-                      id: m.id,
-                      title: m.title,
-                      status: String(m.status),
-                      freshness: String(m.freshness),
-                      venue: m.venue,
-                      format: m.format,
-                      series: m.series,
-                      score: m.score,
-                      homeName: m.homeName ?? m.teams?.home,
-                      awayName: m.awayName ?? m.teams?.away,
-                      isDemo: false,
-                      isSeed: m.id.startsWith("seed-"),
-                      provenance: m.provenance,
-                    });
-                    go("match");
-                  }}
-                >
-                  {m.title}
-                </button>
-                <span className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <FreshnessBadge freshness={m.freshness as FreshnessStatus} />
-                  {m.venue}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      {!providerReady ? (
-        <p className="mt-4 text-center text-sm text-muted-foreground">
-          Optional:{" "}
+          <h2 id="live-heading" className="font-display text-3xl font-light tracking-tight text-navy">
+            Today&rsquo;s <span className="font-semibold">matches</span>
+          </h2>
           <button
             type="button"
-            className="text-action underline-offset-2 hover:underline"
-            onClick={() => openDemoPlayground()}
+            onClick={() => go("match")}
+            className="flex items-center gap-1 rounded-full bg-white/70 px-4 py-2 text-sm text-navy backdrop-blur transition hover:bg-white"
           >
-            Try DEMO playground
-          </button>{" "}
-          — scripted Lord&apos;s sim, always watermarked DEMO, never the default homepage.
-        </p>
-      ) : null}
+            All scores <ArrowUpRight className="size-4" />
+          </button>
+        </div>
+        <LiveFixturesBoard compact limit={4} />
+      </section>
 
-      {recentChats.length > 0 ? (
-        <section className="mt-10 cos-stagger">
-          <Kicker>Continue investigating</Kicker>
-          <ul className="mt-3 divide-y divide-border">
-            {recentChats.slice(0, 4).map((chat) => (
-              <li key={chat.id}>
+      {/* Why it's different */}
+      <section className="grid gap-3 md:grid-cols-3" aria-label="What Cricket Intelligence does">
+        {CAPABILITIES.map((c) => (
+          <article key={c.title} className="glass rounded-[1.75rem] p-6">
+            <p className="font-display text-lg font-semibold tracking-tight text-navy">{c.title}</p>
+            <p className="mt-2 text-sm leading-relaxed text-slate">{c.body}</p>
+          </article>
+        ))}
+      </section>
+
+      {/* From the archive */}
+      <section aria-labelledby="archive-heading">
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+          <h2 id="archive-heading" className="font-display text-3xl font-light tracking-tight text-navy">
+            From the <span className="font-semibold">archive</span>
+          </h2>
+          <SourceChip>Cricsheet · ball-by-ball</SourceChip>
+        </div>
+        {recent.length === 0 ? (
+          <p className="text-sm text-slate">Loading recent results…</p>
+        ) : (
+          <ul className="grid gap-3 sm:grid-cols-2">
+            {recent.map((m) => (
+              <li key={m.id}>
                 <button
                   type="button"
-                  className="w-full py-3 text-left transition hover:text-action"
-                  onClick={() => go("ask", { seedAsk: chat.question })}
+                  onClick={() => ask(`How did ${m.title} swing?`)}
+                  className="glass flex w-full flex-col gap-2 rounded-[1.5rem] p-5 text-left transition hover:-translate-y-0.5"
                 >
-                  <span className="block text-sm font-medium">{chat.question}</span>
-                  <span className="mt-1 block text-xs text-muted-foreground">{chat.headline}</span>
+                  <p className="text-[10.5px] tracking-[0.14em] text-slate uppercase">{m.series ?? m.format}</p>
+                  <p className="font-medium text-navy">{m.title}</p>
+                  {m.statusLine ? <p className="text-sm text-slate">{m.statusLine}</p> : null}
+                  <p className="mt-1 flex items-center gap-1 text-xs text-cobalt">
+                    Ask how it swung <ArrowRight className="size-3.5" />
+                  </p>
                 </button>
               </li>
             ))}
           </ul>
-        </section>
-      ) : null}
+        )}
+        <button
+          type="button"
+          onClick={() => go("archive")}
+          className="mt-4 flex items-center gap-1 text-sm text-navy underline-offset-4 hover:underline"
+        >
+          Browse the full archive <ArrowRight className="size-4" />
+        </button>
+      </section>
 
-      {providerReady ? (
-        <>
-          <div className="mt-10 grid gap-8 lg:grid-cols-[1.45fr_1fr] lg:gap-12">
-            <div>
-              <Kicker>Provider briefing</Kicker>
-              {briefing.length === 0 ? (
-                <p className="mt-5 text-sm text-muted-foreground">
-                  No fixture-derived briefing yet — waiting on provider rows.
-                </p>
-              ) : (
-                <ul className="mt-5 space-y-0 divide-y divide-border">
-                  {briefing.slice(0, 3).map((item) => (
-                    <li key={item.id}>
-                      <button
-                        type="button"
-                        className="w-full py-4 text-left transition hover:text-action"
-                        onClick={() => go(item.screen)}
-                      >
-                        <span className="block text-base font-medium tracking-tight">
-                          {item.title}
-                        </span>
-                        <span className="mt-1.5 block text-sm leading-relaxed text-muted-foreground">
-                          {item.detail}
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-8 border-t border-border pt-8 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-10">
-              {fixtureHighlight ? (
-                <button
-                  type="button"
-                  onClick={() => setShowFixture(true)}
-                  className="text-left transition hover:text-action"
-                >
-                  <div className="flex flex-wrap items-center gap-2">
-                    <StatusBadge status={fixtureStatus} />
-                    <FreshnessBadge freshness={fixtureFreshness} />
-                    <Kicker>Featured fixture</Kicker>
-                  </div>
-                  <p className="font-display mt-3 text-xl tracking-tight text-navy">
-                    {fixtureHighlight.title}
-                  </p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {fixtureHighlight.venue}
-                    {fixtureHighlight.format ? ` · ${fixtureHighlight.format}` : ""}
-                  </p>
-                </button>
-              ) : (
-                <EmptyState
-                  title="No featured match"
-                  detail="Featured fixtures appear when the provider returns product rows."
-                />
-              )}
-            </div>
+      {/* Following */}
+      {myTeams.length || mine.length ? (
+        <section className="glass rounded-[1.75rem] p-6 sm:p-8">
+          <Kicker>Following</Kicker>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {myTeams.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => go("teams", { teamId: t.id })}
+                className="rounded-full bg-navy px-4 py-2 text-sm text-white transition hover:bg-navy/90"
+              >
+                {t.name}
+              </button>
+            ))}
+            {mine.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => go("players", { playerId: p.id })}
+                className="rounded-full border border-white/80 bg-white/70 px-4 py-2 text-sm text-navy transition hover:bg-white"
+              >
+                {p.name}
+                <span className="ml-1.5 text-xs text-slate">{teamLabel(p.teamId)}</span>
+              </button>
+            ))}
           </div>
-
-          <Panel className="mt-12">
-            <Kicker>Your intelligence briefing</Kicker>
-            <p className="mt-2 max-w-lg text-sm leading-relaxed text-muted-foreground">
-              Derived from provider fixtures only — series, venue, status, timestamps.
-            </p>
-            {briefing.length === 0 ? (
-              <p className="mt-5 text-sm text-muted-foreground">
-                I don&apos;t have fixture-derived items in the dataset yet.
-              </p>
-            ) : (
-              <ul className="mt-5 divide-y divide-border">
-                {briefing.map((item) => (
-                  <li key={item.id}>
-                    <button
-                      type="button"
-                      className="flex w-full gap-3 py-4 text-left transition hover:text-action"
-                      onClick={() => go(item.screen)}
-                    >
-                      <span aria-hidden className="mt-0.5 text-muted-foreground">
-                        {item.icon}
-                      </span>
-                      <span>
-                        <span className="block font-medium tracking-tight">{item.title}</span>
-                        <span className="mt-1 block text-sm leading-relaxed text-muted-foreground">
-                          {item.detail}
-                        </span>
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Panel>
-        </>
+        </section>
       ) : null}
-
-      <div className="mt-14 grid gap-10 lg:grid-cols-2 lg:gap-14">
-        <section>
-          <Kicker>Following · teams</Kicker>
-          {myTeams.length === 0 ? (
-            <p className="mt-3 text-sm text-muted-foreground">Pick sides in onboarding or Feed.</p>
-          ) : (
-            <ul className="mt-4 divide-y divide-border">
-              {myTeams.map((team) => (
-                <li key={team.id}>
-                  <button
-                    type="button"
-                    onClick={() => go("teams", { teamId: team.id })}
-                    className="flex w-full items-baseline justify-between gap-3 py-3.5 text-left transition hover:text-action"
-                  >
-                    <span className="font-medium tracking-tight">{team.name}</span>
-                    <span className="text-[11px] tracking-[0.16em] text-muted-foreground uppercase">
-                      {team.short}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-        <section>
-          <Kicker>Following · players</Kicker>
-          {mine.length === 0 ? (
-            <p className="mt-3 text-sm text-muted-foreground">Follow players for profile updates.</p>
-          ) : (
-            <ul className="mt-4 divide-y divide-border">
-              {mine.map((player) => (
-                <li key={player.id}>
-                  <button
-                    type="button"
-                    onClick={() => go("players", { playerId: player.id })}
-                    className="flex w-full items-center gap-4 py-3.5 text-left transition hover:text-action"
-                  >
-                    {player.catalogStub || !player.statsVerified ? (
-                      <span className="flex size-10 items-center justify-center rounded-full border border-border text-[10px] tracking-wide text-muted-foreground uppercase">
-                        {player.role.slice(0, 3)}
-                      </span>
-                    ) : (
-                      <Spark values={player.form} label={`${player.name} recent returns`} />
-                    )}
-                    <span className="min-w-0">
-                      <span className="block font-medium tracking-tight">{player.name}</span>
-                      <span className="block text-sm text-muted-foreground">
-                        {teamLabel(player.teamId)} · {player.role}
-                        {player.span ? ` · ${player.span}` : ""}
-                      </span>
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      </div>
-
-      <Dialog open={showFixture} onOpenChange={setShowFixture}>
-        <DialogContent className="max-h-[85dvh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="font-display text-2xl">
-              {fixtureHighlight?.title ?? "Fixture"}
-            </DialogTitle>
-            <DialogDescription>
-              {fixtureHighlight
-                ? `${fixtureHighlight.venue} · ${fixtureHighlight.freshness}`
-                : "No fixture"}
-            </DialogDescription>
-          </DialogHeader>
-          <p className="text-sm leading-relaxed text-muted-foreground">
-            {fixtureHighlight?.provenance?.note ??
-              "Provider fixture — scores and status only when the feed supplies them."}
-          </p>
-          {fixtures.fixtures.length > 0 ? (
-            <ul className="mt-4 space-y-2 border-t border-border pt-4 text-sm">
-              {fixtures.fixtures.slice(0, 8).map((f) => (
-                <li key={f.id} className="flex flex-wrap items-baseline justify-between gap-2">
-                  <span className="font-medium">{f.title}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {f.freshness} · {f.venue}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

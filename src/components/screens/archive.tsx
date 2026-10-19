@@ -2,9 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { useApp } from "@/components/app-state";
-import { DataStatusStrip } from "@/components/data-status-strip";
 import { FreshnessBadge, StatusBadge } from "@/components/status-badge";
-import { Kicker, PageTitle, Panel } from "@/components/ui-bits";
+import { Kicker, PageTitle, Panel, SourceChip } from "@/components/ui-bits";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -119,31 +118,19 @@ export function ArchiveScreen() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl cos-stagger">
+    <div className="cos-stagger">
       <PageTitle
-        kicker="Historical Archive"
-        title="Find the evidence."
-        lede="Filter normalised matches by year, format, side, venue, and coverage depth. Sources and limitations stay visible — we do not invent scorecards or ball-by-ball."
+        kicker="Archive"
+        title="Every match,"
+        emphasis="ball by ball"
+        lede="Search the archive by season, format, team, venue or result. Open any match to ask how it swung."
       />
 
-      <div className="mb-4">
-        <DataStatusStrip />
-      </div>
-
-      <Panel className="border-border bg-card/40 cos-panel-in">
-        <Kicker className="text-blue">Coverage honesty</Kicker>
-        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          {archive.archive?.claim ?? ARCHIVE_POLICY.claim}
-        </p>
-        {archive.archive ? (
-          <p className="mt-2 text-xs text-muted-foreground">
-            Measured in this response: {archive.archive.measuredYearMin}–
-            {archive.archive.measuredYearMax}
-            {" · "}
-            Filters accept {archive.archive.filterYearMin}–{archive.archive.filterYearMax}
-          </p>
-        ) : null}
-      </Panel>
+      {archive.archive ? (
+        <div className="mb-2 flex flex-wrap gap-2">
+          <SourceChip>Cricsheet ball-by-ball · seasons {archive.archive.measuredYearMin}–{archive.archive.measuredYearMax}</SourceChip>
+        </div>
+      ) : null}
 
       <form
         className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
@@ -322,7 +309,7 @@ export function ArchiveScreen() {
           <Panel className="border-border">
             <p className="text-sm text-muted-foreground">
               No matches for these filters. That is an empty state — not missing invented data.
-              Try widening year range or clearing player filter (seed scorecards often lack
+              Try widening the year range or clearing the player filter (some older scorecards lack
               batting rows).
             </p>
           </Panel>

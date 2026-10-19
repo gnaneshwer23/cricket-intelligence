@@ -138,14 +138,22 @@ function subscribeHash(onStoreChange: () => void) {
   return () => window.removeEventListener("hashchange", onStoreChange);
 }
 
+/** Screens retired in the redesign; old links land on Home. */
+const RETIRED = new Set(["ask", "explorer", "community", "fantasy", "labs", "demo", "demo-playground"]);
+
 function hashScreen(): ScreenId {
   const raw = window.location.hash.replace(/^#/, "").split(/[/?]/)[0] ?? "";
-  // Cricbuzz-style Live Scores hub — same Match Room surface
   if (raw === "live") return "match";
-  // Quarantined DEMO playground (Lord’s sim) — never the default home
-  if (raw === "demo" || raw === "demo-playground") return "match";
+  if (RETIRED.has(raw)) return "home";
   const id = raw as ScreenId;
   return screens.includes(id) ? id : "home";
+}
+
+/** Open the Ask AI panel from anywhere, optionally sending a question. */
+export const ASK_EVENT = "ci:ask";
+export function openAssistant(question?: string) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent<{ question?: string }>(ASK_EVENT, { detail: { question } }));
 }
 
 type GoOpts = {
@@ -261,6 +269,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const go = useCallback((next: ScreenId, opts?: GoOpts) => {
+    // One assistant: "Ask" anywhere opens the Ask AI panel instead of a screen.
+    if (next === "ask") {
+      openAssistant(opts?.seedAsk);
+      return;
+    }
     if (opts?.playerId) setPlayerId(opts.playerId);
     if (opts?.teamId) setTeamId(opts.teamId);
     if (opts?.mode) setAskMode(opts.mode);
@@ -285,7 +298,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
                 return null;
               }
             })();
-      hash = focus?.isDemo ? "demo" : "live";
+      hash = focus?.isDemo ? "home" : "live";
     }
     const target = `#${hash}`;
     if (window.location.hash === target) {

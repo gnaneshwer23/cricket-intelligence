@@ -10,6 +10,7 @@ export type HealthSummary = {
   storageBackend: string;
   storageLabel: string;
   matchCount: number;
+  playerCount?: number;
   freshnessCounts: Partial<Record<FreshnessStatus, number>>;
   briefingLabel?: string;
   primaryFreshness?: FreshnessStatus;

@@ -8,11 +8,12 @@
 
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import { Loader2, Mic, MicOff, Send, Sparkles, Square, Volume2, VolumeX, X } from "lucide-react";
+import { Loader2, Mic, MicOff, Send, Square, Volume2, VolumeX, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { answerQuestion } from "@/lib/engine";
 import { useVoiceAsk } from "@/hooks/use-voice-ask";
+import { ASK_EVENT } from "@/components/app-state";
 
 const SUGGESTIONS = [
   "What's live right now?",
@@ -75,7 +76,8 @@ function GroundingChips({ g }: { g: Grounding }) {
 }
 
 export function AssistantWidget() {
-  const [open, setOpen] = useState(false);
+  // Old #ask links open the panel directly (this component mounts client-side only).
+  const [open, setOpen] = useState(() => typeof window !== "undefined" && window.location.hash === "#ask");
   const [input, setInput] = useState("");
   const [voiceReplies, setVoiceReplies] = useState(false);
   const [fallbacks, setFallbacks] = useState<FallbackAnswer[]>([]);
@@ -112,6 +114,21 @@ export function AssistantWidget() {
     voice.clearTranscript();
   };
 
+  // Open (and optionally ask) when any screen calls openAssistant().
+  const sendRef = useRef(send);
+  useEffect(() => {
+    sendRef.current = send;
+  });
+  useEffect(() => {
+    const onAsk = (e: Event) => {
+      setOpen(true);
+      const q = (e as CustomEvent<{ question?: string }>).detail?.question;
+      if (q) sendRef.current(q);
+    };
+    window.addEventListener(ASK_EVENT, onAsk);
+    return () => window.removeEventListener(ASK_EVENT, onAsk);
+  }, []);
+
   // Voice-first: when the mic stops with a transcript, send it.
   useEffect(() => {
     if (wasListening.current && !voice.listening && voice.transcript.trim()) {
@@ -139,27 +156,15 @@ export function AssistantWidget() {
 
   return (
     <>
-      {!open ? (
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="fixed right-4 bottom-24 z-40 flex items-center gap-2 rounded-full bg-action px-4 py-3 text-sm font-semibold text-primary-foreground shadow-[0_12px_30px_-10px_var(--cos-action)] transition hover:bg-action/90 lg:right-8 lg:bottom-8"
-          aria-label="Open the Cricket Intelligence assistant"
-        >
-          <Sparkles className="size-4" />
-          Ask AI
-        </button>
-      ) : null}
-
       {open ? (
         <section
           role="dialog"
           aria-label="Cricket Intelligence assistant"
-          className="cos-panel-in fixed right-3 bottom-24 z-40 flex h-[min(38rem,calc(100dvh-8rem))] w-[min(26rem,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-[1.5rem] border border-border bg-card shadow-2xl lg:right-8 lg:bottom-8"
+          className="cos-panel-in glass-strong fixed right-3 bottom-24 z-40 flex h-[min(38rem,calc(100dvh-8rem))] w-[min(26rem,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-[1.75rem] md:right-6 md:bottom-6"
         >
-          <header className="cos-onboard-head flex items-start justify-between gap-3 border-b border-border px-4 py-3">
+          <header className="flex items-start justify-between gap-3 border-b border-white/60 px-4 py-3">
             <div>
-              <p className="font-display text-lg font-semibold text-navy">Cricket Intelligence</p>
+              <p className="font-display text-lg text-navy"><span className="font-light">Ask</span> <span className="font-semibold">AI</span></p>
               <p className="text-[11px] text-muted-foreground">
                 Chat or speak · answers grounded in ball-by-ball data and the live feed
               </p>
@@ -198,7 +203,7 @@ export function AssistantWidget() {
                       key={s}
                       type="button"
                       onClick={() => send(s)}
-                      className="rounded-full border border-border bg-muted/40 px-3 py-1.5 text-left text-xs text-navy transition hover:border-action/50"
+                      className="rounded-full border border-white/80 bg-white/70 px-3 py-1.5 text-left text-xs text-navy transition hover:bg-white"
                     >
                       {s}
                     </button>
@@ -231,7 +236,7 @@ export function AssistantWidget() {
                 <div key={m.id} className="max-w-[92%] space-y-2">
                   {groundingOf(m) ? <GroundingChips g={groundingOf(m)!} /> : null}
                   {messageText(m) ? (
-                    <p className="rounded-2xl rounded-bl-md border border-border bg-card px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap text-ink">
+                    <p className="rounded-2xl rounded-bl-md border border-white/80 bg-white/85 px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap text-ink">
                       {messageText(m)}
                     </p>
                   ) : null}
@@ -254,7 +259,7 @@ export function AssistantWidget() {
           </div>
 
           <form
-            className="flex items-center gap-2 border-t border-border bg-card px-3 py-3"
+            className="flex items-center gap-2 border-t border-white/60 px-3 py-3"
             onSubmit={(e) => {
               e.preventDefault();
               send(input);
@@ -279,7 +284,7 @@ export function AssistantWidget() {
               placeholder={voice.listening ? "Listening…" : "Ask about any match or player"}
               aria-label="Your question"
               maxLength={1500}
-              className="h-10 min-w-0 flex-1 rounded-xl border border-input bg-background px-3 text-sm outline-none focus:border-action/60"
+              className="h-10 min-w-0 flex-1 rounded-full border border-white/80 bg-white/80 px-4 text-sm outline-none focus:border-cobalt/50"
             />
             {busy ? (
               <Button type="button" size="icon" variant="outline" aria-label="Stop" onClick={() => stop()}>

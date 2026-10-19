@@ -1,274 +1,143 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-  Activity,
-  ChartColumn,
-  FlaskConical,
-  House,
-  Library,
-  MessageCircle,
-  MessagesSquare,
-  Newspaper,
-  Target,
-  UserRound,
-  Users,
-} from "lucide-react";
-import { AppStateProvider, useApp } from "@/components/app-state";
-import { MatchFocusStrip } from "@/components/match-focus-strip";
+import { useEffect } from "react";
+import { Activity, House, Library, Newspaper, Sparkles, UserRound } from "lucide-react";
+import { AppStateProvider, openAssistant, useApp } from "@/components/app-state";
 import { AssistantWidget } from "@/components/assistant-widget";
 import { Onboarding } from "@/components/onboarding";
 import { ArchiveScreen } from "@/components/screens/archive";
-import { AskScreen } from "@/components/screens/ask";
-import { CommunityScreen } from "@/components/screens/community";
-import { ExplorerScreen } from "@/components/screens/explorer";
-import { FantasyScreen } from "@/components/screens/fantasy";
 import { FeedScreen } from "@/components/screens/feed";
 import { HomeScreen } from "@/components/screens/home";
-import { LabsScreen } from "@/components/screens/labs";
-import { MatchScreen } from "@/components/screens/match";
+import { LiveScreen } from "@/components/screens/live";
 import { PlayersScreen } from "@/components/screens/players";
-import { TeamsScreen } from "@/components/screens/teams";
-import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import type { ScreenId } from "@/lib/types";
 
-const primaryNav: { id: ScreenId; label: string; short: string; icon: typeof House }[] = [
-  { id: "home", label: "Cricket Today", short: "Today", icon: House },
-  { id: "match", label: "Match Intelligence", short: "Match", icon: Activity },
-  { id: "archive", label: "Historical Archive", short: "Archive", icon: Library },
-  { id: "ask", label: "Ask Cricket Intelligence", short: "Ask", icon: MessageCircle },
+const nav: { id: ScreenId; label: string; icon: typeof House }[] = [
+  { id: "home", label: "Home", icon: House },
+  { id: "match", label: "Live", icon: Activity },
+  { id: "players", label: "Players", icon: UserRound },
+  { id: "archive", label: "Archive", icon: Library },
+  { id: "feed", label: "My Cricket", icon: Newspaper },
 ];
 
-const laterNav: { id: ScreenId; label: string; icon: typeof House; note: string }[] = [
-  { id: "players", label: "Players & Teams", icon: UserRound, note: "Search-first profiles" },
-  { id: "labs", label: "Labs", icon: FlaskConical, note: "What-If · transparent assumptions" },
-  { id: "explorer", label: "Explorer", icon: ChartColumn, note: "Charts · DEMO series" },
-  { id: "feed", label: "My Cricket", icon: Newspaper, note: "Personal feed" },
-  { id: "teams", label: "Team Intel", icon: Users, note: "DNA & squad health" },
-  { id: "community", label: "Community", icon: MessagesSquare, note: "Secondary" },
-  { id: "fantasy", label: "Fantasy", icon: Target, note: "Experimental" },
-];
-
-const titles: Record<ScreenId, string> = {
-  home: "Cricket Today",
-  ask: "Ask Cricket Intelligence",
-  match: "Match Intelligence",
-  archive: "Historical Archive",
-  explorer: "Cricket Explorer",
-  players: "Players & Teams",
+const titles: Partial<Record<ScreenId, string>> = {
+  home: "Home",
+  match: "Live scores",
+  archive: "Archive",
+  players: "Players",
   feed: "My Cricket",
-  teams: "Team Intelligence",
-  community: "Community",
-  fantasy: "Fantasy",
-  labs: "Labs · What-If",
+  teams: "Teams",
 };
+
+function Brand() {
+  return (
+    <span className="font-display text-[1.15rem] tracking-tight text-navy">
+      <span className="font-light">Cricket</span> <span className="font-semibold">Intelligence</span>
+    </span>
+  );
+}
 
 function Shell() {
   const { screen, go, onboarded } = useApp();
-  const [more, setMore] = useState(false);
+  const active: ScreenId = screen === "teams" ? "players" : screen;
 
   useEffect(() => {
-    document.title = `${titles[screen]} · Cricket Intelligence`;
+    document.title = `${titles[screen] ?? "Home"} · Cricket Intelligence`;
   }, [screen]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       const typing =
-        target &&
-        (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
+        target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
       if (typing) return;
       if (event.key === "/") {
         event.preventDefault();
-        go("ask");
+        openAssistant();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [go]);
+  }, []);
 
   return (
     <div className="min-h-dvh">
       <a
         href="#content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:rounded-lg focus:bg-primary focus:px-3 focus:py-2 focus:text-primary-foreground"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:rounded-full focus:bg-navy focus:px-4 focus:py-2 focus:text-white"
       >
         Skip to content
       </a>
-      <div
-        className="min-h-dvh"
-        inert={!onboarded ? true : undefined}
-        aria-hidden={!onboarded ? true : undefined}
-      >
-      <aside className="cos-rail fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-sidebar-border bg-sidebar px-3 py-6 lg:flex">
-        <div className="px-2">
-          <p className="font-display text-[1.65rem] font-semibold leading-none text-navy">
-            Cricket Intelligence
-          </p>
-          <p className="mt-2 text-xs leading-relaxed text-sidebar-foreground/70">
-            Understand every match. Explore the evidence. Ask cricket anything.
-          </p>
-        </div>
-        <nav className="mt-8 flex flex-1 flex-col gap-0.5" aria-label="Primary">
-          {primaryNav.map((item) => {
+      <div className="min-h-dvh" inert={!onboarded ? true : undefined} aria-hidden={!onboarded ? true : undefined}>
+        {/* Floating glass navigation */}
+        <header className="sticky top-0 z-30 px-3 pt-3 sm:px-6 sm:pt-4">
+          <div className="glass-strong mx-auto flex max-w-6xl items-center justify-between gap-3 rounded-full py-2 pr-2 pl-5">
+            <button type="button" onClick={() => go("home")} className="shrink-0" aria-label="Cricket Intelligence home">
+              <Brand />
+            </button>
+            <nav className="hidden items-center gap-1 md:flex" aria-label="Primary">
+              {nav.map((item) => {
+                const on = active === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => go(item.id)}
+                    aria-current={on ? "page" : undefined}
+                    className={`rounded-full px-4 py-2 text-sm transition ${
+                      on ? "bg-navy text-white shadow-sm" : "text-slate hover:bg-white/80 hover:text-navy"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                );
+              })}
+            </nav>
+            <button
+              type="button"
+              onClick={() => openAssistant()}
+              className="flex items-center gap-2 rounded-full bg-cobalt px-4 py-2 text-sm font-medium text-white shadow-[0_10px_24px_-12px_var(--cos-blue)] transition hover:bg-cobalt/90"
+            >
+              <Sparkles className="size-4" />
+              <span className="hidden sm:inline">Ask AI</span>
+            </button>
+          </div>
+        </header>
+
+        <main id="content" className="mx-auto max-w-6xl px-4 pt-6 pb-32 sm:px-6 lg:pt-10 lg:pb-20">
+          {screen === "home" ? <HomeScreen /> : null}
+          {screen === "match" ? <LiveScreen /> : null}
+          {screen === "archive" ? <ArchiveScreen /> : null}
+          {screen === "players" || screen === "teams" ? <PlayersScreen /> : null}
+          {screen === "feed" ? <FeedScreen /> : null}
+        </main>
+
+        {/* Mobile tab bar */}
+        <nav
+          className="glass-strong fixed inset-x-3 bottom-3 z-30 grid grid-cols-5 rounded-[1.4rem] px-1.5 py-1.5 md:hidden"
+          aria-label="Primary"
+        >
+          {nav.map((item) => {
             const Icon = item.icon;
-            const active = screen === item.id;
+            const on = active === item.id;
             return (
-              <Button
+              <button
                 key={item.id}
                 type="button"
-                variant={active ? "default" : "ghost"}
-                className={`h-10 justify-start px-3 ${
-                  active
-                    ? "cos-cta bg-action text-primary-foreground shadow-[0_6px_16px_-8px_var(--cos-action)] hover:bg-action/90"
-                    : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-                }`}
-                aria-current={active ? "page" : undefined}
                 onClick={() => go(item.id)}
+                aria-current={on ? "page" : undefined}
+                className={`flex flex-col items-center gap-0.5 rounded-2xl px-1 py-1.5 text-[10px] transition ${
+                  on ? "bg-navy text-white" : "text-slate"
+                }`}
               >
-                <Icon />
+                <Icon className="size-[18px]" />
                 {item.label}
-              </Button>
-            );
-          })}
-          <p className="mt-6 px-3 text-[10px] tracking-[0.2em] text-sidebar-foreground/50 uppercase">
-            Labs & more
-          </p>
-          {laterNav.map((item) => {
-            const Icon = item.icon;
-            const active = screen === item.id;
-            return (
-              <Button
-                key={item.id}
-                type="button"
-                variant="ghost"
-                className={`h-9 justify-start px-3 ${
-                  active
-                    ? "bg-sidebar-accent text-sidebar-foreground shadow-[inset_2px_0_0_0_var(--cos-blue)]"
-                    : "text-sidebar-foreground/65 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-                }`}
-                aria-current={active ? "page" : undefined}
-                onClick={() => go(item.id)}
-              >
-                <Icon />
-                <span className="truncate">{item.label}</span>
-              </Button>
+              </button>
             );
           })}
         </nav>
-        <p className="px-2 text-[11px] leading-relaxed text-sidebar-foreground/55">
-          The match is the centre
-          <span className="mt-1.5 block text-sidebar-foreground/40">
-            Every number has a source — no invented scores. Tap Ask AI to chat or speak.
-          </span>
-        </p>
-      </aside>
 
-      <div className="lg:pl-60">
-        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-canvas/85 px-4 py-3.5 backdrop-blur-xl lg:hidden">
-          <div>
-            <p className="font-display text-xl font-semibold text-navy">Cricket Intelligence</p>
-            <p className="text-[10px] tracking-[0.18em] text-muted-foreground uppercase">
-              Evidence-first cricket
-            </p>
-          </div>
-          <p className="text-[10px] tracking-[0.14em] text-action uppercase">Match centre</p>
-        </header>
-        <main id="content" className="px-4 pt-6 pb-28 lg:px-10 lg:pt-10 lg:pb-20">
-          <MatchFocusStrip />
-          {screen === "home" ? <HomeScreen /> : null}
-          {screen === "ask" ? <AskScreen /> : null}
-          {screen === "match" ? <MatchScreen /> : null}
-          {screen === "archive" ? <ArchiveScreen /> : null}
-          {screen === "explorer" ? <ExplorerScreen /> : null}
-          {screen === "players" ? <PlayersScreen /> : null}
-          {screen === "feed" ? <FeedScreen /> : null}
-          {screen === "teams" ? <TeamsScreen /> : null}
-          {screen === "community" ? <CommunityScreen /> : null}
-          {screen === "fantasy" ? <FantasyScreen /> : null}
-          {screen === "labs" ? <LabsScreen /> : null}
-        </main>
-      </div>
-
-      <nav
-        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-border bg-canvas/92 px-1.5 py-2 backdrop-blur-xl lg:hidden"
-        aria-label="Primary"
-      >
-        {primaryNav.map((item) => {
-          const Icon = item.icon;
-          const active = screen === item.id;
-          return (
-            <button
-              key={item.id}
-              type="button"
-              className={`flex flex-col items-center gap-1 rounded-lg px-1 py-1.5 text-[10px] transition ${
-                active
-                  ? "text-action"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-              onClick={() => go(item.id)}
-            >
-              <Icon className="size-4" />
-              {item.short}
-            </button>
-          );
-        })}
-        <button
-          type="button"
-          className={`flex flex-col items-center gap-1 rounded-lg px-1 py-1.5 text-[10px] transition ${
-            laterNav.some((item) => item.id === screen)
-              ? "text-action"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-          onClick={() => setMore(true)}
-        >
-          <span className="text-base leading-none">+</span>
-          More
-        </button>
-      </nav>
-
-      <Sheet open={more} onOpenChange={setMore}>
-        <SheetContent side="bottom" className="rounded-t-3xl">
-          <SheetHeader>
-            <SheetTitle>More</SheetTitle>
-            <SheetDescription>
-              Labs, Explorer, feed, and secondary rooms. Paths back to Match Intelligence stay
-              available via the match focus chip.
-            </SheetDescription>
-          </SheetHeader>
-          <div className="grid gap-2 px-4 pb-6">
-            {laterNav.map((item) => {
-              const Icon = item.icon;
-              return (
-                <Button
-                  key={item.id}
-                  type="button"
-                  variant={screen === item.id ? "default" : "secondary"}
-                  className="h-11 justify-start"
-                  onClick={() => {
-                    setMore(false);
-                    go(item.id);
-                  }}
-                >
-                  <Icon />
-                  <span className="flex flex-col items-start">
-                    <span>{item.label}</span>
-                    <span className="text-[10px] font-normal text-muted-foreground">{item.note}</span>
-                  </span>
-                </Button>
-              );
-            })}
-          </div>
-        </SheetContent>
-      </Sheet>
-      {onboarded ? <AssistantWidget /> : null}
+        {onboarded ? <AssistantWidget /> : null}
       </div>
 
       <Onboarding />

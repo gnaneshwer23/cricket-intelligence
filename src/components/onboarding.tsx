@@ -85,16 +85,16 @@ export function Onboarding() {
             {step === 1 && "Which nations do you follow?"}
             {step === 2 && "Follow an IPL side?"}
             {step === 3 && "Who are your players?"}
-            {step === 4 && "Your briefing is ready"}
+            {step === 4 && "You're all set"}
           </h2>
           <p className="mt-2 max-w-lg text-sm leading-relaxed text-muted-foreground">
             {step === 0 &&
-              "Follow · understand · explore what next. Choose sides and stars so briefing and Ask feel like yours. Match data starts in DEMO mode."}
-            {step === 1 && "Multi-select. England through Bangladesh — build the map you care about."}
-            {step === 2 && "Optional. Franchise follows sit beside your nations without bloating Ask."}
+              "Pick the sides and players you care about — their matches and questions come first."}
+            {step === 1 && "Choose as many as you like."}
+            {step === 2 && "Optional — follow a franchise alongside your nations."}
             {step === 3 &&
-              "Search across cricket history. Type a name — we will not dump the whole catalog."}
-            {step === 4 && "We will seed Ask from your top side and land you on a personal briefing."}
+              "Search any era — type a name."}
+            {step === 4 && "You're set. Ask AI anything, any time, from the top bar."}
           </p>
         </div>
 
@@ -107,7 +107,7 @@ export function Onboarding() {
                   ["10", "IPL franchises"],
                   [String(players.length), "Player profiles"],
                 ].map(([value, label]) => (
-                  <div key={label} className="rounded-2xl border border-border bg-muted/40 px-4 py-3">
+                  <div key={label} className="rounded-2xl border border-white/80 bg-white/70 px-4 py-3">
                     <p className="font-display text-3xl text-navy">{value}</p>
                     <p className="mt-1 text-xs tracking-[0.14em] text-muted-foreground uppercase">
                       {label}
@@ -116,8 +116,7 @@ export function Onboarding() {
                 ))}
               </div>
               <p className="text-sm leading-relaxed text-muted-foreground">
-                Fan → AI → Answers → Predictions. Primary product stays Ask Cricket — this just tunes
-                the room to your sides.
+                Live scores, ball-by-ball history and an AI analyst that shows its working.
               </p>
             </div>
           ) : null}

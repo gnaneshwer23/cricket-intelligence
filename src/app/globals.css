@@ -9,8 +9,8 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-display: var(--font-syne);
-  --font-heading: var(--font-syne);
+  --font-display: var(--font-sora);
+  --font-heading: var(--font-sora);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -56,6 +56,8 @@
   --color-ink: var(--cos-ink);
   --color-warm: var(--cos-warm);
   --color-canvas: var(--cos-canvas);
+  --color-live: var(--cos-live);
+  --color-cobalt: var(--cos-blue);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -66,51 +68,54 @@
 }
 
 :root {
-  --cos-canvas: #fbfaf7;
-  --cos-sky: #cfe3f4;
+  /* Stride-inspired: periwinkle sky canvas, frosted glass, navy ink, cobalt accent */
+  --cos-canvas: #eef2fd;
+  --cos-sky: #c7d6ff;
+  --cos-lilac: #ddd8ff;
   --cos-turf: #d8edd9;
-  --cos-navy: #03314c;
-  --cos-deep: #084e6e;
-  --cos-blue: #236686;
-  --cos-ink: #12171c;
-  --cos-slate: #5c6b76;
-  --cos-mist: #9aa3ad;
-  --cos-action: #e85d04;
-  --cos-pitch: #2f9e44;
-  --cos-warm: #d83c16;
+  --cos-navy: #0b1b3f;
+  --cos-deep: #16295a;
+  --cos-blue: #3554f0;
+  --cos-ink: #0b1b3f;
+  --cos-slate: #55617a;
+  --cos-mist: #98a2b8;
+  /* Primary actions are navy pills; orange is retired. */
+  --cos-action: #0b1b3f;
+  --cos-pitch: #2f9e62;
+  --cos-warm: #e5484d;
+  --cos-live: #e5484d;
   --background: var(--cos-canvas);
   --foreground: var(--cos-ink);
-  --card: #fffefc;
+  --card: #ffffff;
   --card-foreground: var(--cos-ink);
-  --popover: #fffefc;
+  --popover: #ffffff;
   --popover-foreground: var(--cos-ink);
-  --primary: var(--cos-action);
-  --primary-foreground: #fffaf5;
-  --secondary: color-mix(in oklab, var(--cos-navy) 6%, white);
+  --primary: var(--cos-navy);
+  --primary-foreground: #ffffff;
+  --secondary: color-mix(in oklab, var(--cos-blue) 7%, white);
   --secondary-foreground: var(--cos-navy);
-  --muted: color-mix(in oklab, var(--cos-navy) 4.5%, white);
+  --muted: color-mix(in oklab, var(--cos-blue) 5%, white);
   --muted-foreground: var(--cos-slate);
   --accent: color-mix(in oklab, var(--cos-blue) 10%, white);
   --accent-foreground: var(--cos-navy);
   --destructive: var(--cos-warm);
-  --border: color-mix(in oklab, var(--cos-navy) 12%, transparent);
-  --input: color-mix(in oklab, var(--cos-navy) 14%, transparent);
-  --ring: var(--cos-action);
-  --chart-1: var(--cos-navy);
-  --chart-2: var(--cos-blue);
-  --chart-3: var(--cos-action);
+  --border: color-mix(in oklab, var(--cos-navy) 9%, transparent);
+  --input: color-mix(in oklab, var(--cos-navy) 12%, transparent);
+  --ring: var(--cos-blue);
+  --chart-1: var(--cos-blue);
+  --chart-2: var(--cos-navy);
+  --chart-3: #8ea2ff;
   --chart-4: var(--cos-pitch);
   --chart-5: var(--cos-slate);
-  --radius: 0.75rem;
-  /* Light frosted rail — navy type on near-white glass */
-  --sidebar: color-mix(in oklab, white 82%, transparent);
+  --radius: 0.9rem;
+  --sidebar: color-mix(in oklab, white 70%, transparent);
   --sidebar-foreground: var(--cos-navy);
-  --sidebar-primary: var(--cos-action);
-  --sidebar-primary-foreground: #fffaf5;
+  --sidebar-primary: var(--cos-navy);
+  --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: color-mix(in oklab, var(--cos-blue) 9%, white);
   --sidebar-accent-foreground: var(--cos-navy);
-  --sidebar-border: color-mix(in oklab, var(--cos-navy) 9%, transparent);
-  --sidebar-ring: var(--cos-action);
+  --sidebar-border: color-mix(in oklab, var(--cos-navy) 8%, transparent);
+  --sidebar-ring: var(--cos-blue);
 }
 
 .dark {
@@ -169,32 +174,54 @@
   body {
     @apply text-foreground;
     background-color: var(--background);
-    /* Daylight at the ground: warm white canvas, sky glow, a hint of turf. */
+    /* Periwinkle → sky gradient with soft cobalt and lilac light (Stride-inspired). */
     background-image:
-      radial-gradient(1100px 560px at 88% -12%, color-mix(in oklab, var(--cos-sky) 85%, transparent), transparent 62%),
-      radial-gradient(820px 520px at -8% 108%, color-mix(in oklab, var(--cos-turf) 90%, transparent), transparent 60%),
-      radial-gradient(640px 420px at 55% 112%, color-mix(in oklab, var(--cos-action) 5%, transparent), transparent 60%),
-      linear-gradient(180deg, #ffffff 0%, var(--cos-canvas) 46%, #f7f8f5 100%);
+      radial-gradient(1000px 620px at 85% -10%, color-mix(in oklab, var(--cos-blue) 22%, transparent), transparent 60%),
+      radial-gradient(900px 600px at -10% 105%, color-mix(in oklab, var(--cos-lilac) 90%, transparent), transparent 60%),
+      linear-gradient(180deg, #e7edff 0%, #dde6fb 38%, #eef2fd 72%, #f5f7fd 100%);
     background-attachment: fixed;
     min-height: 100%;
-  }
-  /* Fine dot texture, fading out below the fold — depth without noise. */
-  body::before {
-    content: "";
-    pointer-events: none;
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    background-image: radial-gradient(color-mix(in oklab, var(--cos-navy) 9%, transparent) 0.7px, transparent 0.8px);
-    background-size: 22px 22px;
-    mask-image: linear-gradient(180deg, black 0%, transparent 70%);
   }
 }
 
 .font-display {
-  font-family: var(--font-syne), ui-sans-serif, system-ui, sans-serif;
-  font-optical-sizing: auto;
-  letter-spacing: -0.03em;
+  font-family: var(--font-sora), ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -0.035em;
+}
+
+/* Frosted glass surface — the core card of the redesign. */
+.glass {
+  background: color-mix(in oklab, white 68%, transparent);
+  backdrop-filter: blur(22px) saturate(1.35);
+  -webkit-backdrop-filter: blur(22px) saturate(1.35);
+  border: 1px solid color-mix(in oklab, white 75%, transparent);
+  box-shadow:
+    0 1px 0 0 color-mix(in oklab, white 80%, transparent) inset,
+    0 22px 50px -32px color-mix(in oklab, var(--cos-navy) 45%, transparent);
+}
+
+.glass-strong {
+  background: color-mix(in oklab, white 86%, transparent);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  border: 1px solid color-mix(in oklab, white 80%, transparent);
+  box-shadow: 0 24px 60px -34px color-mix(in oklab, var(--cos-navy) 50%, transparent);
+}
+
+/* Hero band — deeper cobalt-to-sky field, white type. */
+.hero-field {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  color: white;
+  background:
+    radial-gradient(ellipse 70% 80% at 85% 10%, color-mix(in oklab, #9fb6ff 70%, transparent), transparent 60%),
+    radial-gradient(ellipse 60% 70% at 0% 100%, color-mix(in oklab, var(--cos-lilac) 55%, transparent), transparent 60%),
+    linear-gradient(150deg, #3150e6 0%, #5b7bff 45%, #9fb8ff 100%);
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
 }
 
 .story-dialog {
@@ -340,7 +367,7 @@
   overflow: hidden;
   background:
     radial-gradient(ellipse 80% 70% at 100% 0%, color-mix(in oklab, var(--cos-sky) 90%, transparent), transparent 60%),
-    radial-gradient(ellipse 60% 55% at 0% 100%, color-mix(in oklab, var(--cos-turf) 85%, transparent), transparent 58%),
+    radial-gradient(ellipse 60% 55% at 0% 100%, color-mix(in oklab, var(--cos-lilac) 85%, transparent), transparent 58%),
     linear-gradient(160deg, #ffffff 0%, #fffefb 55%, color-mix(in oklab, var(--cos-sky) 22%, white) 100%);
   box-shadow:
     0 1px 0 0 white inset,
@@ -356,7 +383,7 @@
   z-index: -1;
   /* Pitch strip — a faint centre band like a cut wicket */
   background:
-    linear-gradient(90deg, transparent 0%, color-mix(in oklab, var(--cos-turf) 55%, transparent) 50%, transparent 100%)
+    linear-gradient(90deg, transparent 0%, color-mix(in oklab, var(--cos-lilac) 55%, transparent) 50%, transparent 100%)
       center / 34% 100% no-repeat;
   opacity: 0.55;
   mask-image: linear-gradient(180deg, transparent 0%, black 45%, transparent 100%);
@@ -449,7 +476,7 @@
 .cos-onboard-head {
   background:
     radial-gradient(ellipse at top right, color-mix(in oklab, var(--cos-sky) 95%, transparent), transparent 60%),
-    radial-gradient(ellipse at bottom left, color-mix(in oklab, var(--cos-turf) 90%, transparent), transparent 55%),
+    radial-gradient(ellipse at bottom left, color-mix(in oklab, var(--cos-lilac) 90%, transparent), transparent 55%),
     linear-gradient(160deg, #ffffff, var(--cos-canvas));
 }
 
