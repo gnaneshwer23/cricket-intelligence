@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import { after, describe, it } from "node:test";
 import { strToU8, zipSync } from "fflate";
+import { parseCricsheetMatch } from "../ingestion/cricsheet.ts";
 import { ingestCricsheetZip } from "../ingestion/cricsheet-ingest.ts";
+import { backfillMatchMeta, readCricsheetMatchMeta } from "../ingestion/cricsheet-meta.ts";
 import { buildMatchWhere, createPool, escapeLike, PostgresStorage } from "../storage/postgres.ts";
 import { SYNTHETIC_CRICSHEET_ID, syntheticCricsheetMatch } from "./fixtures/cricsheet-match.ts";
 
@@ -63,6 +65,32 @@ describe("PostgresStorage (integration)", { skip: url ? false : "CRICKETOS_TEST_
       [matchId],
     );
     assert.deepEqual(typed.rows[0], { runs: 14, wkts: 2 });
+  });
+
+  it("rebuilds balls from typed columns exactly as the parser produced them", async () => {
+    const parsed = parseCricsheetMatch(syntheticCricsheetMatch, SYNTHETIC_CRICSHEET_ID).balls;
+    const stored = await storage!.getBalls(matchId);
+    // Parser leaves optional keys as `undefined`; storage omits them.
+    assert.deepEqual(stored, JSON.parse(JSON.stringify(parsed)));
+    assert.ok(stored.some((b) => b.isFour) && stored.some((b) => b.isSix) && stored.some((b) => b.dismissalText));
+  });
+
+  it("stores and backfills toss, player of the match and scheduled overs", async () => {
+    const cols = "toss_winner, toss_decision, player_of_match, scheduled_overs";
+    const expected = { toss_winner: "Team B", toss_decision: "field", player_of_match: ["A1"], scheduled_overs: 20 };
+    const read = async () => (await pool!.query(`SELECT ${cols} FROM matches WHERE id = $1`, [matchId])).rows[0];
+    assert.deepEqual(await read(), expected);
+
+    await pool!.query(
+      `UPDATE matches SET toss_winner = NULL, toss_decision = NULL, player_of_match = NULL,
+         scheduled_overs = NULL, payload = payload - 'toss' WHERE id = $1`,
+      [matchId],
+    );
+    const zip = zipSync({ [`${SYNTHETIC_CRICSHEET_ID}.json`]: strToU8(JSON.stringify(syntheticCricsheetMatch)) });
+    const updated = await backfillMatchMeta(pool!, readCricsheetMatchMeta(zip));
+    assert.equal(updated, 1);
+    assert.deepEqual(await read(), expected);
+    assert.deepEqual((await storage!.getMatch(matchId))?.toss, { winner: "Team B", decision: "field" });
   });
 
   it("pushes search filters down to SQL", async () => {

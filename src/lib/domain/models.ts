@@ -126,6 +126,10 @@ export type DomainMatch = {
   coverage?: CoverageMeta;
   /** Free-text result line when known (e.g. statusLine from provider/seed). */
   resultText?: string;
+  toss?: { winner: string; decision: string };
+  playerOfMatch?: string[];
+  /** Scheduled overs per innings (Cricsheet info.overs), e.g. 20 for T20. */
+  scheduledOvers?: number;
 };
 
 export type DomainFixtureListItem = Pick<

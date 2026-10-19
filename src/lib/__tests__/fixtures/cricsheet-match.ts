@@ -35,6 +35,8 @@ export const syntheticCricsheetMatch = {
     gender: "female",
     match_type: "T20",
     outcome: { winner: "Team A", by: { runs: 14 }, method: "D/L" },
+    overs: 20,
+    player_of_match: ["A1"],
     players: {
       "Team A": ["A1", "A2", "A3"],
       "Team B": ["B1", "B2", "Y1", "Y3", "Y4"],
@@ -43,6 +45,7 @@ export const syntheticCricsheetMatch = {
     season: "2026",
     team_type: "club",
     teams: ["Team A", "Team B"],
+    toss: { winner: "Team B", decision: "field" },
     venue: "Synthetic Oval",
   },
   innings: [

@@ -26,6 +26,9 @@ describe("cricsheet parser (synthetic test data)", () => {
     assert.equal(match.series, "Synthetic League 2026");
     assert.equal(match.venue, "Synthetic Oval, Testville");
     assert.equal(match.resultText, "Team A won by 14 runs (D/L)");
+    assert.deepEqual(match.toss, { winner: "Team B", decision: "field" });
+    assert.deepEqual(match.playerOfMatch, ["A1"]);
+    assert.equal(match.scheduledOvers, 20);
     assert.equal(match.provenance.provider, "cricsheet");
     assert.equal(match.coverage?.level, "ball_by_ball");
     assert.equal(match.coverage?.gender, "women");

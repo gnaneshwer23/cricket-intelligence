@@ -158,8 +158,10 @@ export class PostgresStorage implements CricketStorage {
     await this.pool.query(
       `INSERT INTO matches (id, provider_ids, status, freshness, title, venue, series, format,
          start_time, teams, score, note, provenance, updated_at, payload,
-         home_name, away_name, gender, coverage_level, result_text, provider)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
+         home_name, away_name, gender, coverage_level, result_text, provider,
+         toss_winner, toss_decision, player_of_match, scheduled_overs)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,
+         $22,$23,$24,$25)
        ON CONFLICT (id) DO UPDATE SET
          provider_ids = EXCLUDED.provider_ids, status = EXCLUDED.status,
          freshness = EXCLUDED.freshness, title = EXCLUDED.title, venue = EXCLUDED.venue,
@@ -173,7 +175,9 @@ export class PostgresStorage implements CricketStorage {
            WHEN array_position(ARRAY['result','scorecard','innings','ball_by_ball'], matches.coverage_level)
               > array_position(ARRAY['result','scorecard','innings','ball_by_ball'], EXCLUDED.coverage_level)
            THEN matches.coverage_level ELSE EXCLUDED.coverage_level END,
-         result_text = EXCLUDED.result_text, provider = EXCLUDED.provider`,
+         result_text = EXCLUDED.result_text, provider = EXCLUDED.provider,
+         toss_winner = EXCLUDED.toss_winner, toss_decision = EXCLUDED.toss_decision,
+         player_of_match = EXCLUDED.player_of_match, scheduled_overs = EXCLUDED.scheduled_overs`,
       [
         match.id,
         JSON.stringify(match.providerIds ?? {}),
@@ -196,6 +200,10 @@ export class PostgresStorage implements CricketStorage {
         meta.coverageLevel,
         match.resultText ?? match.note ?? null,
         match.provenance.provider ?? null,
+        match.toss?.winner ?? null,
+        match.toss?.decision ?? null,
+        match.playerOfMatch ?? null,
+        match.scheduledOvers ?? null,
       ],
     );
   }
@@ -290,12 +298,16 @@ export class PostgresStorage implements CricketStorage {
   }
 
   async getBalls(matchId: string): Promise<DomainBall[]> {
-    const res = await this.pool.query<{ payload: DomainBall }>(
-      `SELECT payload FROM balls WHERE match_id = $1
+    const res = await this.pool.query<BallRow>(
+      `SELECT id, match_id, innings_id, over_number, ball_in_over, innings_number,
+              batting_team, batter_id, bowler_id, non_striker_id, runs_batter,
+              runs_extras, runs_total, is_wide, is_no_ball, is_wicket, wicket_kind,
+              player_out_id, bowler_runs, is_super_over, is_four, is_six, dismissal_text
+         FROM balls WHERE match_id = $1
         ORDER BY innings_number NULLS FIRST, innings_id, over_number, ball_in_over`,
       [matchId],
     );
-    return res.rows.map((r) => r.payload);
+    return res.rows.map(ballFromRow);
   }
 
   async upsertPlayer(player: DomainPlayer): Promise<void> {
@@ -479,16 +491,18 @@ async function insertMatchPlayers(
 
 async function insertBallBatch(client: PoolClient, matchId: string, balls: DomainBall[]) {
   await client.query(
-    `INSERT INTO balls (id, match_id, innings_id, over_number, ball_in_over, payload,
+    `INSERT INTO balls (id, match_id, innings_id, over_number, ball_in_over,
        innings_number, batting_team, batter_id, bowler_id, non_striker_id,
        runs_batter, runs_extras, runs_total, is_wide, is_no_ball, is_wicket,
-       wicket_kind, player_out_id, bowler_runs, is_super_over)
+       wicket_kind, player_out_id, bowler_runs, is_super_over,
+       is_four, is_six, dismissal_text)
      SELECT * FROM UNNEST(
-       $1::text[], $2::text[], $3::text[], $4::int[], $5::int[], $6::jsonb[],
-       $7::int[], $8::text[], $9::text[], $10::text[], $11::text[],
-       $12::int[], $13::int[], $14::int[], $15::bool[], $16::bool[], $17::bool[],
-       $18::text[], $19::text[], $20::int[], $21::bool[])
-     ON CONFLICT (id) DO UPDATE SET payload = EXCLUDED.payload,
+       $1::text[], $2::text[], $3::text[], $4::int[], $5::int[],
+       $6::int[], $7::text[], $8::text[], $9::text[], $10::text[],
+       $11::int[], $12::int[], $13::int[], $14::bool[], $15::bool[], $16::bool[],
+       $17::text[], $18::text[], $19::int[], $20::bool[],
+       $21::bool[], $22::bool[], $23::text[])
+     ON CONFLICT (id) DO UPDATE SET
        innings_number = EXCLUDED.innings_number, batting_team = EXCLUDED.batting_team,
        batter_id = EXCLUDED.batter_id, bowler_id = EXCLUDED.bowler_id,
        non_striker_id = EXCLUDED.non_striker_id, runs_batter = EXCLUDED.runs_batter,
@@ -496,14 +510,14 @@ async function insertBallBatch(client: PoolClient, matchId: string, balls: Domai
        is_wide = EXCLUDED.is_wide, is_no_ball = EXCLUDED.is_no_ball,
        is_wicket = EXCLUDED.is_wicket, wicket_kind = EXCLUDED.wicket_kind,
        player_out_id = EXCLUDED.player_out_id, bowler_runs = EXCLUDED.bowler_runs,
-       is_super_over = EXCLUDED.is_super_over`,
+       is_super_over = EXCLUDED.is_super_over, is_four = EXCLUDED.is_four,
+       is_six = EXCLUDED.is_six, dismissal_text = EXCLUDED.dismissal_text`,
     [
       balls.map((b) => b.id),
       balls.map(() => matchId),
       balls.map((b) => b.inningsId),
       balls.map((b) => b.overNumber),
       balls.map((b) => b.ballInOver),
-      balls.map((b) => JSON.stringify(b)),
       balls.map((b) => b.inningsNumber ?? null),
       balls.map((b) => b.battingTeam ?? null),
       balls.map((b) => b.batsmanId ?? null),
@@ -519,8 +533,67 @@ async function insertBallBatch(client: PoolClient, matchId: string, balls: Domai
       balls.map((b) => b.playerOutId ?? null),
       balls.map((b) => b.bowlerRuns ?? null),
       balls.map((b) => Boolean(b.isSuperOver)),
+      balls.map((b) => Boolean(b.isFour)),
+      balls.map((b) => Boolean(b.isSix)),
+      balls.map((b) => b.dismissalText ?? null),
     ],
   );
+}
+
+type BallRow = {
+  id: string;
+  match_id: string;
+  innings_id: string;
+  over_number: number;
+  ball_in_over: number;
+  innings_number: number | null;
+  batting_team: string | null;
+  batter_id: string | null;
+  bowler_id: string | null;
+  non_striker_id: string | null;
+  runs_batter: number | null;
+  runs_extras: number | null;
+  runs_total: number | null;
+  is_wide: boolean | null;
+  is_no_ball: boolean | null;
+  is_wicket: boolean | null;
+  wicket_kind: string | null;
+  player_out_id: string | null;
+  bowler_runs: number | null;
+  is_super_over: boolean;
+  is_four: boolean;
+  is_six: boolean;
+  dismissal_text: string | null;
+};
+
+/** Typed ball columns → DomainBall; nullable columns become absent keys. */
+export function ballFromRow(r: BallRow): DomainBall {
+  const ball: DomainBall = {
+    id: r.id,
+    matchId: r.match_id,
+    inningsId: r.innings_id,
+    overNumber: r.over_number,
+    ballInOver: r.ball_in_over,
+    runsOffBat: r.runs_batter ?? 0,
+    extras: r.runs_extras ?? 0,
+    totalRuns: r.runs_total ?? 0,
+    isWicket: Boolean(r.is_wicket),
+    isWide: Boolean(r.is_wide),
+    isNoBall: Boolean(r.is_no_ball),
+    isFour: r.is_four,
+    isSix: r.is_six,
+  };
+  if (r.innings_number != null) ball.inningsNumber = r.innings_number;
+  if (r.batting_team != null) ball.battingTeam = r.batting_team;
+  if (r.batter_id != null) ball.batsmanId = r.batter_id;
+  if (r.bowler_id != null) ball.bowlerId = r.bowler_id;
+  if (r.non_striker_id != null) ball.nonStrikerId = r.non_striker_id;
+  if (r.wicket_kind != null) ball.wicketKind = r.wicket_kind;
+  if (r.player_out_id != null) ball.playerOutId = r.player_out_id;
+  if (r.bowler_runs != null) ball.bowlerRuns = r.bowler_runs;
+  if (r.is_super_over) ball.isSuperOver = true;
+  if (r.dismissal_text != null) ball.dismissalText = r.dismissal_text;
+  return ball;
 }
 
 let sharedPool: Pool | null = null;
