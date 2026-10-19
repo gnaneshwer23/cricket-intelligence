@@ -206,8 +206,8 @@ export async function battingStats(pool: Pool, playerId: string, filter: StatsFi
            COALESCE(SUM(b.runs_batter) FILTER (WHERE b.batter_id = ${pid}), 0) AS runs,
            COUNT(*) FILTER (WHERE b.batter_id = ${pid} AND NOT b.is_wide) AS balls,
            COUNT(*) FILTER (WHERE b.batter_id = ${pid} AND NOT b.is_wide AND b.runs_batter = 0) AS dots,
-           COUNT(*) FILTER (WHERE b.batter_id = ${pid} AND (b.payload->>'isFour')::boolean) AS fours,
-           COUNT(*) FILTER (WHERE b.batter_id = ${pid} AND (b.payload->>'isSix')::boolean) AS sixes,
+           COUNT(*) FILTER (WHERE b.batter_id = ${pid} AND b.is_four) AS fours,
+           COUNT(*) FILTER (WHERE b.batter_id = ${pid} AND b.is_six) AS sixes,
            BOOL_OR(b.player_out_id = ${pid} AND NOT (b.wicket_kind = ANY(${notOutKinds}::text[]))) AS out
       FROM balls b JOIN matches m ON m.id = b.match_id
      WHERE ${q.clauses.join(" AND ")}
@@ -390,8 +390,8 @@ export async function matchup(
            COALESCE(SUM(b.runs_batter), 0) AS runs,
            COUNT(*) FILTER (WHERE b.player_out_id = ${bat} AND b.wicket_kind = ANY(${credited}::text[])) AS dismissals,
            COUNT(*) FILTER (WHERE NOT b.is_wide AND b.runs_batter = 0) AS dots,
-           COUNT(*) FILTER (WHERE (b.payload->>'isFour')::boolean) AS fours,
-           COUNT(*) FILTER (WHERE (b.payload->>'isSix')::boolean) AS sixes
+           COUNT(*) FILTER (WHERE b.is_four) AS fours,
+           COUNT(*) FILTER (WHERE b.is_six) AS sixes
       FROM balls b JOIN matches m ON m.id = b.match_id
      WHERE ${q.clauses.join(" AND ")}
      GROUP BY 1 ORDER BY 1`;

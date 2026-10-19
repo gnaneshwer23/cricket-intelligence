@@ -57,8 +57,8 @@ export const TRAJECTORY_SQL_BASE = `
     SELECT b.match_id, b.id AS ball_id, b.innings_number, b.over_number, b.ball_in_over,
            b.batting_team, b.runs_total, b.is_wicket,
            (NOT b.is_wide AND NOT b.is_no_ball) AS legal,
-           COALESCE((b.payload->>'isFour')::boolean, false) AS is_four,
-           COALESCE((b.payload->>'isSix')::boolean, false) AS is_six,
+           b.is_four AS is_four,
+           b.is_six AS is_six,
            m.title, m.result_text, EXTRACT(YEAR FROM m.start_time)::int AS year
       FROM balls b JOIN matches m ON m.id = b.match_id
      WHERE m.format = 't20' AND NOT b.is_super_over AND b.innings_number IN (1, 2)

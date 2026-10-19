@@ -68,11 +68,14 @@ export type CricsheetMatch = {
     gender?: string;
     match_type: string;
     outcome?: CsOutcome;
+    overs?: number;
+    player_of_match?: string[];
     players?: Record<string, string[]>;
     registry?: { people?: Record<string, string> };
     season?: string | number;
     team_type?: string;
     teams: string[];
+    toss?: { winner?: string; decision?: string };
     venue?: string;
   };
   innings?: CsInnings[];
@@ -185,6 +188,21 @@ function dismissalText(w: CsWicket, bowler: string): string {
  * Parse one Cricsheet match. `cricsheetId` is the file stem (e.g. "1359475").
  * Throws on structurally invalid input; data-quality issues go in `quality`.
  */
+/** Toss, player of the match and scheduled overs — shared with the metadata backfill. */
+export function cricsheetMatchMeta(
+  info: Pick<CricsheetMatch["info"], "toss" | "player_of_match" | "overs">,
+): Pick<DomainMatch, "toss" | "playerOfMatch" | "scheduledOvers"> {
+  const meta: Pick<DomainMatch, "toss" | "playerOfMatch" | "scheduledOvers"> = {};
+  if (info.toss?.winner && info.toss.decision) {
+    meta.toss = { winner: info.toss.winner, decision: info.toss.decision };
+  }
+  if (Array.isArray(info.player_of_match) && info.player_of_match.length) {
+    meta.playerOfMatch = info.player_of_match.filter((n) => typeof n === "string");
+  }
+  if (typeof info.overs === "number" && info.overs > 0) meta.scheduledOvers = info.overs;
+  return meta;
+}
+
 export function parseCricsheetMatch(raw: unknown, cricsheetId: string): CricsheetBundle {
   const cs = raw as CricsheetMatch;
   if (!cs?.info || !Array.isArray(cs.info.teams) || cs.info.teams.length < 2) {
@@ -437,6 +455,7 @@ export function parseCricsheetMatch(raw: unknown, cricsheetId: string): Cricshee
     resultText,
     provenance,
     updatedAt: nowIso,
+    ...cricsheetMatchMeta(info),
     coverage: {
       ...deriveCoverage({
         status: "COMPLETED",

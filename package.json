@@ -12,6 +12,7 @@
     "db:migrate": "tsx scripts/db-migrate.ts",
     "ingest:cricsheet": "tsx scripts/ingest-cricsheet.ts",
     "ingest:register": "tsx scripts/ingest-cricsheet-register.ts",
+    "backfill:match-meta": "tsx scripts/backfill-match-meta.ts",
     "winprob:train": "tsx scripts/train-winprob.ts",
     "winprob:backfill": "tsx scripts/winprob-backfill.ts"
   },
