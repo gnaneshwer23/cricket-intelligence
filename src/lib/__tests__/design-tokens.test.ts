@@ -9,11 +9,20 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "../../..");
 describe("visual redesign tokens", () => {
   it("defines soft canvas, navy, action orange, and pitch green", () => {
     const css = readFileSync(join(root, "src/app/globals.css"), "utf8");
-    assert.match(css, /--cos-canvas:\s*#f6f5f2/i);
+    assert.match(css, /--cos-canvas:\s*#fbfaf7/i);
     assert.match(css, /--cos-navy:\s*#03314c/i);
     assert.match(css, /--cos-action:\s*#e85d04/i);
     assert.match(css, /--cos-pitch:/i);
     assert.match(css, /--color-action:\s*var\(--cos-action\)/);
+  });
+
+  it("keeps the shell light: frosted rail, navy type, no navy sidebar fill", () => {
+    const css = readFileSync(join(root, "src/app/globals.css"), "utf8");
+    const rootBlock = css.slice(css.indexOf(":root {"), css.indexOf(".dark {"));
+    assert.match(rootBlock, /--sidebar:\s*color-mix\(in oklab, white/);
+    assert.match(rootBlock, /--sidebar-foreground:\s*var\(--cos-navy\)/);
+    const shell = readFileSync(join(root, "src/components/cricket-os.tsx"), "utf8");
+    assert.doesNotMatch(shell, /leading-none text-white/);
   });
 
   it("keeps reduced-motion guards on named animations", () => {

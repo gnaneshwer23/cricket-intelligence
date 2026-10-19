@@ -106,9 +106,9 @@ function Shell() {
         inert={!onboarded ? true : undefined}
         aria-hidden={!onboarded ? true : undefined}
       >
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-sidebar-border bg-sidebar px-3 py-6 lg:flex">
+      <aside className="cos-rail fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-sidebar-border bg-sidebar px-3 py-6 lg:flex">
         <div className="px-2">
-          <p className="font-display text-[1.65rem] font-semibold leading-none text-white">
+          <p className="font-display text-[1.65rem] font-semibold leading-none text-navy">
             CricketOS
           </p>
           <p className="mt-2 text-xs leading-relaxed text-sidebar-foreground/70">
@@ -126,7 +126,7 @@ function Shell() {
                 variant={active ? "default" : "ghost"}
                 className={`h-10 justify-start px-3 ${
                   active
-                    ? "cos-cta bg-action text-primary-foreground shadow-[inset_2px_0_0_0_var(--cos-action)] hover:bg-action/90"
+                    ? "cos-cta bg-action text-primary-foreground shadow-[0_6px_16px_-8px_var(--cos-action)] hover:bg-action/90"
                     : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground"
                 }`}
                 aria-current={active ? "page" : undefined}

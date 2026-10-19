@@ -36,7 +36,10 @@ Soft off-white product canvas — distinct CricketOS identity (not Granger clone
 
 | Token | Value | Role |
 |-------|-------|------|
-| `--cos-canvas` | `#F6F5F2` | Soft off-white page plane |
+| `--cos-canvas` | `#FBFAF7` | Warm white page plane ("daylight at the ground") |
+| `--cos-sky` | `#CFE3F4` | Soft sky glow (canvas top-right, hero) |
+| `--cos-turf` | `#D8EDD9` | Faint turf glow (canvas bottom-left, hero pitch strip) |
+| `--sidebar` | white 82% (frosted) | Light rail with navy type; orange pill for the active item |
 | `--cos-navy` | `#03314C` | Deep brand / nav / hero wash |
 | `--cos-deep` | `#084E6E` | Elevated navy panels |
 | `--cos-blue` | `#236686` | Cricket blue links / secondary |

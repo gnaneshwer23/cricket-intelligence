@@ -59,13 +59,13 @@ export function Onboarding() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 p-3 sm:items-center sm:p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-[color-mix(in_oklab,var(--cos-navy)_35%,transparent)] p-3 backdrop-blur-sm sm:items-center sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="onboarding-title"
     >
       <div className="max-h-[92dvh] w-full max-w-2xl overflow-hidden rounded-[2rem] border border-border bg-card shadow-2xl">
-        <div className="border-b border-border bg-[radial-gradient(ellipse_at_top_left,oklch(0.32_0.07_145/0.45),transparent_55%),linear-gradient(160deg,oklch(0.17_0.02_145),oklch(0.13_0.01_120))] px-5 py-5 sm:px-8 sm:py-6">
+        <div className="cos-onboard-head border-b border-border px-5 py-5 sm:px-8 sm:py-6">
           <div className="flex items-center justify-between gap-3">
             <Kicker>
               Step {step + 1} of {STEPS.length} · {STEPS[step]}
